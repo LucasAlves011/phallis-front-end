@@ -1,26 +1,72 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Cor de fundo principal */
+    --background: 24 9.8% 10%;
+    /* phalis-dark #1c1c1c */
+    --foreground: 0 0% 98%;
+    /* text-white */
+
+    /* Cor dos inputs "normais" */
+    --input: 24 9.8% 16.5%;
+    /* phalis-gray #2a2a2a */
+
+    /* Cor da borda e anel (quando clica) */
+    --border: 24 9.8% 25%;
+    --ring: 163 100% 47%;
+
+    /* Outras cores do Shadcn */
+    --card: 24 9.8% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 24 9.8% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 24 9.8% 10%;
+    --secondary: 24 9.8% 16.5%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 24 9.8% 16.5%;
+    --muted-foreground: 0 0% 62.9%;
+    --accent: 24 9.8% 16.5%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 347 89% 49%;
+    --radius: 0.5rem;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    /* Nosso fundo padrão definido no config */
+    @apply bg-phalis-dark text-white;
+  }
+}
+
+input[type="number"] {
+  @apply [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none;
+}
+
+@keyframes flashCiano {
+
+  0%,
+  100% {
+    /* (Cor de fundo da tabela: phalis-gray/50) */
+    background-color: theme('colors.phalis-gray / 0.5');
+  }
+
+  25%,
+  75% {
+    /* (Sua cor de ação: phalis-action) */
+    background-color: theme('colors.phalis-action / 0.3');
+  }
+}
+
+.animate-flashCiano {
+  /* Roda a animação 'flashCiano' por 1.5s, 3 vezes */
+  animation: flashCiano 1.5s 3;
 }

@@ -1,5 +1,6 @@
 // Arquivo: app/mocks/handlers.ts
 import { http, HttpResponse } from 'msw';
+
 // Vamos reutilizar nossos dados e tipos!
 import {
    MOCK_ORDERS,
@@ -10,7 +11,34 @@ import {
    type StatusProducao
 } from '@/lib/orderData';
 
-import { fetchClients, addClient, editClient, type Cliente } from '@/lib/clientData';
+import { fetchClients, addClient, editClient, type Cliente, type User } from '@/lib/clientData';
+
+const MOCK_USERS_DB: (User & { password: string, username: string })[] = [
+   {
+      id: 'user_1',
+      nome: 'Lucas Alves', // O usuário principal
+      email: 'lucas@phalis.com',
+      username: 'lucas', // O login que já funciona
+      password: '123'
+   },
+   {
+      id: 'user_2',
+      nome: 'Phallis Admin', // Novo usuário
+      email: 'phallis@phalis.com',
+      username: 'phallis',
+      password: '123' // Senha simples para o mock
+   },
+   {
+      id: 'user_3',
+      nome: 'Bob Silva', // Segundo novo usuário
+      email: 'bob@phalis.com',
+      username: 'bob',
+      password: '123' // Senha simples para o mock
+   }
+];
+
+let currentlyLoggedInUser: User | null = null;
+let hasMockCookie = false; // Simula a existência do cookie
 
 const LIMIT = 20; // 20 pedidos por página
 
@@ -41,9 +69,6 @@ export const handlers = [
       return HttpResponse.json(pedidosPaginados);
    }),
 
-   // ==========================================================
-   // MUDANÇA AQUI: Corrigindo a criação do pedido
-   // ==========================================================
    http.post('/api/pedidos', async ({ request }) => {
       console.log('[MSW] Interceptada chamada para POST /api/pedidos');
 
@@ -142,6 +167,91 @@ export const handlers = [
       } else {
          return HttpResponse.json({ message: 'Cliente não encontrado' }, { status: 404 });
       }
+   }),
+
+
+   // ==========================================================
+   // NOVAS ROTAS DE AUTENTICAÇÃO
+   // ==========================================================
+
+   // 1. Rota de Login
+   http.post('/api/auth/login', async ({ request }) => {
+      const { username, password } = await request.json() as any;
+
+      console.log(`[MSW] Tentativa de login para: ${username}`);
+      // await delay(500);
+
+      // Procura o usuário no "banco"
+      const foundUser = MOCK_USERS_DB.find(
+         user => user.username === username && user.password === password
+      );
+
+      if (foundUser) {
+         // Extrai os dados públicos (sem a senha)
+         const { password, ...userPublicData } = foundUser;
+
+         // Define o estado global do mock
+         currentlyLoggedInUser = userPublicData;
+         hasMockCookie = true;
+
+         console.log(`[MSW] Login bem-sucedido para: ${userPublicData.nome}`);
+
+         return HttpResponse.json(userPublicData, {
+            status: 200,
+            headers: {
+               'Set-Cookie': 'session-token=mocked_jwt_token; HttpOnly; Path=/; Max-Age=3600'
+            }
+         });
+      }
+
+      // Falha
+      currentlyLoggedInUser = null;
+      hasMockCookie = false;
+      console.log('[MSW] Login falhou: Credenciais inválidas');
+
+      return HttpResponse.json(
+         { message: 'Credenciais inválidas' },
+         { status: 401 }
+      );
+   }),
+
+   // ==========================================================
+   // MUDANÇA 4: Rota "Quem sou eu?" atualizada
+   // ==========================================================
+   http.get('/api/users/me', ({ cookies }) => {
+      console.log('[MSW] Verificando sessão (GET /api/users/me)');
+
+      // Verifica se o cookie (simulado pelo 'hasMockCookie') E o usuário logado existem
+      if (hasMockCookie && currentlyLoggedInUser) {
+         // Sucesso! Retorna o usuário que fez login.
+         console.log(`[MSW] Sessão válida. Usuário: ${currentlyLoggedInUser.nome}`);
+         return HttpResponse.json(currentlyLoggedInUser);
+      }
+
+      // Falha!
+      console.log('[MSW] Sessão inválida ou expirada.');
+      return HttpResponse.json(
+         { message: 'Não autorizado' },
+         { status: 401 }
+      );
+   }),
+
+   // ==========================================================
+   // MUDANÇA 5: Rota de Logout atualizada
+   // ==========================================================
+   http.post('/api/auth/logout', () => {
+      console.log('[MSW] Logout (POST /api/auth/logout)');
+
+      // Limpa o estado global do mock
+      currentlyLoggedInUser = null;
+      hasMockCookie = false;
+
+      return HttpResponse.json(null, {
+         status: 200,
+         headers: {
+            'Set-Cookie': 'session-token=; HttpOnly; Path=/; Max-Age=0'
+         }
+      });
    }),
 
    // Você pode adicionar outras rotas aqui:

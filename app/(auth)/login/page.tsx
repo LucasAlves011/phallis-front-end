@@ -1,3 +1,4 @@
+// Arquivo: app/(auth)/login/page.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -5,21 +6,31 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from '@/lib/auth/AuthContext'; // Import do novo caminho
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
+   // MUDANÇA: de 'email' para 'username'
    const [username, setUsername] = useState('');
    const [password, setPassword] = useState('');
    const [error, setError] = useState('');
+   const [isLoading, setIsLoading] = useState(false);
    const router = useRouter();
+   const { login } = useAuth();
 
-   const handleSubmit = (e: React.FormEvent) => {
+   const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setError('');
+      setIsLoading(true);
 
-      if (username === 'admin' && password === 'admin') {
+      // MUDANÇA: Passando 'username' para a função de login
+      const success = await login(username, password);
+
+      if (success) {
          router.push('/');
       } else {
-         setError('Usuário ou senha inválidos');
+         setError('Credenciais inválidas. Tente novamente.');
+         setIsLoading(false);
       }
    };
 
@@ -39,12 +50,13 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
 
+               {/* MUDANÇA: Bloco de 'username' */}
                <div>
                   <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1">
                      Usuário
                   </label>
                   <Input
-                     type="text"
+                     type="text" // tipo mudou
                      id="username"
                      value={username}
                      onChange={(e) => setUsername(e.target.value)}
@@ -79,8 +91,9 @@ export default function LoginPage() {
                   <Button
                      type="submit"
                      className="w-full bg-phalis-action text-phalis-black font-bold text-lg py-6 hover:bg-phalis-action-hover"
+                     disabled={isLoading}
                   >
-                     ENTRAR
+                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENTRAR'}
                   </Button>
                </div>
             </form>

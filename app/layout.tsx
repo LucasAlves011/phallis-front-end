@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { MswComponent } from "@/app/mocks/MswComponent";
+import { AuthProvider } from "@/lib/auth/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -19,7 +20,9 @@ export default function RootLayout({
       <html lang="pt-BR" className="dark">
          <body className={inter.className}>
             <MswComponent>
-               {children}
+               <AuthProvider>
+                  {children}
+               </AuthProvider>
             </MswComponent>
          </body>
       </html>

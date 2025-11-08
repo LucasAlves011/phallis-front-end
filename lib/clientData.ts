@@ -9,6 +9,12 @@ export type Cliente = {
    telefone2: string;
 };
 
+export type User = {
+  id: string;
+  nome: string;
+  email: string;
+};
+
 export const MOCK_CLIENTS: Cliente[] = [
    { id: 'cli_001', nome: 'Cliente Metro 1 (Original)', cpfCnpj: '111.222.333-44', email: 'cliente1@email.com', telefone1: '(81) 99999-0001', telefone2: '' },
    { id: 'cli_002', nome: 'Cliente Unidade 2 (Original)', cpfCnpj: '22.333.444/0001-55', email: 'cliente2@email.com', telefone1: '(81) 98888-0002', telefone2: '' },

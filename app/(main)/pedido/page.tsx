@@ -268,6 +268,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
    const [selections, setSelections] = useState<Selections>({
       papel: null, tamanho: null, cores: null, acabamento: null,
    });
+
    const [observacoes, setObservacoes] = useState('');
    const [largura, setLargura] = useState('');
    const [altura, setAltura] = useState('');
@@ -308,17 +309,29 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
    const isBuilderCompleto = useMemo(() => Object.values(selections).every(value => value !== null), [selections]);
    const isPrecoCompleto = useMemo(() => largura && altura && m2Custo && m2Venda && pagamento, [largura, altura, m2Custo, m2Venda, pagamento]);
 
-   // MUDANÇA AQUI: handleConcluir
+
+   // ==========================================================
+   // MUDANÇA AQUI: Convertendo os preços para Número no 'payload'
+   // ==========================================================
    const handleConcluir = async () => {
       if (!isBuilderCompleto || !isPrecoCompleto || !cliente) return;
       setIsLoading(true);
 
       const payload = {
-         cliente: cliente, produto: produto, opcoes: selections, observacao: observacoes,
+         cliente: cliente,
+         produto: produto,
+         opcoes: selections,
+         observacao: observacoes,
          preco: {
-            largura, altura,
+            largura: (Number(largura) || 0), // <-- CORRIGIDO
+            altura: (Number(altura) || 0), // <-- CORRIGIDO
             valorArte: (Number(valorArte) || 0),
-            pagamento, m2Custo, m2Venda, total, valorTotalCusto, valorTotalVenda
+            pagamento,
+            m2Custo: (Number(m2Custo) || 0), // <-- CORRIGIDO
+            m2Venda: (Number(m2Venda) || 0), // <-- CORRIGIDO
+            total,
+            valorTotalCusto,
+            valorTotalVenda
          }
       };
       try {
@@ -331,7 +344,6 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
 
          const salvo = await response.json();
 
-         // MUDANÇA: Redireciona com o ID para o highlight
          router.push(`/historico-pedidos?highlight=${salvo.id}`);
 
       } catch (error) {
@@ -344,7 +356,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
 
    return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-         {/* ... (Resto do JSX de FormularioMetro - Sem mudanças) ... */}
+
          {/* COLUNA DA ESQUERDA (Ficha) */}
          <div className="lg:col-span-1 space-y-4">
             <ClientCombobox
@@ -367,6 +379,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
                ))}
             </div>
          </div>
+
          {/* COLUNA DA DIREITA (Layout do seu Esboço) */}
          <div className="lg:col-span-2 space-y-6 flex flex-col">
             <ProductBuilderStep
@@ -374,7 +387,9 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
                selections={selections}
                onSelectOption={handleSelectOption}
             />
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+               {/* Coluna da Observação */}
                <div className="lg:col-span-2">
                   <Textarea
                      placeholder="Observações (Opcional)..."
@@ -383,15 +398,19 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
                      onChange={(e) => setObservacoes(e.target.value)}
                   />
                </div>
+
+               {/* Coluna do Preço (FLUXO METRO) */}
                <div className="lg:col-span-1 space-y-3">
                   <h3 className="text-base font-medium text-white">Fluxo de Custo</h3>
                   <Input type="number" placeholder="Largura (cm) *" value={largura} onChange={e => setLargura(e.target.value)} className="bg-phalis-gray border-0" />
                   <Input type="number" placeholder="Altura (cm) *" value={altura} onChange={e => setAltura(e.target.value)} className="bg-phalis-gray border-0" />
                   <MoneyInput placeholder="Valor Custo (por m²) *" value={m2Custo} onChange={e => setM2Custo(e.target.value)} />
                   <div className="bg-phalis-gray rounded-md p-3 text-white">Custo Total: <span className="font-bold">R$ {valorTotalCusto.toFixed(2)}</span></div>
+
                   <h3 className="text-base font-medium text-white pt-4">Fluxo de Venda</h3>
                   <MoneyInput placeholder="Valor Venda (por m²) *" value={m2Venda} onChange={e => setM2Venda(e.target.value)} />
                   <div className="bg-phalis-gray rounded-md p-3 text-white">Venda Total: <span className="font-bold">R$ {valorTotalVenda.toFixed(2)}</span></div>
+
                   <h3 className="text-base font-medium text-white pt-4">Finalização</h3>
                   <MoneyInput placeholder="Valor Arte (Opcional)" value={valorArte} onChange={e => setValorArte(e.target.value)} />
                   <Select onValueChange={setPagamento}>
@@ -404,6 +423,8 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
                   </Select>
                </div>
             </div>
+
+            {/* Botão Concluir e Total */}
             <div className="bg-phalis-black p-4 rounded-lg flex justify-between items-center">
                <div className="text-right text-white">
                   <span className="text-sm text-gray-400 block">TOTAL (Venda + Arte)</span>

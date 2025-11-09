@@ -3,13 +3,15 @@ import { http, HttpResponse } from 'msw';
 
 // Vamos reutilizar nossos dados e tipos!
 import {
-   MOCK_ORDERS,
-   type Pedido,
-   updateStatusFinanceiro,
-   updateStatusProducao,
-   type StatusFinanceiro,
-   type StatusProducao
+  MOCK_ORDERS,
+  type Pedido,
+  updateStatusFinanceiro,
+  updateStatusProducao,
+  type StatusFinanceiro,
+  type StatusProducao
 } from '@/lib/orderData';
+
+import { produtosDoCatalogo } from '@/lib/productData';
 
 import { fetchClients, addClient, editClient, type Cliente, type User } from '@/lib/clientData';
 
@@ -44,28 +46,52 @@ const LIMIT = 20; // 20 pedidos por página
 
 export const handlers = [
 
+
+   // ==========================================================
+   // MUDANÇA AQUI: Nova rota GET para /api/produtos (o catálogo)
+   // ==========================================================
+   http.get('/api/produtos', async () => {
+      console.log('[MSW] Interceptada chamada para GET /api/produtos');
+      // await delay(300); // Simula um pequeno delay de rede
+      return HttpResponse.json(produtosDoCatalogo);
+   }),
+
    // ==========================================================
    // ROTAS DE PEDIDOS
    // ==========================================================
 
    // Intercepta a chamada GET para /api/pedidos
    http.get('/api/pedidos', ({ request }) => {
-
-      // Pega os parâmetros da URL (ex: /api/pedidos?page=1)
       const url = new URL(request.url);
       const page = parseInt(url.searchParams.get('page') || '1', 10);
 
-      console.log(`[MSW] Interceptada chamada para /api/pedidos (Página: ${page})`);
+      // 1. Pega os novos parâmetros de filtro
+      const cliente = url.searchParams.get('cliente');
+      const financeiro = url.searchParams.get('financeiro') as StatusFinanceiro | null;
+      const status = url.searchParams.get('status') as StatusProducao | null;
 
-      // Lógica de paginação
+      console.log(`[MSW] GET /api/pedidos (Página: ${page}, Cliente: ${cliente}, Financeiro: ${financeiro}, Status: ${status})`);
+
+      // 2. Aplica os filtros ao MOCK_ORDERS
+      let filteredOrders = MOCK_ORDERS;
+
+      if (cliente) {
+         filteredOrders = filteredOrders.filter(p =>
+            p.cliente.nome.toLowerCase().includes(cliente.toLowerCase())
+         );
+      }
+      if (financeiro) {
+         filteredOrders = filteredOrders.filter(p => p.statusFinanceiro === financeiro);
+      }
+      if (status) {
+         filteredOrders = filteredOrders.filter(p => p.statusProducao === status);
+      }
+
+      // 3. Pagina os resultados *filtrados*
       const start = (page - 1) * LIMIT;
       const end = start + LIMIT;
-      const pedidosPaginados = MOCK_ORDERS.slice(start, end);
+      const pedidosPaginados = filteredOrders.slice(start, end);
 
-      // Simula o delay da rede
-      // await delay(500); // (O MSW v2 recomenda não usar delay no handler)
-
-      // Retorna a resposta como JSON
       return HttpResponse.json(pedidosPaginados);
    }),
 
@@ -73,17 +99,18 @@ export const handlers = [
       console.log('[MSW] Interceptada chamada para POST /api/pedidos');
 
       const dadosDoFormulario = await request.json() as any;
-
-      // 1. Definir a data ANTES de criar o objeto
       const dataCriacao = new Date().toISOString();
-
       const valorDoPedido = dadosDoFormulario.produto.pricingType === 'arte'
          ? dadosDoFormulario.preco.valorVenda
          : dadosDoFormulario.preco.total;
 
+      // Pega o nome do usuário que está no payload
+      const userName = dadosDoFormulario.user?.nome || 'Usuário Desconhecido';
+
       const novoPedido: Pedido = {
          id: `PED-${Math.floor(Math.random() * 9000) + 1000}`,
-         dataCriacao: dataCriacao, // <-- 2. Usar a variável aqui
+         dataCriacao: dataCriacao,
+         criadoPor: userName, // <-- SALVA O CRIADOR
          cliente: dadosDoFormulario.cliente,
          itemNome: dadosDoFormulario.produto.nome,
          itemImageUrl: dadosDoFormulario.produto.imageUrl || '/images/catalogo/arte.png',
@@ -91,9 +118,8 @@ export const handlers = [
          valor: valorDoPedido,
          statusFinanceiro: dadosDoFormulario.preco.pagamento,
          statusProducao: 'pre_prod',
-         // 3. Usar a variável aqui também
-         historicoFinanceiro: [{ status: dadosDoFormulario.preco.pagamento, data: dataCriacao }],
-         historicoProducao: [{ status: 'pre_prod', data: dataCriacao }],
+         historicoFinanceiro: [{ status: dadosDoFormulario.preco.pagamento, data: dataCriacao, user: userName }],
+         historicoProducao: [{ status: 'pre_prod', data: dataCriacao, user: userName }],
          detalhes: {
             type: dadosDoFormulario.produto.pricingType,
             opcoes: dadosDoFormulario.opcoes,
@@ -104,25 +130,27 @@ export const handlers = [
       return HttpResponse.json(novoPedido, { status: 201 });
    }),
 
+   // MUDANÇA 2: Rota PUT agora recebe 'userName'
    http.put('/api/pedidos/:id/financeiro', async ({ request, params }) => {
       const { id } = params;
-      const { status } = await request.json() as { status: StatusFinanceiro };
-      console.log(`[MSW] PUT /api/pedidos/${id}/financeiro -> ${status}`);
+      // Pega o 'status' e o 'userName' do body
+      const { status, userName } = await request.json() as { status: StatusFinanceiro, userName: string };
+      console.log(`[MSW] PUT /api/pedidos/${id}/financeiro -> ${status} por ${userName}`);
 
-      const pedidoAtualizado = await updateStatusFinanceiro(id as string, status);
+      const pedidoAtualizado = await updateStatusFinanceiro(id as string, status, userName);
       if (pedidoAtualizado) {
          return HttpResponse.json(pedidoAtualizado);
       }
       return HttpResponse.json({ message: 'Pedido não encontrado' }, { status: 404 });
    }),
 
-   // Rota PUT para Status de Produção
+   // MUDANÇA 3: Rota PUT agora recebe 'userName'
    http.put('/api/pedidos/:id/producao', async ({ request, params }) => {
       const { id } = params;
-      const { status } = await request.json() as { status: StatusProducao };
-      console.log(`[MSW] PUT /api/pedidos/${id}/producao -> ${status}`);
+      const { status, userName } = await request.json() as { status: StatusProducao, userName: string };
+      console.log(`[MSW] PUT /api/pedidos/${id}/producao -> ${status} por ${userName}`);
 
-      const pedidoAtualizado = await updateStatusProducao(id as string, status);
+      const pedidoAtualizado = await updateStatusProducao(id as string, status, userName);
       if (pedidoAtualizado) {
          return HttpResponse.json(pedidoAtualizado);
       }

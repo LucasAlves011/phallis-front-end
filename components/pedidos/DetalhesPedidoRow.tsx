@@ -4,12 +4,16 @@ import { Pedido, HistoricoItem } from '@/lib/orderData';
 import { optionGroupsConfig, getProductById, type Product } from '@/lib/productData';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
+// 1. MUDANÇA: Importar 'useRouter' e 'Pencil'
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
 
 type DetalhesProps = {
    pedido: Pedido;
 };
 
-// ... (formatarData, DetailRow - sem mudança)
+// ... (formatarData, DetailRow, Mapas de Estilo, TimelineItem - Sem mudanças) ...
 const formatarData = (isoString: string) => {
    return new Date(isoString).toLocaleString('pt-BR', {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -21,8 +25,6 @@ const DetailRow = ({ label, value }: { label: string, value: React.ReactNode }) 
       <span className="font-medium text-white">{value}</span>
    </div>
 );
-
-// ... (STATUS_NOME_MAP, STATUS_COR_MAP - sem mudança)
 const STATUS_NOME_MAP: Record<string, string> = {
    nao_pago: 'Não Pago', pago_50: 'Pago 50%', pago: 'Pago',
    pre_prod: 'Pré-Produção', em_producao: 'Em Produção',
@@ -35,8 +37,6 @@ const STATUS_COR_MAP: Record<string, string> = {
    pronto_retirada: 'bg-purple-600', concluido: 'bg-green-600',
    CRIADO: 'bg-gray-500',
 };
-
-// ... (TimelineItem - sem mudança)
 const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, user: string, subStatus?: string }, isLast: boolean }) => {
    const nomeStatus = STATUS_NOME_MAP[item.status] || item.status.replace(/_/g, ' ');
    const corStatus = STATUS_COR_MAP[item.status] || 'bg-cyan-500';
@@ -60,10 +60,12 @@ const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, 
    );
 };
 
+
 // --- Renderizadores Específicos ---
 
 const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product }> = ({ pedido, produto }) => {
    const { detalhes, itemImageUrl, itemNome } = pedido;
+   const router = useRouter(); // 2. MUDANÇA: Adicionar router
 
    if (detalhes.type !== 'unidade' && detalhes.type !== 'metro') return null;
    const { opcoes } = detalhes;
@@ -84,6 +86,13 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product }> = ({ 
       return todosEventos;
    }, [pedido]);
 
+   // 3. MUDANÇA: Função para o clique de Editar
+   const handleEdit = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Impede o acordeon de fechar
+      // Redireciona para a tela de pedido, passando o ID do PRODUTO e o ID do PEDIDO
+      router.push(`/pedido?id=${pedido.productId}&edit=${pedido.id}`);
+   };
+
    return (
       <div className="bg-phalis-gray rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
 
@@ -99,7 +108,13 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product }> = ({ 
             <h4 className="text-lg font-semibold text-white mb-2">{itemNome}</h4>
             {optionGroupsConfig.map(group => {
                const optionId = opcoes[group.id] || 'N/A';
-               const optionLabel = produto.options?.[group.id]?.find(o => o.id === optionId)?.name || optionId;
+               let optionLabel = optionId;
+               if (group.id === 'tamanho' && detalhes.type === 'unidade' && detalhes.dimensoesPersonalizadas) {
+                  const { larguraCm, alturaCm } = detalhes.dimensoesPersonalizadas;
+                  optionLabel = `Personalizado (${larguraCm}cm x ${alturaCm}cm)`;
+               } else {
+                  optionLabel = produto.options?.[group.id]?.find(o => o.id === optionId)?.name || optionId;
+               }
                return <DetailRow key={group.id} label={group.name.split('. ')[1]} value={optionLabel} />
             })}
          </div>
@@ -147,24 +162,36 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product }> = ({ 
                {historicoCompleto.map((item, index) => (
                   <TimelineItem
                      key={index}
-                     // @ts-ignore
                      item={item}
                      isLast={index === historicoCompleto.length - 1}
                   />
                ))}
             </ol>
+
+            {/* 4. MUDANÇA: Adicionar o botão de Editar */}
+            <Button
+               variant="outline"
+               size="sm"
+               className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
+               onClick={handleEdit}
+            >
+               <Pencil className="h-4 w-4 mr-2" />
+               Editar Pedido
+            </Button>
          </div>
       </div>
    );
 };
 
-// ... (DetalhesArte e Componente Principal - sem mudança)
+// ... (O componente DetalhesArte precisa da mesma mudança)
 const DetalhesArte: React.FC<{ pedido: Pedido; }> = ({ pedido }) => {
    const { detalhes, itemImageUrl, itemNome } = pedido;
+   const router = useRouter(); // 2. MUDANÇA
    if (detalhes.type !== 'arte') return null;
    const { preco } = detalhes;
 
    const historicoCompleto = useMemo(() => {
+      // ... (lógica do histórico - sem mudança)
       const statusInicialFinanceiro = pedido.historicoFinanceiro[0]?.status || 'nao_pago';
       const criacaoEvent = {
          status: 'CRIADO',
@@ -179,8 +206,15 @@ const DetalhesArte: React.FC<{ pedido: Pedido; }> = ({ pedido }) => {
       return todosEventos;
    }, [pedido]);
 
+   // 3. MUDANÇA
+   const handleEdit = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      router.push(`/pedido?id=${pedido.productId}&edit=${pedido.id}`);
+   };
+
    return (
       <div className="bg-phalis-gray rounded-lg p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+         {/* ... (Coluna 1: Imagem, Coluna 2: Detalhes - sem mudança) ... */}
          <div className="md:col-span-1">
             <div className="relative w-full h-40 rounded-md overflow-hidden bg-phalis-dark">
                <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
@@ -195,27 +229,43 @@ const DetalhesArte: React.FC<{ pedido: Pedido; }> = ({ pedido }) => {
                </span>
             } />
          </div>
+
+         {/* Coluna 3 (Gestão do Tempo) */}
          <div className="md:col-span-1 space-y-4">
             <h4 className="text-lg font-semibold text-white mb-2">Gestão do Tempo</h4>
             <ol className="list-none m-0 p-0">
                {historicoCompleto.map((item, index) => (
                   <TimelineItem
                      key={index}
-                     // @ts-ignore
                      item={item}
                      isLast={index === historicoCompleto.length - 1}
                   />
                ))}
             </ol>
+
+            {/* 4. MUDANÇA: Adicionar o botão de Editar */}
+            <Button
+               variant="outline"
+               size="sm"
+               className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
+               onClick={handleEdit}
+            >
+               <Pencil className="h-4 w-4 mr-2" />
+               Editar Pedido
+            </Button>
          </div>
       </div>
    );
 };
+
+// --- Componente Principal ---
 const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido }) => {
+   // ... (lógica de getProductById - sem mudança)
    const produto = getProductById(pedido.productId);
    if (!produto) {
       return <div className="text-red-500 p-4">Erro: Produto original (ID: {pedido.productId}) não encontrado.</div>
    }
+
    switch (pedido.detalhes.type) {
       case 'unidade':
       case 'metro':
@@ -226,4 +276,5 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido }) => {
          return <div>Detalhes indisponíveis.</div>;
    }
 };
+
 export default DetalhesPedidoRow;

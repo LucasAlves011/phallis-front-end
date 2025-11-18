@@ -19,10 +19,11 @@ export type Product = {
   nome: string;
   descricao: string;
   imageUrl: string;
-  // O tipo de motor de preço
   pricingType: 'metro' | 'unidade' | 'arte';
-  // Opcional: 'arte' não terá isso
+  consultaPreco?: boolean;
   options?: ProductOptions;
+  defaultM2Custo?: number;
+  defaultM2Venda?: number;
 };
 
 // --- CONFIGURAÇÃO DAS COLUNAS (PARA ORDEM E RESET) ---
@@ -36,14 +37,13 @@ export const optionGroupsConfig = [
 // ==========================================================
 // MUDANÇA: Função para converter o seu JSON no nosso formato
 // ==========================================================
-const formatarOpcoes = (opcoes: string[]): ProductOption[] => {
-  // Se a opção for nula ou o array estiver vazio, retorna um padrão
-  // if (!opcoes || opcoes.length === 0) {
-  //   return [{ id: 'padrao', name: 'Padrão' }];
-  // }
-  // Converte a string (ex: "4x0") em um objeto { id: '4x0', name: '4x0' }
+const formatarOpcoes = (opcoes: string[] | null | undefined): ProductOption[] => {
   return opcoes.map(op => ({
-    id: op.toLowerCase().replace(/ /g, '_').substr(0, 20), // Cria um ID simples
+    // 1. Removemos o 'substr(0, 20)'
+    // 2. Trocamos o 'replace' para um que limpa tudo que não é letra/número
+    id: op.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '') // Remove pontuação (ex: '+', '(', ')')
+      .replace(/\s+/g, '_'), // Substitui espaços por underscore
     name: op
   }));
 };
@@ -70,11 +70,13 @@ const NOVOS_PRODUTOS: Product[] = [
     "imageUrl": "/images/catalogo/banner.png", // Pego do mock antigo
     "pricingType": "metro", // Tipo 'metro'
     "options": {
-      "papel": formatarOpcoes(["Lona Front 380g"]),
+      "papel": formatarOpcoes(["Lona Normal", "Lona UV"]),
       "tamanho": formatarOpcoes([]),
       "cores": formatarOpcoes(["4x0"]),
-      "acabamento": formatarOpcoes(["Madeirinhas e ponteiras"])
-    }
+      "acabamento": formatarOpcoes(["Madeirinhas e Ponteiras", "Ilhós", "Sem acabamento"])
+    },
+    "defaultM2Custo": 29,
+    "defaultM2Venda": 60
   },
   {
     "id": "prod_011", // Pego do mock antigo
@@ -87,7 +89,8 @@ const NOVOS_PRODUTOS: Product[] = [
       "tamanho": formatarOpcoes(["3.8x10cm Arte (3.5X9.7cm Final)", "2.2x7.4cm Arte (2.0X7.2cm Final)"]),
       "cores": formatarOpcoes(["4x0"]),
       "acabamento": formatarOpcoes(["Meio Corte Padrão Entregue em Bobinas de 33cm"])
-    }
+    },
+    "consultaPreco": true
   },
   {
     "id": "prod_025", // Pego do mock antigo
@@ -514,7 +517,7 @@ const NOVOS_PRODUTOS: Product[] = [
     "pricingType": "unidade",
     "options": {
       "papel": formatarOpcoes(["Completo", "Só Tecido"]),
-      "tamanho": formatarOpcoes(["1,80m (150x36)", "2,50m (145x50)", "3,10m (200x60)", "3,50m (250x71)"]),
+      "tamanho": formatarOpcoes(["1.8m (150x36)", "2.5m (145x50)", "3.1m (200x60)", "3.5m (250x71)"]),
       "cores": formatarOpcoes(["4x4"]),
       "acabamento": formatarOpcoes(["Faca", "Vela", "Pena"])
     }
@@ -527,7 +530,7 @@ const NOVOS_PRODUTOS: Product[] = [
     "pricingType": "unidade",
     "options": {
       "papel": formatarOpcoes(["Completo", "Só Tecido"]),
-      "tamanho": formatarOpcoes(["2,0m (155x60)", "2,50m (200x60)", "3,0m (250x60)", "3,5m (290x60)"]),
+      "tamanho": formatarOpcoes(["2.0m (155x60)", "2.5m (200x60)", "3.0m (250x60)", "3.5m (290x60)"]),
       "cores": formatarOpcoes(["4x4"]),
       "acabamento": formatarOpcoes(["Faca", "Vela", "Pena"])
     }
@@ -540,24 +543,103 @@ const NOVOS_PRODUTOS: Product[] = [
     "pricingType": "unidade",
     "options": {
       "papel": formatarOpcoes(["Cetim"]),
-      "tamanho": formatarOpcoes(["300x20 (320x20)", "300x15 (320x15)"]),
+      "tamanho": formatarOpcoes(["300x20cm (320x20cm)", "300x15cm (320x15cm)"]),
       "cores": formatarOpcoes(["4x0"]),
       "acabamento": formatarOpcoes(["Padrão"])
     }
   },
   {
     "id": "prod_028",
-    "nome": "Tapete Impresso",
+    "nome": "Tapete de Carpacho Impresso",
     "descricao": "",
     "imageUrl": "/images/catalogo/tapete-impresso.png",
-    "pricingType": "unidade",
+    "pricingType": "metro",
     "options": {
       "papel": formatarOpcoes(["Borracha"]),
       "tamanho": formatarOpcoes([]),
       "cores": formatarOpcoes(["4x0"]),
       "acabamento": formatarOpcoes(["Sem Borda", "Borda Rebaixada"])
     }
+  },
+  {
+    "id": "prod_029",
+    "nome": "Mochila Pirulito",
+    "descricao": "- 01 Mochila:\n Regulável para tamanhos P, M ou G.\n- 01 Haste: \nHaste em Alumínio. \n- 01 Mídia em PS Adesivadas F/V (Dupla-Face)",
+    "imageUrl": "/images/catalogo/mochila-pirulito.png",
+    "pricingType": "unidade",
+    "options": {
+      "papel": formatarOpcoes(["Padrão"]),
+      "tamanho": formatarOpcoes(["38x38cm"]),
+      "cores": formatarOpcoes(["4x4"]),
+      "acabamento": formatarOpcoes(["Padrão"])
+    }
+  },
+  {
+    "id": "prod_030",
+    "nome": "Painel de Festa Redondo",
+    "descricao": "",
+    "imageUrl": "/images/catalogo/painel-redondo.png",
+    "pricingType": "unidade",
+    "options": {
+      "papel": formatarOpcoes(["Malha Helanca com elástico"]),
+      "tamanho": formatarOpcoes(["50cm", "100cm", "150cm"]),
+      "cores": formatarOpcoes(["4x0"]),
+      "acabamento": formatarOpcoes(["Padrão"])
+    }
+  },
+  {
+    "id": "prod_031",
+    "nome": "Capa de Cadeira",
+    "descricao": "",
+    "imageUrl": "/images/catalogo/capa-de-cadeira.png",
+    "pricingType": "unidade",
+    "options": {
+      "papel": formatarOpcoes(["Padrão"]),
+      "tamanho": formatarOpcoes(["Encosto", "Assento e Encosto"]),
+      "cores": formatarOpcoes(["4x0"]),
+      "acabamento": formatarOpcoes(["Padrão"])
+    }
+  },
+  {
+    "id": "prod_032",
+    "nome": "Capa de Garrafão",
+    "descricao": "",
+    "imageUrl": "/images/catalogo/capa-de-garrafao.png",
+    "pricingType": "unidade",
+    "options": {
+      "papel": formatarOpcoes(["Tecido", "PVC"]),
+      "tamanho": formatarOpcoes(["Padrão"]),
+      "cores": formatarOpcoes(["4x0"]),
+      "acabamento": formatarOpcoes(["Padrão"])
+    }
+  },
+  {
+    "id": "prod_033",
+    "nome": "Adesivo Perfurado",
+    "descricao": "A largura máxima tem tamanho máximo de 1,37m.",
+    "imageUrl": "/images/catalogo/capa-de-garrafao.png",
+    "pricingType": "metro",
+    "options": {
+      "papel": formatarOpcoes(["Padrão"]),
+      "tamanho": formatarOpcoes([]),
+      "cores": formatarOpcoes(["4x0"]),
+      "acabamento": formatarOpcoes(["Padrão"])
+    }
+  },
+  {
+    "id": "prod_034",
+    "nome": "Adesivo Leitoso",
+    "descricao": "A largura máxima tem tamanho máximo de 1,37m.",
+    "imageUrl": "/images/catalogo/capa-de-garrafao.png",
+    "pricingType": "metro",
+    "options": {
+      "papel": formatarOpcoes(["Normal", "UV"]),
+      "tamanho": formatarOpcoes([]),
+      "cores": formatarOpcoes(["4x0"]),
+      "acabamento": formatarOpcoes(["Padrão"])
+    }
   }
+
 ];
 
 // --- Combina e exporta a lista final ---
@@ -565,7 +647,24 @@ const NOVOS_PRODUTOS: Product[] = [
 const productMap = new Map<string, Product>();
 NOVOS_PRODUTOS.forEach(p => productMap.set(p.id, p));
 
-export const produtosDoCatalogo: Product[] = Array.from(productMap.values());
+export let produtosDoCatalogo: Product[] = Array.from(productMap.values());
+
+export const deleteProduct = (id: string): boolean => {
+  const index = produtosDoCatalogo.findIndex(p => p.id === id);
+  if (index !== -1) {
+    produtosDoCatalogo.splice(index, 1);
+    return true;
+  }
+  return false;
+};
+
+
+export const reorderProducts = (productIds: string[]): void => {
+  // Cria um mapa para busca rápida
+  const productMap = new Map(produtosDoCatalogo.map(p => [p.id, p]));
+  // Recria o array na nova ordem
+  produtosDoCatalogo = productIds.map(id => productMap.get(id)).filter(Boolean) as Product[];
+};
 
 // --- FUNÇÃO PARA BUSCAR O PRODUTO ---
 export const getProductById = (id: string): Product | undefined => {

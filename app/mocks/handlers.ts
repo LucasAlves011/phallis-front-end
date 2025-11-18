@@ -3,15 +3,15 @@ import { http, HttpResponse } from 'msw';
 
 // Vamos reutilizar nossos dados e tipos!
 import {
-  MOCK_ORDERS,
-  type Pedido,
-  updateStatusFinanceiro,
-  updateStatusProducao,
-  type StatusFinanceiro,
-  type StatusProducao
+   MOCK_ORDERS,
+   type Pedido,
+   updateStatusFinanceiro,
+   updateStatusProducao,
+   type StatusFinanceiro,
+   type StatusProducao
 } from '@/lib/orderData';
 
-import { produtosDoCatalogo } from '@/lib/productData';
+import { produtosDoCatalogo, deleteProduct, reorderProducts, type Product } from '@/lib/productData';
 
 import { fetchClients, addClient, editClient, type Cliente, type User } from '@/lib/clientData';
 
@@ -38,7 +38,6 @@ const MOCK_USERS_DB: (User & { password: string, username: string })[] = [
       password: '123' // Senha simples para o mock
    }
 ];
-
 let currentlyLoggedInUser: User | null = null;
 let hasMockCookie = false; // Simula a existência do cookie
 
@@ -46,6 +45,123 @@ const LIMIT = 20; // 20 pedidos por página
 
 export const handlers = [
 
+
+   // ==========================================================
+   // MUDANÇA 1: NOVA ROTA (GET por ID)
+   // ==========================================================
+   http.get('/api/produtos/:id', async ({ params }) => {
+      const { id } = params;
+      console.log(`[MSW] GET /api/produtos/${id}`);
+      const produto = produtosDoCatalogo.find(p => p.id === id);
+
+      if (produto) {
+         return HttpResponse.json(produto);
+      }
+      return HttpResponse.json({ message: 'Produto não encontrado' }, { status: 404 });
+   }),
+
+   // ==========================================================
+   // MUDANÇA 2: NOVA ROTA (POST - Criar)
+   // ==========================================================
+   http.post('/api/produtos', async ({ request }) => {
+      const novoProduto = await request.json() as Product;
+      // Adiciona o novo produto no INÍCIO da lista
+      produtosDoCatalogo.unshift(novoProduto);
+      console.log('[MSW] POST /api/produtos', novoProduto);
+      return HttpResponse.json(novoProduto, { status: 201 });
+   }),
+
+   // ==========================================================
+   // MUDANÇA 3: NOVA ROTA (PUT - Atualizar)
+   // ==========================================================
+   http.put('/api/produtos/:id', async ({ request, params }) => {
+      const { id } = params;
+      const updatedData = await request.json() as Product;
+
+      const index = produtosDoCatalogo.findIndex(p => p.id === id);
+      if (index !== -1) {
+         produtosDoCatalogo[index] = updatedData;
+         console.log(`[MSW] PUT /api/produtos/${id}`, updatedData);
+         return HttpResponse.json(updatedData);
+      }
+      return HttpResponse.json({ message: 'Produto não encontrado' }, { status: 404 });
+   }),
+
+   // ==========================================================
+   // MUDANÇA 3: NOVA ROTA (DELETE com senha)
+   // ==========================================================
+   http.delete('/api/produtos/:id', async ({ request, params }) => {
+      const { id } = params;
+      const { password } = await request.json() as { password: string };
+
+      // 1. Checa se o usuário está logado
+      if (!currentlyLoggedInUser) {
+         return HttpResponse.json({ message: 'Não autorizado' }, { status: 401 });
+      }
+
+      // 2. Acha o usuário logado no "banco"
+      const userInDb = MOCK_USERS_DB.find(u => u.id === currentlyLoggedInUser.id);
+
+      // 3. Checa a senha
+      if (!userInDb || userInDb.password !== password) {
+         console.log('[MSW] Falha ao deletar: Senha incorreta');
+         return HttpResponse.json({ message: 'Senha incorreta' }, { status: 403 }); // 403 Forbidden
+      }
+
+      // 4. Deleta o produto
+      const deleted = deleteProduct(id as string);
+      if (deleted) {
+         console.log(`[MSW] Produto ${id} deletado`);
+         return HttpResponse.json(null, { status: 204 }); // 204 No Content
+      }
+
+      return HttpResponse.json({ message: 'Produto não encontrado' }, { status: 404 });
+   }),
+
+   http.put('/api/produtos/reorder', async ({ request }) => {
+      console.log('[MSW] Interceptada chamada para PUT /api/produtos/reorder');
+      const { productIds } = await request.json() as { productIds: string[] };
+
+      if (!productIds) {
+         return HttpResponse.json({ message: 'IDs não fornecidos' }, { status: 400 });
+      }
+
+      reorderProducts(productIds);
+
+      console.log('[MSW] PUT /api/produtos/reorder', productIds);
+      return HttpResponse.json({ success: true });
+   }),
+
+   http.put('/api/pedidos/:id', async ({ request, params }) => {
+      const { id } = params;
+      const updatedData = await request.json() as any; // (O payload do formulário)
+
+      const index = MOCK_ORDERS.findIndex(p => p.id === id);
+
+      if (index !== -1) {
+         // Atualiza o pedido no "banco"
+         // (Combinamos o pedido antigo com os novos dados)
+         MOCK_ORDERS[index] = {
+            ...MOCK_ORDERS[index], // Mantém ID, dataCriacao, etc.
+            cliente: updatedData.cliente,
+            opcoes: updatedData.opcoes,
+            detalhes: { // Recria os detalhes
+               ...MOCK_ORDERS[index].detalhes,
+               opcoes: updatedData.opcoes,
+               dimensoesPersonalizadas: updatedData.dimensoesPersonalizadas,
+               preco: updatedData.preco,
+            },
+            valor: updatedData.preco.total,
+            statusFinanceiro: updatedData.preco.pagamento,
+            // (Nota: A atualização de status de produção é separada)
+         };
+
+         console.log(`[MSW] PUT /api/pedidos/${id}`, MOCK_ORDERS[index]);
+         return HttpResponse.json(MOCK_ORDERS[index]);
+      }
+
+      return HttpResponse.json({ message: 'Pedido não encontrado' }, { status: 404 });
+   }),
 
    // ==========================================================
    // MUDANÇA AQUI: Nova rota GET para /api/produtos (o catálogo)
@@ -95,22 +211,47 @@ export const handlers = [
       return HttpResponse.json(pedidosPaginados);
    }),
 
+   // ==========================================================
+   // MUDANÇA AQUI: Rota POST agora salva os novos campos
+   // ==========================================================
    http.post('/api/pedidos', async ({ request }) => {
       console.log('[MSW] Interceptada chamada para POST /api/pedidos');
 
       const dadosDoFormulario = await request.json() as any;
       const dataCriacao = new Date().toISOString();
+
       const valorDoPedido = dadosDoFormulario.produto.pricingType === 'arte'
          ? dadosDoFormulario.preco.valorVenda
          : dadosDoFormulario.preco.total;
 
-      // Pega o nome do usuário que está no payload
       const userName = dadosDoFormulario.user?.nome || 'Usuário Desconhecido';
+
+      // Lógica para construir o 'detalhes' corretamente
+      let detalhesDoPedido: any;
+      if (dadosDoFormulario.produto.pricingType === 'unidade') {
+         detalhesDoPedido = {
+            type: 'unidade',
+            opcoes: dadosDoFormulario.opcoes,
+            dimensoesPersonalizadas: dadosDoFormulario.dimensoesPersonalizadas, // <-- SALVO AQUI
+            preco: dadosDoFormulario.preco, // Já contém custoTotal, vendaTotal, etc.
+         };
+      } else if (dadosDoFormulario.produto.pricingType === 'metro') {
+         detalhesDoPedido = {
+            type: 'metro',
+            opcoes: dadosDoFormulario.opcoes,
+            preco: dadosDoFormulario.preco, // Já contém valorTotalCusto, valorTotalVenda, etc.
+         };
+      } else {
+         detalhesDoPedido = {
+            type: 'arte',
+            preco: dadosDoFormulario.preco,
+         };
+      }
 
       const novoPedido: Pedido = {
          id: `PED-${Math.floor(Math.random() * 9000) + 1000}`,
          dataCriacao: dataCriacao,
-         criadoPor: userName, // <-- SALVA O CRIADOR
+         criadoPor: userName,
          cliente: dadosDoFormulario.cliente,
          itemNome: dadosDoFormulario.produto.nome,
          itemImageUrl: dadosDoFormulario.produto.imageUrl || '/images/catalogo/arte.png',
@@ -120,11 +261,7 @@ export const handlers = [
          statusProducao: 'pre_prod',
          historicoFinanceiro: [{ status: dadosDoFormulario.preco.pagamento, data: dataCriacao, user: userName }],
          historicoProducao: [{ status: 'pre_prod', data: dataCriacao, user: userName }],
-         detalhes: {
-            type: dadosDoFormulario.produto.pricingType,
-            opcoes: dadosDoFormulario.opcoes,
-            preco: dadosDoFormulario.preco,
-         } as any,
+         detalhes: detalhesDoPedido, // <-- CORRIGIDO
       };
       MOCK_ORDERS.unshift(novoPedido);
       return HttpResponse.json(novoPedido, { status: 201 });
@@ -144,6 +281,7 @@ export const handlers = [
       return HttpResponse.json({ message: 'Pedido não encontrado' }, { status: 404 });
    }),
 
+
    // MUDANÇA 3: Rota PUT agora recebe 'userName'
    http.put('/api/pedidos/:id/producao', async ({ request, params }) => {
       const { id } = params;
@@ -153,6 +291,17 @@ export const handlers = [
       const pedidoAtualizado = await updateStatusProducao(id as string, status, userName);
       if (pedidoAtualizado) {
          return HttpResponse.json(pedidoAtualizado);
+      }
+      return HttpResponse.json({ message: 'Pedido não encontrado' }, { status: 404 });
+   }),
+
+   http.get('/api/pedidos/:id', async ({ params }) => {
+      const { id } = params;
+      console.log(`[MSW] GET /api/pedidos/${id}`);
+      const pedido = MOCK_ORDERS.find(p => p.id === id);
+
+      if (pedido) {
+         return HttpResponse.json(pedido);
       }
       return HttpResponse.json({ message: 'Pedido não encontrado' }, { status: 404 });
    }),
@@ -282,7 +431,36 @@ export const handlers = [
       });
    }),
 
-   // Você pode adicionar outras rotas aqui:
-   // http.post('/api/pedidos', ...)
-   // http.put('/api/pedidos/:id/status', ...)
+   // ==========================================================
+   // MUDANÇA AQUI: Nova rota POST para /consultar-preco
+   // ==========================================================
+   http.post('http://localhost:8030/consultar-preco/:nomeProduto', async ({ request, params }) => {
+      const { nomeProduto } = params;
+      const opcoes = await request.json();
+
+      console.log(`[MSW] POST /consultar-preco/${nomeProduto}`);
+      console.log('[MSW] Opções Recebidas:', opcoes);
+
+      // Simula o delay da API real
+      // await delay(1000);
+
+      // Retorna o seu JSON de exemplo
+      const mockResponse = {
+         nomeProduto: nomeProduto,
+         dataExtracao: new Date().toISOString(),
+         qtdMinima: 1,
+         precoMinimo: 33.60,
+         tamanhoPasso: 1,
+         precos: [
+            { qtd: 1, preco: 33.60 },
+            { qtd: 2, preco: 67.20 },
+            { qtd: 3, preco: 100.80 },
+            { qtd: 4, preco: 134.40 },
+            { qtd: 5, preco: 168.00 },
+            { qtd: 10, preco: 336.00 },
+         ]
+      };
+
+      return HttpResponse.json(mockResponse);
+   }),
 ];

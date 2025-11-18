@@ -20,14 +20,16 @@ import { Pedido, StatusFinanceiro, StatusProducao } from '@/lib/orderData';
 import DetalhesPedidoRow from './DetalhesPedidoRow';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { type User } from '@/lib/clientData';
 
 interface TabelaPedidosProps {
    pedidos: Pedido[];
    onPedidoUpdated: (pedido: Pedido) => void;
    highlightId: string | null;
+   currentUser: User;
 }
 
-// ... (Opções e Cores - sem mudança)
+// --- Listas de Opções ---
 const statusFinanceiroOptions: { value: StatusFinanceiro, label: string }[] = [
    { value: 'nao_pago', label: 'Não Pago' },
    { value: 'pago_50', label: 'Pago 50%' },
@@ -38,6 +40,8 @@ const statusProducaoOptions: { value: Exclude<StatusProducao, 'pre_prod'>, label
    { value: 'pronto_retirada', label: 'Pronto p/ Retirada' },
    { value: 'concluido', label: 'Concluído' },
 ];
+
+// --- Mapeamento de Cores para os Badges ---
 const financeiroBadgeColors: Record<StatusFinanceiro, string> = {
    nao_pago: 'bg-red-600 text-white hover:bg-red-700',
    pago_50: 'bg-yellow-500 text-black hover:bg-yellow-600',
@@ -50,15 +54,13 @@ const producaoBadgeColors: Record<StatusProducao, string> = {
    concluido: 'bg-green-600 text-white hover:bg-green-700',
 };
 
-// ... (Função formatarWhatsApp - sem mudança)
+// ... (Funções formatarWhatsApp e formatarData - sem mudança)
 const formatarWhatsApp = (numero: string | undefined | null) => {
    if (!numero) return '#';
    const ddi = '55';
    const digitos = numero.replace(/\D/g, '');
    return `https://wa.me/${ddi}${digitos}`;
 };
-
-// Função de formatação de data
 const formatarData = (isoString: string) => {
    return new Date(isoString).toLocaleString('pt-BR', {
       day: '2-digit',
@@ -69,16 +71,16 @@ const formatarData = (isoString: string) => {
    });
 };
 
-const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated, highlightId }) => {
+const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated, highlightId, currentUser }) => {
    const [openRowId, setOpenRowId] = useState<string | null>(null);
    const [loadingStatus, setLoadingStatus] = useState<Record<string, boolean>>({});
 
-   // ... (handleStatusChange e toggleRow - sem mudança)
    const handleStatusChange = async (
       pedidoId: string,
       tipo: 'financeiro' | 'producao',
       value: string
    ) => {
+      // ... (lógica de salvar, sem mudança)
       const loadingKey = `${tipo}-${pedidoId}`;
       setLoadingStatus(prev => ({ ...prev, [loadingKey]: true }));
       try {
@@ -86,7 +88,10 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
          const response = await fetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: value }),
+            body: JSON.stringify({
+               status: value,
+               userName: currentUser.nome
+            }),
          });
          if (!response.ok) throw new Error('Falha ao atualizar status');
          const pedidoAtualizado: Pedido = await response.json();
@@ -97,6 +102,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
          setLoadingStatus(prev => ({ ...prev, [loadingKey]: false }));
       }
    };
+
    const toggleRow = (pedidoId: string) => {
       setOpenRowId(prevId => (prevId === pedidoId ? null : pedidoId));
    };
@@ -129,29 +135,32 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                      onClick={() => toggleRow(pedido.id)}
                   >
                      <TableCell>{pedido.id}</TableCell>
-
-                     {/* ========================================================== */}
-                     {/* MUDANÇA AQUI: Adicionado 'suppressHydrationWarning' */}
-                     {/* ========================================================== */}
                      <TableCell className="text-xs" suppressHydrationWarning={true}>
                         {formatarData(pedido.dataCriacao)}
                      </TableCell>
-
                      <TableCell>{pedido.cliente.nome}</TableCell>
-                     <TableCell onClick={(e) => e.stopPropagation()}>
+
+                     {/* ========================================================== */}
+                     {/* MUDANÇA 1: Removido 'onClick' da CÉLULA de Contato */}
+                     {/* ========================================================== */}
+                     <TableCell>
                         <a
                            href={formatarWhatsApp(pedido.cliente.telefone1)}
                            target="_blank"
                            rel="noopener noreferrer"
                            className="text-white hover:text-phalis-action hover:underline"
+                           onClick={(e) => e.stopPropagation()} // <-- O stopPropagation fica no LINK
                         >
                            {pedido.cliente.telefone1 || '---'}
                         </a>
                      </TableCell>
+
                      <TableCell>{pedido.itemNome}</TableCell>
 
-                     {/* --- Dropdown Financeiro --- */}
-                     <TableCell onClick={(e) => e.stopPropagation()}>
+                     {/* ========================================================== */}
+                     {/* MUDANÇA 2: Removido 'onClick' da CÉLULA de Financeiro */}
+                     {/* ========================================================== */}
+                     <TableCell>
                         <Select
                            value={pedido.statusFinanceiro}
                            onValueChange={(value) => handleStatusChange(pedido.id, 'financeiro', value)}
@@ -162,6 +171,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                                  "font-semibold border-0 rounded-full px-3 py-1 text-xs",
                                  financeiroBadgeColors[pedido.statusFinanceiro]
                               )}
+                              onClick={(e) => e.stopPropagation()} // <-- O stopPropagation fica no TRIGGER
                            >
                               {loadingStatus[`financeiro-${pedido.id}`] ? (
                                  <Loader2 className="h-4 w-4 animate-spin" />
@@ -179,8 +189,10 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
 
                      <TableCell>R$ {pedido.valor.toFixed(2)}</TableCell>
 
-                     {/* --- Dropdown Status --- */}
-                     <TableCell onClick={(e) => e.stopPropagation()}>
+                     {/* ========================================================== */}
+                     {/* MUDANÇA 3: Removido 'onClick' da CÉLULA de Status */}
+                     {/* ========================================================== */}
+                     <TableCell>
                         <Select
                            value={pedido.statusProducao}
                            onValueChange={(value) => handleStatusChange(pedido.id, 'producao', value)}
@@ -191,6 +203,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                                  "font-semibold border-0 rounded-full px-3 py-1 text-xs",
                                  producaoBadgeColors[pedido.statusProducao]
                               )}
+                              onClick={(e) => e.stopPropagation()} // <-- O stopPropagation fica no TRIGGER
                            >
                               {loadingStatus[`producao-${pedido.id}`] ? (
                                  <Loader2 className="h-4 w-4 animate-spin" />

@@ -45,6 +45,12 @@ const Header: React.FC = () => {
                <Button asChild className="bg-yellow-500 text-black hover:bg-yellow-600 font-medium">
                   <Link href="/historico-pedidos">PEDIDOS</Link>
                </Button>
+               <Button asChild className="bg-phalis-ciano text-black hover:bg-phalis-ciano-hover font-medium">
+                  <Link href="/adm/produtos/novo">CADASTRO DE PRODUTO</Link>
+               </Button>
+               <Button asChild className="bg-phalis-ciano text-black hover:bg-phalis-ciano-hover font-medium">
+                  <Link href="/adm/produtos">EDITAR PRODUTOS</Link>
+               </Button>
             </nav>
 
             <Button
@@ -56,6 +62,8 @@ const Header: React.FC = () => {
                <LogOut className="h-5 w-5" />
                <span className="sr-only">Sair</span>
             </Button>
+
+
          </div>
       </header>
    );

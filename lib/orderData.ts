@@ -4,12 +4,13 @@ import { type Cliente, MOCK_CLIENTS } from "./clientData";
 
 // --- TIPOS DE DADOS PARA OS PEDIDOS ---
 export type StatusFinanceiro = 'nao_pago' | 'pago_50' | 'pago';
-export type StatusProducao = 'pre_prod' | 'em_producao' | 'pronto_retirada' | 'concluido';
+export type StatusProducao = 'pre_prod' | 'em_producao' | 'pronto_retirada' | 'concluido' | 'cancelado';
 
 export type HistoricoItem = {
    status: StatusFinanceiro | StatusProducao;
    data: string;
    user: string;
+   motivo?: string;
 };
 
 type DetalhesPedidoUnidade = {
@@ -939,7 +940,7 @@ export let MOCK_ORDERS: Pedido[] = [
       "dataCriacao": "2025-11-06T12:00:00.000Z",
       "detalhes": {
          "opcoes": {
-            "acabamento": "ilhos",
+            "acabamento": "madeirinhas_e_ponteiras",
             "cores": "4x0",
             "papel": "lona_normal",
             "tamanho": "personalizado"
@@ -1218,7 +1219,7 @@ export let MOCK_ORDERS: Pedido[] = [
       "dataCriacao": "2025-11-18T04:50:00.000Z",
       "detalhes": {
          "opcoes": {
-            "acabamento": "ilhos",
+            "acabamento": "sem_acabamento",
             "cores": "4x0",
             "papel": "lona_uv",
             "tamanho": "personalizado"
@@ -2064,7 +2065,7 @@ export let MOCK_ORDERS: Pedido[] = [
       "dataCriacao": "2025-11-06T12:00:00.000Z",
       "detalhes": {
          "opcoes": {
-            "acabamento": "ilhos",
+            "acabamento": "madeirinhas_e_ponteiras",
             "cores": "4x0",
             "papel": "lona_normal",
             "tamanho": "personalizado"
@@ -3066,7 +3067,7 @@ export let MOCK_ORDERS: Pedido[] = [
       "dataCriacao": "2025-10-19T10:00:00.000Z",
       "detalhes": {
          "opcoes": {
-            "acabamento": "ilhos",
+            "acabamento": "sem_acabamento",
             "cores": "4x0",
             "papel": "lona_normal",
             "tamanho": "personalizado"
@@ -3456,6 +3457,7 @@ export const fetchPedidos = async (page: number, limit: number = 20): Promise<Pe
    await new Promise(resolve => setTimeout(resolve, 500));
    return MOCK_ORDERS.slice(start, end);
 };
+
 export const updateStatusFinanceiro = async (id: string, newStatus: StatusFinanceiro, userName: string): Promise<Pedido | null> => {
    await new Promise(resolve => setTimeout(resolve, 300));
    const pedido = MOCK_ORDERS.find(p => p.id === id);
@@ -3464,6 +3466,7 @@ export const updateStatusFinanceiro = async (id: string, newStatus: StatusFinanc
    pedido.historicoFinanceiro.push({ status: newStatus, data: new Date().toISOString(), user: userName });
    return pedido;
 };
+
 export const updateStatusProducao = async (id: string, newStatus: StatusProducao, userName: string): Promise<Pedido | null> => {
    await new Promise(resolve => setTimeout(resolve, 300));
    const pedido = MOCK_ORDERS.find(p => p.id === id);
@@ -3471,4 +3474,21 @@ export const updateStatusProducao = async (id: string, newStatus: StatusProducao
    pedido.statusProducao = newStatus;
    pedido.historicoProducao.push({ status: newStatus, data: new Date().toISOString(), user: userName });
    return pedido;
+};
+
+export const cancelarPedido = async (id: string, userName: string, motivo: string): Promise<Pedido | null> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const pedido = MOCK_ORDERS.find(p => p.id === id);
+  if (!pedido) return null;
+
+  pedido.statusProducao = 'cancelado';
+  // Adiciona o evento de cancelamento ao histórico
+  pedido.historicoProducao.push({
+    status: 'cancelado',
+    data: new Date().toISOString(),
+    user: userName,
+    motivo: motivo
+  });
+
+  return pedido;
 };

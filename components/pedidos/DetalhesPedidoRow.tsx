@@ -1,16 +1,28 @@
 // Arquivo: components/pedidos/DetalhesPedidoRow.tsx
-import React, { useMemo } from 'react';
-import { Pedido, HistoricoItem } from '@/lib/orderData';
+import React, { useMemo, useState } from 'react';
+import { Pedido, HistoricoItem, StatusFinanceiro, StatusProducao } from '@/lib/orderData';
 import { optionGroupsConfig, getProductById, type Product } from '@/lib/productData';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
-// 1. MUDANÇA: Importar 'useRouter' e 'Pencil'
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Pencil } from 'lucide-react';
+import {
+   AlertDialog,
+   AlertDialogContent,
+   AlertDialogDescription,
+   AlertDialogFooter,
+   AlertDialogHeader,
+   AlertDialogTitle,
+   AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Pencil, XOctagon, Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 type DetalhesProps = {
    pedido: Pedido;
+   onPedidoUpdated: (pedido: Pedido) => void;
 };
 
 // ... (formatarData, DetailRow, Mapas de Estilo, TimelineItem - Sem mudanças) ...
@@ -30,14 +42,16 @@ const STATUS_NOME_MAP: Record<string, string> = {
    pre_prod: 'Pré-Produção', em_producao: 'Em Produção',
    pronto_retirada: 'Pronto p/ Retirada', concluido: 'Concluído',
    CRIADO: 'Pedido Criado',
+   cancelado: 'Cancelado',
 };
 const STATUS_COR_MAP: Record<string, string> = {
    nao_pago: 'bg-red-600', pago_50: 'bg-yellow-500', pago: 'bg-green-600',
    pre_prod: 'bg-gray-500', em_producao: 'bg-blue-600',
    pronto_retirada: 'bg-purple-600', concluido: 'bg-green-600',
    CRIADO: 'bg-gray-500',
+   cancelado: 'bg-gray-700',
 };
-const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, user: string, subStatus?: string }, isLast: boolean }) => {
+const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, user: string, subStatus?: string, motivo?: string }, isLast: boolean }) => {
    const nomeStatus = STATUS_NOME_MAP[item.status] || item.status.replace(/_/g, ' ');
    const corStatus = STATUS_COR_MAP[item.status] || 'bg-cyan-500';
    return (
@@ -54,6 +68,11 @@ const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, 
             {item.subStatus && (
                <div className="text-xs text-gray-400">{item.subStatus}</div>
             )}
+            {item.motivo && (
+               <div className="text-xs text-red-400 italic mt-1">
+                  Motivo: {item.motivo}
+               </div>
+            )}
             <div className="text-xs text-gray-500">{formatarData(item.data)}</div>
          </div>
       </li>
@@ -63,9 +82,15 @@ const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, 
 
 // --- Renderizadores Específicos ---
 
-const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product }> = ({ pedido, produto }) => {
+const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ pedido, produto, onPedidoUpdated }) => {
    const { detalhes, itemImageUrl, itemNome } = pedido;
-   const router = useRouter(); // 2. MUDANÇA: Adicionar router
+   const router = useRouter();
+   const { user } = useAuth();
+
+   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+   const [cancelMotivo, setCancelMotivo] = useState('');
+   const [cancelLoading, setCancelLoading] = useState(false);
+   const [cancelError, setCancelError] = useState('');
 
    if (detalhes.type !== 'unidade' && detalhes.type !== 'metro') return null;
    const { opcoes } = detalhes;
@@ -86,107 +111,224 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product }> = ({ 
       return todosEventos;
    }, [pedido]);
 
-   // 3. MUDANÇA: Função para o clique de Editar
    const handleEdit = (e: React.MouseEvent) => {
-      e.stopPropagation(); // Impede o acordeon de fechar
-      // Redireciona para a tela de pedido, passando o ID do PRODUTO e o ID do PEDIDO
+      e.stopPropagation();
       router.push(`/pedido?id=${pedido.productId}&edit=${pedido.id}`);
    };
 
-   return (
-      <div className="bg-phalis-gray rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+   // ... (Funções de Cancelar - sem mudança)
+   const openCancelDialog = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setCancelMotivo('');
+      setCancelError('');
+      setCancelLoading(false);
+      setIsCancelDialogOpen(true);
+   };
+   const handleCancelConfirm = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!cancelMotivo) {
+         setCancelError("O motivo é obrigatório.");
+         return;
+      }
+      setCancelLoading(true);
+      setCancelError('');
+      try {
+         const response = await fetch(`/api/pedidos/${pedido.id}/cancelar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               userName: user?.nome || 'Usuário',
+               motivo: cancelMotivo
+            }),
+         });
+         if (response.status === 400) throw new Error('O motivo é obrigatório.');
+         if (!response.ok) throw new Error('Falha ao cancelar o pedido');
+         const updatedPedido = await response.json();
+         onPedidoUpdated(updatedPedido);
+         setIsCancelDialogOpen(false);
+      } catch (error: any) {
+         setCancelError(error.message);
+      } finally {
+         setCancelLoading(false);
+      }
+   };
 
-         {/* Coluna 1: Imagem do Produto */}
-         <div className="md:col-span-1">
-            <div className="relative w-full h-40 rounded-md overflow-hidden bg-phalis-dark">
-               <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
+   const isCanceled = pedido.statusProducao === 'cancelado';
+
+   return (
+      <>
+         <div className="bg-phalis-gray rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+
+            {/* Coluna 1: Imagem (RESTAURADO) */}
+            <div className="md:col-span-1">
+               <div className="relative w-full h-40 rounded-md overflow-hidden bg-phalis-dark">
+                  <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
+               </div>
+            </div>
+
+            {/* Coluna 2: Opções (RESTAURADO) */}
+            <div className="md:col-span-1">
+               <h4 className="text-lg font-semibold text-white mb-2">{itemNome}</h4>
+               {optionGroupsConfig.map(group => {
+                  const optionId = opcoes[group.id] || 'N/A';
+                  let optionLabel = optionId;
+                  if (group.id === 'tamanho' && detalhes.type === 'unidade' && detalhes.dimensoesPersonalizadas) {
+                     const { larguraCm, alturaCm } = detalhes.dimensoesPersonalizadas;
+                     optionLabel = `Personalizado (${larguraCm}cm x ${alturaCm}cm)`;
+                  } else {
+                     optionLabel = produto.options?.[group.id]?.find(o => o.id === optionId)?.name || optionId;
+                  }
+                  return <DetailRow key={group.id} label={group.name.split('. ')[1]} value={optionLabel} />
+               })}
+            </div>
+
+            {/* Coluna 3: Valores (RESTAURADO) */}
+            <div className="md:col-span-1">
+               <h4 className="text-lg font-semibold text-white mb-2">Valores</h4>
+               {detalhes.type === 'unidade' && (
+                  <>
+                     <DetailRow label="Quantidade" value={detalhes.preco.quantidade} />
+                     <DetailRow label="Custo (Total)" value={`R$ ${detalhes.preco.custoTotal.toFixed(2)}`} />
+                     <DetailRow label="Venda (Total)" value={`R$ ${detalhes.preco.vendaTotal.toFixed(2)}`} />
+                     <DetailRow label="Arte" value={`R$ ${detalhes.preco.precoArte.toFixed(2)}`} />
+                     <DetailRow label="TOTAL" value={
+                        <span className="text-xl font-bold text-phalis-action">
+
+                           R$ {detalhes.preco.total.toFixed(2)}
+                        </span>
+                     } />
+                  </>
+               )}
+               {detalhes.type === 'metro' && (
+                  <>
+
+                     <DetailRow label="Largura" value={`${detalhes.preco.largura.toFixed(2)} m`} />
+                     <DetailRow label="Altura" value={`${detalhes.preco.altura.toFixed(2)} m`} />
+                     <DetailRow label="Custo (m²)" value={`R$ ${detalhes.preco.m2Custo.toFixed(2)}`} />
+                     <DetailRow label="Custo Total" value={`R$ ${detalhes.preco.valorTotalCusto.toFixed(2)}`} />
+                     <DetailRow label="Venda (m²)" value={`R$ ${detalhes.preco.m2Venda.toFixed(2)}`} />
+                     <DetailRow label="Venda Total" value={`R$ ${detalhes.preco.valorTotalVenda.toFixed(2)}`} />
+                     <DetailRow label="Arte" value={`R$ ${detalhes.preco.valorArte.toFixed(2)}`} />
+                     <DetailRow label="TOTAL" value={
+                        <span className="text-xl font-bold text-phalis-action">
+
+                           R$ {detalhes.preco.total.toFixed(2)}
+                        </span>
+                     } />
+                  </>
+               )}
+            </div>
+
+            {/* Coluna 4 (Gestão do Tempo e Ações) */}
+            <div className="md:col-span-1 space-y-4">
+               <h4 className="text-lg font-semibold text-white mb-2">Gestão do Tempo</h4>
+               <ol className="list-none m-0 p-0">
+                  {historicoCompleto.map((item, index) => (
+                     <TimelineItem
+                        key={index}
+                        item={item}
+                        isLast={index === historicoCompleto.length - 1}
+                     />
+                  ))}
+               </ol>
+               <div className="flex flex-col space-y-2">
+                  <Button
+                     variant="outline"
+                     size="sm"
+                     className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
+                     onClick={handleEdit}
+                     disabled={isCanceled}
+                  >
+                     <Pencil className="h-4 w-4 mr-2" />
+                     Editar Pedido
+                  </Button>
+                  <Button
+                     variant="outline"
+                     size="sm"
+                     className="w-full bg-phalis-danger/20 text-phalis-danger border-phalis-danger/30 hover:bg-phalis-danger/30 hover:text-red-400"
+                     onClick={openCancelDialog}
+                     disabled={isCanceled}
+                  >
+                     <XOctagon className="h-4 w-4 mr-2" />
+                     Cancelar Pedido
+                  </Button>
+               </div>
             </div>
          </div>
 
-         {/* Coluna 2: Opções do Builder */}
-         <div className="md:col-span-1">
-            <h4 className="text-lg font-semibold text-white mb-2">{itemNome}</h4>
-            {optionGroupsConfig.map(group => {
-               const optionId = opcoes[group.id] || 'N/A';
-               let optionLabel = optionId;
-               if (group.id === 'tamanho' && detalhes.type === 'unidade' && detalhes.dimensoesPersonalizadas) {
-                  const { larguraCm, alturaCm } = detalhes.dimensoesPersonalizadas;
-                  optionLabel = `Personalizado (${larguraCm}cm x ${alturaCm}cm)`;
-               } else {
-                  optionLabel = produto.options?.[group.id]?.find(o => o.id === optionId)?.name || optionId;
-               }
-               return <DetailRow key={group.id} label={group.name.split('. ')[1]} value={optionLabel} />
-            })}
-         </div>
+         {/* O AlertDialog (RESTAURADO) */}
+         <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+            <AlertDialogContent className="bg-phalis-black border-gray-800 text-white">
+               <AlertDialogHeader>
+                  <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
 
-         {/* Coluna 3: Preço (Polimórfico) */}
-         <div className="md:col-span-1">
-            <h4 className="text-lg font-semibold text-white mb-2">Valores</h4>
-            {detalhes.type === 'unidade' && (
-               // ... (JSX de Unidade - sem mudança)
-               <>
-                  <DetailRow label="Quantidade" value={detalhes.preco.quantidade} />
-                  <DetailRow label="Custo (Total)" value={`R$ ${detalhes.preco.precoCusto.toFixed(2)}`} />
-                  <DetailRow label="Venda (Total)" value={`R$ ${detalhes.preco.precoVenda.toFixed(2)}`} />
-                  <DetailRow label="Arte" value={`R$ ${detalhes.preco.precoArte.toFixed(2)}`} />
-                  <DetailRow label="TOTAL" value={
-                     <span className="text-xl font-bold text-phalis-action">
-                        R$ {detalhes.preco.total.toFixed(2)}
-                     </span>
-                  } />
-               </>
-            )}
-            {detalhes.type === 'metro' && (
-               <>
                   {/* ========================================================== */}
-                  {/* MUDANÇA AQUI: Mostrando 'm' (metros) e '.toFixed(2)' */}
+                  {/* MUDANÇA 1: Trocar <AlertDialogDescription> por <div asChild> */}
                   {/* ========================================================== */}
-                  <DetailRow label="Largura" value={`${detalhes.preco.largura.toFixed(2)} m`} />
-                  <DetailRow label="Altura" value={`${detalhes.preco.altura.toFixed(2)} m`} />
-                  <DetailRow label="Custo (m²)" value={`R$ ${detalhes.preco.m2Custo.toFixed(2)}`} />
-                  <DetailRow label="Venda (m²)" value={`R$ ${detalhes.preco.m2Venda.toFixed(2)}`} />
-                  <DetailRow label="Arte" value={`R$ ${detalhes.preco.valorArte.toFixed(2)}`} />
-                  <DetailRow label="TOTAL" value={
-                     <span className="text-xl font-bold text-phalis-action">
-                        R$ {detalhes.preco.total.toFixed(2)}
-                     </span>
-                  } />
-               </>
-            )}
-         </div>
+                  <AlertDialogDescription asChild>
+                     <div className="text-gray-400 space-y-3">
+                        <p>
+                           Cliente: <span className="font-medium text-white">{pedido.cliente.nome}</span>
+                           <br />
+                           Produto: <span className="font-medium text-white">{pedido.itemNome}</span>
+                        </p>
+                        <p className="text-yellow-400">Esta ação não pode ser desfeita.</p>
 
-         {/* Coluna 4 (Gestão do Tempo) */}
-         <div className="md:col-span-1 space-y-4">
-            <h4 className="text-lg font-semibold text-white mb-2">Gestão do Tempo</h4>
-            <ol className="list-none m-0 p-0">
-               {historicoCompleto.map((item, index) => (
-                  <TimelineItem
-                     key={index}
-                     item={item}
-                     isLast={index === historicoCompleto.length - 1}
-                  />
-               ))}
-            </ol>
+                        {(pedido.statusFinanceiro === 'pago' || pedido.statusFinanceiro === 'pago_50') && (
+                           <div className="p-3 bg-yellow-900/50 border border-yellow-700 rounded-md text-yellow-300">
+                              <span className="font-bold">Atenção:</span> Este pedido já possui pagamento. Lembre-se de reembolsar o cliente ou realocar o valor.
+                           </div>
+                        )}
 
-            {/* 4. MUDANÇA: Adicionar o botão de Editar */}
-            <Button
-               variant="outline"
-               size="sm"
-               className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
-               onClick={handleEdit}
-            >
-               <Pencil className="h-4 w-4 mr-2" />
-               Editar Pedido
-            </Button>
-         </div>
-      </div>
+                        <div className="space-y-2 pt-2">
+                           <Label htmlFor="motivo" className="text-white">Motivo do Cancelamento (Obrigatório)</Label>
+                           <Textarea
+                              id="motivo"
+                              placeholder="Ex: Cliente desistiu, erro no pedido..."
+                              className="bg-phalis-gray border-0"
+                              value={cancelMotivo}
+                              onChange={(e) => setCancelMotivo(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                           />
+                           {cancelError && (
+                              <p className="text-sm text-phalis-danger">{cancelError}</p>
+                           )}
+                        </div>
+                     </div>
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                  <AlertDialogCancel
+                     className="bg-gray-700 border-0 hover:bg-gray-600 hover:text-white"
+                     onClick={(e) => e.stopPropagation()}
+                  >
+                     Voltar
+                  </AlertDialogCancel>
+                  <Button
+                     className="bg-phalis-danger text-white hover:bg-red-700"
+                     disabled={cancelLoading}
+                     onClick={handleCancelConfirm}
+                  >
+                     {cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Cancelamento"}
+                  </Button>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+      </>
    );
 };
 
-// ... (O componente DetalhesArte precisa da mesma mudança)
-const DetalhesArte: React.FC<{ pedido: Pedido; }> = ({ pedido }) => {
+// ... (O componente DetalhesArte precisa da mesma restauração)
+const DetalhesArte: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ pedido, onPedidoUpdated }) => {
    const { detalhes, itemImageUrl, itemNome } = pedido;
-   const router = useRouter(); // 2. MUDANÇA
+   const router = useRouter();
+   const { user } = useAuth();
+
+   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+   const [cancelMotivo, setCancelMotivo] = useState('');
+   const [cancelLoading, setCancelLoading] = useState(false);
+   const [cancelError, setCancelError] = useState('');
+
    if (detalhes.type !== 'arte') return null;
    const { preco } = detalhes;
 
@@ -206,62 +348,174 @@ const DetalhesArte: React.FC<{ pedido: Pedido; }> = ({ pedido }) => {
       return todosEventos;
    }, [pedido]);
 
-   // 3. MUDANÇA
    const handleEdit = (e: React.MouseEvent) => {
       e.stopPropagation();
       router.push(`/pedido?id=${pedido.productId}&edit=${pedido.id}`);
    };
 
+   const openCancelDialog = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setCancelMotivo('');
+      setCancelError('');
+      setCancelLoading(false);
+      setIsCancelDialogOpen(true);
+   };
+
+   const handleCancelConfirm = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!cancelMotivo) {
+         setCancelError("O motivo é obrigatório.");
+         return;
+      }
+      setCancelLoading(true);
+      setCancelError('');
+
+      try {
+         const response = await fetch(`/api/pedidos/${pedido.id}/cancelar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               userName: user?.nome || 'Usuário',
+               motivo: cancelMotivo
+            }),
+         });
+         if (!response.ok) throw new Error('Falha ao cancelar o pedido');
+
+         const updatedPedido = await response.json();
+         onPedidoUpdated(updatedPedido);
+         setIsCancelDialogOpen(false);
+
+      } catch (error: any) {
+         setCancelError(error.message);
+      } finally {
+         setCancelLoading(false);
+      }
+   };
+
+   const isCanceled = pedido.statusProducao === 'cancelado';
+
    return (
-      <div className="bg-phalis-gray rounded-lg p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-         {/* ... (Coluna 1: Imagem, Coluna 2: Detalhes - sem mudança) ... */}
-         <div className="md:col-span-1">
-            <div className="relative w-full h-40 rounded-md overflow-hidden bg-phalis-dark">
-               <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
+      <>
+         <div className="bg-phalis-gray rounded-lg p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Coluna 1: Imagem (RESTAURADO) */}
+            <div className="md:col-span-1">
+               <div className="relative w-full h-40 rounded-md overflow-hidden bg-phalis-dark">
+                  <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
+               </div>
+            </div>
+
+            {/* Coluna 2: Detalhes (RESTAURADO) */}
+            <div className="md:col-span-1">
+               <h4 className="text-lg font-semibold text-white mb-2">{itemNome}</h4>
+               <DetailRow label="Descrição/Observações" value={preco.observacao} />
+               <DetailRow label="Valor Venda" value={
+                  <span className="text-xl font-bold text-phalis-action">
+                     R$ {preco.valorVenda.toFixed(2)}
+                  </span>
+               } />
+            </div>
+
+            {/* Coluna 3 (Gestão do Tempo) */}
+            <div className="md:col-span-1 space-y-4">
+               <h4 className="text-lg font-semibold text-white mb-2">Gestão do Tempo</h4>
+               <ol className="list-none m-0 p-0">
+                  {historicoCompleto.map((item, index) => (
+                     <TimelineItem
+                        key={index}
+                        item={item}
+                        isLast={index === historicoCompleto.length - 1}
+                     />
+                  ))}
+               </ol>
+
+               <div className="flex flex-col space-y-2">
+                  <Button
+                     variant="outline"
+                     size="sm"
+                     className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
+                     onClick={handleEdit}
+                     disabled={isCanceled}
+                  >
+                     <Pencil className="h-4 w-4 mr-2" />
+                     Editar Pedido
+                  </Button>
+                  <Button
+                     variant="outline"
+                     size="sm"
+                     className="w-full bg-phalis-danger/20 text-phalis-danger border-phalis-danger/30 hover:bg-phalis-danger/30 hover:text-red-400"
+                     onClick={openCancelDialog}
+                     disabled={isCanceled}
+                  >
+                     <XOctagon className="h-4 w-4 mr-2" />
+                     Cancelar Pedido
+                  </Button>
+               </div>
             </div>
          </div>
-         <div className="md:col-span-1">
-            <h4 className="text-lg font-semibold text-white mb-2">{itemNome}</h4>
-            <DetailRow label="Descrição/Observações" value={preco.observacao} />
-            <DetailRow label="Valor Venda" value={
-               <span className="text-xl font-bold text-phalis-action">
-                  R$ {preco.valorVenda.toFixed(2)}
-               </span>
-            } />
-         </div>
 
-         {/* Coluna 3 (Gestão do Tempo) */}
-         <div className="md:col-span-1 space-y-4">
-            <h4 className="text-lg font-semibold text-white mb-2">Gestão do Tempo</h4>
-            <ol className="list-none m-0 p-0">
-               {historicoCompleto.map((item, index) => (
-                  <TimelineItem
-                     key={index}
-                     item={item}
-                     isLast={index === historicoCompleto.length - 1}
-                  />
-               ))}
-            </ol>
-
-            {/* 4. MUDANÇA: Adicionar o botão de Editar */}
-            <Button
-               variant="outline"
-               size="sm"
-               className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
-               onClick={handleEdit}
-            >
-               <Pencil className="h-4 w-4 mr-2" />
-               Editar Pedido
-            </Button>
-         </div>
-      </div>
+         {/* ========================================================== */}
+         {/* MUDANÇA 2: O AlertDialog (RESTAURADO) */}
+         {/* ========================================================== */}
+         <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+            <AlertDialogContent className="bg-phalis-black border-gray-800 text-white">
+               <AlertDialogHeader>
+                  <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                     <div className="text-gray-400 space-y-3">
+                        <p>
+                           Cliente: <span className="font-medium text-white">{pedido.cliente.nome}</span>
+                           <br />
+                           Produto: <span className="font-medium text-white">{pedido.itemNome}</span>
+                        </p>
+                        <p className="text-yellow-400">Esta ação não pode ser desfeita.</p>
+                        {(pedido.statusFinanceiro === 'pago' || pedido.statusFinanceiro === 'pago_50') && (
+                           <div className="p-3 bg-yellow-900/50 border border-yellow-700 rounded-md text-yellow-300">
+                              <span className="font-bold">Atenção:</span> Este pedido já possui pagamento. Lembre-se de reembolsar o cliente ou realocar o valor.
+                           </div>
+                        )}
+                        <div className="space-y-2 pt-2">
+                           <Label htmlFor="motivo-arte" className="text-white">Motivo do Cancelamento (Obrigatório)</Label>
+                           <Textarea
+                              id="motivo-arte"
+                              placeholder="Ex: Cliente desistiu, erro no pedido..."
+                              className="bg-phalis-gray border-0"
+                              value={cancelMotivo}
+                              onChange={(e) => setCancelMotivo(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                           />
+                           {cancelError && (
+                              <p className="text-sm text-phalis-danger">{cancelError}</p>
+                           )}
+                        </div>
+                     </div>
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                  <AlertDialogCancel
+                     className="bg-gray-700 border-0 hover:bg-gray-600 hover:text-white"
+                     onClick={(e) => e.stopPropagation()}
+                  >
+                     Voltar
+                  </AlertDialogCancel>
+                  <Button
+                     className="bg-phalis-danger text-white hover:bg-red-700"
+                     disabled={cancelLoading}
+                     onClick={handleCancelConfirm}
+                  >
+                     {cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Cancelamento"}
+                  </Button>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+      </>
    );
 };
 
 // --- Componente Principal ---
-const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido }) => {
-   // ... (lógica de getProductById - sem mudança)
+const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated }) => {
    const produto = getProductById(pedido.productId);
+
    if (!produto) {
       return <div className="text-red-500 p-4">Erro: Produto original (ID: {pedido.productId}) não encontrado.</div>
    }
@@ -269,9 +523,9 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido }) => {
    switch (pedido.detalhes.type) {
       case 'unidade':
       case 'metro':
-         return <DetalhesUnidadeMetro pedido={pedido} produto={produto} />;
+         return <DetalhesUnidadeMetro pedido={pedido} produto={produto} onPedidoUpdated={onPedidoUpdated} />;
       case 'arte':
-         return <DetalhesArte pedido={pedido} />;
+         return <DetalhesArte pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
       default:
          return <div>Detalhes indisponíveis.</div>;
    }

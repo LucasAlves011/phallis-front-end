@@ -8,7 +8,8 @@ import {
    updateStatusFinanceiro,
    updateStatusProducao,
    type StatusFinanceiro,
-   type StatusProducao
+   type StatusProducao,
+   cancelarPedido
 } from '@/lib/orderData';
 
 import { produtosDoCatalogo, deleteProduct, reorderProducts, type Product } from '@/lib/productData';
@@ -209,6 +210,26 @@ export const handlers = [
       const pedidosPaginados = filteredOrders.slice(start, end);
 
       return HttpResponse.json(pedidosPaginados);
+   }),
+
+   // ==========================================================
+  //  NOVA ROTA (PUT - Cancelar)
+  // ==========================================================
+   http.put('/api/pedidos/:id/cancelar', async ({ request, params }) => {
+      const { id } = params;
+      const { userName, motivo } = await request.json() as { userName: string, motivo: string };
+
+      if (!motivo) {
+         return HttpResponse.json({ message: 'O motivo é obrigatório' }, { status: 400 });
+      }
+
+      console.log(`[MSW] PUT /api/pedidos/${id}/cancelar por ${userName}`);
+
+      const pedidoAtualizado = await cancelarPedido(id as string, userName, motivo);
+      if (pedidoAtualizado) {
+         return HttpResponse.json(pedidoAtualizado);
+      }
+      return HttpResponse.json({ message: 'Pedido não encontrado' }, { status: 404 });
    }),
 
    // ==========================================================

@@ -52,6 +52,7 @@ const producaoBadgeColors: Record<StatusProducao, string> = {
    em_producao: 'bg-blue-600 text-white hover:bg-blue-700',
    pronto_retirada: 'bg-purple-600 text-white hover:bg-purple-700',
    concluido: 'bg-green-600 text-white hover:bg-green-700',
+   cancelado: 'bg-gray-700 text-gray-400 border-gray-600'
 };
 
 // ... (Funções formatarWhatsApp e formatarData - sem mudança)
@@ -123,116 +124,124 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
          </TableHeader>
 
          <TableBody>
-            {pedidos.map((pedido) => (
-               <React.Fragment key={pedido.id}>
+            {pedidos.map((pedido) => {
+               // 2. MUDANÇA: Checa se o pedido está cancelado
+               const isCanceled = pedido.statusProducao === 'cancelado';
 
-                  <TableRow
-                     data-state={openRowId === pedido.id ? 'open' : 'closed'}
-                     className={cn(
-                        "cursor-pointer hover:bg-phalis-gray/50 data-[state=open]:bg-phalis-gray",
-                        pedido.id === highlightId && 'animate-flashCiano'
-                     )}
-                     onClick={() => toggleRow(pedido.id)}
-                  >
-                     <TableCell>{pedido.id}</TableCell>
-                     <TableCell className="text-xs" suppressHydrationWarning={true}>
-                        {formatarData(pedido.dataCriacao)}
-                     </TableCell>
-                     <TableCell>{pedido.cliente.nome}</TableCell>
+               return (
+                  <React.Fragment key={pedido.id}>
 
-                     {/* ========================================================== */}
-                     {/* MUDANÇA 1: Removido 'onClick' da CÉLULA de Contato */}
-                     {/* ========================================================== */}
-                     <TableCell>
-                        <a
-                           href={formatarWhatsApp(pedido.cliente.telefone1)}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="text-white hover:text-phalis-action hover:underline"
-                           onClick={(e) => e.stopPropagation()} // <-- O stopPropagation fica no LINK
-                        >
-                           {pedido.cliente.telefone1 || '---'}
-                        </a>
-                     </TableCell>
-
-                     <TableCell>{pedido.itemNome}</TableCell>
-
-                     {/* ========================================================== */}
-                     {/* MUDANÇA 2: Removido 'onClick' da CÉLULA de Financeiro */}
-                     {/* ========================================================== */}
-                     <TableCell>
-                        <Select
-                           value={pedido.statusFinanceiro}
-                           onValueChange={(value) => handleStatusChange(pedido.id, 'financeiro', value)}
-                           disabled={loadingStatus[`financeiro-${pedido.id}`]}
-                        >
-                           <SelectTrigger
+                     <TableRow
+                        data-state={openRowId === pedido.id ? 'open' : 'closed'}
+                        // 3. MUDANÇA: Adiciona estilo de "riscado"
+                        className={cn(
+                           "cursor-pointer hover:bg-phalis-gray/50 data-[state=open]:bg-phalis-gray",
+                           pedido.id === highlightId && 'animate-flashCiano',
+                           isCanceled && 'line-through text-gray-600 hover:bg-phalis-gray/30' // <-- Estilo de cancelado
+                        )}
+                        onClick={() => toggleRow(pedido.id)}
+                     >
+                        <TableCell>{pedido.id}</TableCell>
+                        <TableCell className="text-xs" suppressHydrationWarning={true}>
+                           {formatarData(pedido.dataCriacao)}
+                        </TableCell>
+                        <TableCell>{pedido.cliente.nome}</TableCell>
+                        <TableCell>
+                           <a
+                              href={formatarWhatsApp(pedido.cliente.telefone1)}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className={cn(
-                                 "font-semibold border-0 rounded-full px-3 py-1 text-xs",
-                                 financeiroBadgeColors[pedido.statusFinanceiro]
+                                 "text-white hover:text-phalis-action hover:underline",
+                                 isCanceled && "pointer-events-none" // Desabilita o link
                               )}
-                              onClick={(e) => e.stopPropagation()} // <-- O stopPropagation fica no TRIGGER
+                              onClick={(e) => e.stopPropagation()}
                            >
-                              {loadingStatus[`financeiro-${pedido.id}`] ? (
-                                 <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                 <SelectValue className="flex-1 text-center" />
-                              )}
-                           </SelectTrigger>
-                           <SelectContent className="bg-phalis-gray border-0">
-                              {statusFinanceiroOptions.map(opt => (
-                                 <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </TableCell>
+                              {pedido.cliente.telefone1 || '---'}
+                           </a>
+                        </TableCell>
+                        <TableCell>{pedido.itemNome}</TableCell>
 
-                     <TableCell>R$ {pedido.valor.toFixed(2)}</TableCell>
-
-                     {/* ========================================================== */}
-                     {/* MUDANÇA 3: Removido 'onClick' da CÉLULA de Status */}
-                     {/* ========================================================== */}
-                     <TableCell>
-                        <Select
-                           value={pedido.statusProducao}
-                           onValueChange={(value) => handleStatusChange(pedido.id, 'producao', value)}
-                           disabled={loadingStatus[`producao-${pedido.id}`]}
-                        >
-                           <SelectTrigger
-                              className={cn(
-                                 "font-semibold border-0 rounded-full px-3 py-1 text-xs",
-                                 producaoBadgeColors[pedido.statusProducao]
-                              )}
-                              onClick={(e) => e.stopPropagation()} // <-- O stopPropagation fica no TRIGGER
+                        {/* 4. MUDANÇA: Desabilita os selects se cancelado */}
+                        <TableCell>
+                           <Select
+                              value={pedido.statusFinanceiro}
+                              onValueChange={(value) => handleStatusChange(pedido.id, 'financeiro', value)}
+                              disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled} // <-- DESABILITADO
                            >
-                              {loadingStatus[`producao-${pedido.id}`] ? (
-                                 <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                 <SelectValue className="flex-1 text-center" />
-                              )}
-                           </SelectTrigger>
-                           <SelectContent className="bg-phalis-gray border-0">
-                              {pedido.statusProducao === 'pre_prod' && (
-                                 <SelectItem value="pre_prod" disabled>Pré-Produção</SelectItem>
-                              )}
-                              {statusProducaoOptions.map(opt => (
-                                 <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </TableCell>
-                  </TableRow>
+                              <SelectTrigger
+                                 className={cn(
+                                    "font-semibold border-0 rounded-full px-3 py-1 text-xs",
+                                    financeiroBadgeColors[pedido.statusFinanceiro],
+                                    isCanceled && "bg-gray-700 text-gray-400" // Cor de cancelado
+                                 )}
+                                 onClick={(e) => e.stopPropagation()}
+                              >
+                                 {loadingStatus[`financeiro-${pedido.id}`] ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                 ) : (
+                                    <SelectValue className="flex-1 text-center" />
+                                 )}
+                              </SelectTrigger>
+                              <SelectContent className="bg-phalis-gray border-0">
+                                 {statusFinanceiroOptions.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
+                        </TableCell>
 
-                  {openRowId === pedido.id && (
-                     <TableRow className="bg-phalis-dark hover:bg-phalis-dark">
-                        <TableCell colSpan={8} className="p-4">
-                           <DetalhesPedidoRow pedido={pedido} />
+                        <TableCell>R$ {pedido.valor.toFixed(2)}</TableCell>
+
+                        <TableCell>
+                           <Select
+                              value={pedido.statusProducao}
+                              onValueChange={(value) => handleStatusChange(pedido.id, 'producao', value)}
+                              disabled={loadingStatus[`producao-${pedido.id}`] || isCanceled} // <-- DESABILITADO
+                           >
+                              <SelectTrigger
+                                 className={cn(
+                                    "font-semibold border-0 rounded-full px-3 py-1 text-xs",
+                                    producaoBadgeColors[pedido.statusProducao]
+                                 )}
+                                 onClick={(e) => e.stopPropagation()}
+                              >
+                                 {loadingStatus[`producao-${pedido.id}`] ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                 ) : (
+                                    <SelectValue className="flex-1 text-center" />
+                                 )}
+                              </SelectTrigger>
+                              <SelectContent className="bg-phalis-gray border-0">
+                                 {/* Mostra "Cancelado" se for o status atual, mas não como opção */}
+                                 {isCanceled && (
+                                    <SelectItem value="cancelado" disabled>Cancelado</SelectItem>
+                                 )}
+                                 {pedido.statusProducao === 'pre_prod' && (
+                                    <SelectItem value="pre_prod" disabled>Pré-Produção</SelectItem>
+                                 )}
+                                 {statusProducaoOptions.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
                         </TableCell>
                      </TableRow>
-                  )}
 
-               </React.Fragment>
-            ))}
+                     {openRowId === pedido.id && (
+                        <TableRow className="bg-phalis-dark hover:bg-phalis-dark">
+                           <TableCell colSpan={8} className="p-4">
+                              {/* 5. MUDANÇA: Passa 'onPedidoUpdated' para o DetalhesRow */}
+                              <DetalhesPedidoRow
+                                 pedido={pedido}
+                                 onPedidoUpdated={onPedidoUpdated}
+                              />
+                           </TableCell>
+                        </TableRow>
+                     )}
+                  </React.Fragment>
+               )
+            })}
          </TableBody>
       </Table>
    );

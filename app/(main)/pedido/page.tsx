@@ -304,7 +304,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
       };
 
       try {
-         const url = pedidoParaEditar ? `/api/pedido/${pedidoParaEditar.id}` : '/api/pedidos';
+         const url = pedidoParaEditar ? `/api/pedidos/${pedidoParaEditar.id}` : '/api/pedidos';
          const method = pedidoParaEditar ? 'PUT' : 'POST';
 
          const response = await fetch(url, {

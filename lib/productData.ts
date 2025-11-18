@@ -63,7 +63,7 @@ export let produtosDoCatalogo: Product[] = [
       ],
       "acabamento": [
         { "id": "madeirinhas_e_ponteiras", "name": "Madeirinhas e Ponteiras" },
-        { "id": "ilhós", "name": "Ilhós" },
+        { "id": "ilhos", "name": "Ilhós" },
         { "id": "sem_acabamento", "name": "Sem acabamento" }
       ]
     },

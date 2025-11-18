@@ -124,7 +124,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1030",
+      "id": "PED-1070",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -186,7 +186,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1029",
+      "id": "PED-1069",
       "itemImageUrl": "/images/catalogo/cartao-de-visita.png",
       "itemNome": "Cartão de Visita",
       "productId": "prod_008",
@@ -232,7 +232,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1028",
+      "id": "PED-1068",
       "itemImageUrl": "/images/catalogo/phalis-kekw.png",
       "itemNome": "Criação de Arte",
       "productId": "prod_099",
@@ -287,7 +287,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1027",
+      "id": "PED-1067",
       "itemImageUrl": "/images/catalogo/rotulos-e-adesivos.png",
       "itemNome": "Rótulos e Adesivos",
       "productId": "prod_new_06",
@@ -349,7 +349,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1026",
+      "id": "PED-1066",
       "itemImageUrl": "/images/catalogo/windbanner.png",
       "itemNome": "Wind Banner",
       "productId": "prod_030",
@@ -401,7 +401,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1025",
+      "id": "PED-1065",
       "itemImageUrl": "/images/catalogo/capa-de-garrafao.png",
       "itemNome": "Adesivo Perfurado",
       "productId": "prod_037",
@@ -463,7 +463,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1024",
+      "id": "PED-1064",
       "itemImageUrl": "/images/catalogo/panfleto.png",
       "itemNome": "Panfletos",
       "productId": "prod_010",
@@ -525,7 +525,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1023",
+      "id": "PED-1063",
       "itemImageUrl": "/images/catalogo/tags.png",
       "itemNome": "Tags",
       "productId": "prod_009",
@@ -577,7 +577,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1022",
+      "id": "PED-1062",
       "itemImageUrl": "/images/catalogo/caixa-de-hamburguer.png",
       "itemNome": "Caixa de Hambúrguer",
       "productId": "prod_025",
@@ -644,7 +644,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1021",
+      "id": "PED-1061",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -690,7 +690,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1020",
+      "id": "PED-1060",
       "itemImageUrl": "/images/catalogo/phalis-kekw.png",
       "itemNome": "Criação de Arte",
       "productId": "prod_099",
@@ -752,7 +752,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1019",
+      "id": "PED-1059",
       "itemImageUrl": "/images/catalogo/pulseira-de-cetim.png",
       "itemNome": "Pulseira de Evento",
       "productId": "prod_031",
@@ -804,7 +804,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1018",
+      "id": "PED-1058",
       "itemImageUrl": "/images/catalogo/tapete-impresso.png",
       "itemNome": "Tapete de Carpacho Impresso",
       "productId": "prod_032",
@@ -856,7 +856,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1017",
+      "id": "PED-1057",
       "itemImageUrl": "/images/catalogo/folder.png",
       "itemNome": "Folder",
       "productId": "prod_015",
@@ -918,7 +918,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1016",
+      "id": "PED-1056",
       "itemImageUrl": "/images/catalogo/sacola.png",
       "itemNome": "Sacolas",
       "productId": "prod_021",
@@ -970,7 +970,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1015",
+      "id": "PED-1055",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -1032,7 +1032,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1014",
+      "id": "PED-1054",
       "itemImageUrl": "/images/catalogo/bigflag.png",
       "itemNome": "Big  Flag",
       "productId": "prod_029",
@@ -1084,7 +1084,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Phallis Admin"
          }
       ],
-      "id": "PED-1013",
+      "id": "PED-1053",
       "itemImageUrl": "/images/catalogo/capa-de-garrafao.png",
       "itemNome": "Adesivo Leitoso",
       "productId": "prod_038",
@@ -1135,7 +1135,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1012",
+      "id": "PED-1052",
       "itemImageUrl": "/images/catalogo/phalis-kekw.png",
       "itemNome": "Criação de Arte",
       "productId": "prod_099",
@@ -1197,7 +1197,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1011",
+      "id": "PED-1051",
       "itemImageUrl": "/images/catalogo/cartao-de-visita.png",
       "itemNome": "Cartão de Visita",
       "productId": "prod_008",
@@ -1249,7 +1249,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1030",
+      "id": "PED-1050",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -1311,7 +1311,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1029",
+      "id": "PED-1049",
       "itemImageUrl": "/images/catalogo/cartao-de-visita.png",
       "itemNome": "Cartão de Visita",
       "productId": "prod_008",
@@ -1357,7 +1357,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1028",
+      "id": "PED-1048",
       "itemImageUrl": "/images/catalogo/phalis-kekw.png",
       "itemNome": "Criação de Arte",
       "productId": "prod_099",
@@ -1412,7 +1412,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1027",
+      "id": "PED-1047",
       "itemImageUrl": "/images/catalogo/rotulos-e-adesivos.png",
       "itemNome": "Rótulos e Adesivos",
       "productId": "prod_new_06",
@@ -1474,7 +1474,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1026",
+      "id": "PED-1046",
       "itemImageUrl": "/images/catalogo/windbanner.png",
       "itemNome": "Wind Banner",
       "productId": "prod_030",
@@ -1526,7 +1526,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1025",
+      "id": "PED-1045",
       "itemImageUrl": "/images/catalogo/capa-de-garrafao.png",
       "itemNome": "Adesivo Perfurado",
       "productId": "prod_037",
@@ -1588,7 +1588,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1024",
+      "id": "PED-1044",
       "itemImageUrl": "/images/catalogo/panfleto.png",
       "itemNome": "Panfletos",
       "productId": "prod_010",
@@ -1650,7 +1650,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1023",
+      "id": "PED-1043",
       "itemImageUrl": "/images/catalogo/tags.png",
       "itemNome": "Tags",
       "productId": "prod_009",
@@ -1702,7 +1702,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1022",
+      "id": "PED-1042",
       "itemImageUrl": "/images/catalogo/caixa-de-hamburguer.png",
       "itemNome": "Caixa de Hambúrguer",
       "productId": "prod_025",
@@ -1769,7 +1769,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1021",
+      "id": "PED-1041",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -1815,7 +1815,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1020",
+      "id": "PED-1040",
       "itemImageUrl": "/images/catalogo/phalis-kekw.png",
       "itemNome": "Criação de Arte",
       "productId": "prod_099",
@@ -1877,7 +1877,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1019",
+      "id": "PED-1039",
       "itemImageUrl": "/images/catalogo/pulseira-de-cetim.png",
       "itemNome": "Pulseira de Evento",
       "productId": "prod_031",
@@ -1929,7 +1929,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1018",
+      "id": "PED-1038",
       "itemImageUrl": "/images/catalogo/tapete-impresso.png",
       "itemNome": "Tapete de Carpacho Impresso",
       "productId": "prod_032",
@@ -1981,7 +1981,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1017",
+      "id": "PED-1037",
       "itemImageUrl": "/images/catalogo/folder.png",
       "itemNome": "Folder",
       "productId": "prod_015",
@@ -2043,7 +2043,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1016",
+      "id": "PED-1036",
       "itemImageUrl": "/images/catalogo/sacola.png",
       "itemNome": "Sacolas",
       "productId": "prod_021",
@@ -2095,7 +2095,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1015",
+      "id": "PED-1035",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -2157,7 +2157,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1014",
+      "id": "PED-1034",
       "itemImageUrl": "/images/catalogo/bigflag.png",
       "itemNome": "Big  Flag",
       "productId": "prod_029",
@@ -2209,7 +2209,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Phallis Admin"
          }
       ],
-      "id": "PED-1013",
+      "id": "PED-1033",
       "itemImageUrl": "/images/catalogo/capa-de-garrafao.png",
       "itemNome": "Adesivo Leitoso",
       "productId": "prod_038",
@@ -2260,7 +2260,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1012",
+      "id": "PED-1032",
       "itemImageUrl": "/images/catalogo/phalis-kekw.png",
       "itemNome": "Criação de Arte",
       "productId": "prod_099",
@@ -2322,7 +2322,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1011",
+      "id": "PED-1031",
       "itemImageUrl": "/images/catalogo/cartao-de-visita.png",
       "itemNome": "Cartão de Visita",
       "productId": "prod_008",
@@ -2389,7 +2389,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1010",
+      "id": "PED-1030",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -2441,7 +2441,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1009",
+      "id": "PED-1029",
       "itemImageUrl": "/images/catalogo/timbrado.png",
       "itemNome": "Timbrado",
       "productId": "prod_023",
@@ -2498,7 +2498,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1008",
+      "id": "PED-1028",
       "itemImageUrl": "/images/catalogo/capa-de-cadeira.png",
       "itemNome": "Capa de Cadeira",
       "productId": "prod_031",
@@ -2550,7 +2550,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Phallis Admin"
          }
       ],
-      "id": "PED-1007",
+      "id": "PED-1027",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -2605,7 +2605,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1006",
+      "id": "PED-1026",
       "itemImageUrl": "/images/catalogo/rotulos-e-adesivos.png",
       "itemNome": "Rótulos e Adesivos",
       "productId": "prod_new_06",
@@ -2651,7 +2651,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1005",
+      "id": "PED-1025",
       "itemImageUrl": "/images/catalogo/phalis-kekw.png",
       "itemNome": "Criação de Arte",
       "productId": "prod_099",
@@ -2703,7 +2703,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Phallis Admin"
          }
       ],
-      "id": "PED-1004",
+      "id": "PED-1024",
       "itemImageUrl": "/images/catalogo/cartao-de-visita.png",
       "itemNome": "Cartão de Visita",
       "productId": "prod_008",
@@ -2760,7 +2760,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1003",
+      "id": "PED-1023",
       "itemImageUrl": "/images/catalogo/lava-jato.png",
       "itemNome": "Tapete Lava Jato",
       "productId": "prod_022",
@@ -2812,7 +2812,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-1002",
+      "id": "PED-1022",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -2879,7 +2879,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1001",
+      "id": "PED-1021",
       "itemImageUrl": "/images/catalogo/calendario-mesa.png",
       "itemNome": "Calendário de Mesa",
       "productId": "prod_005",
@@ -2936,7 +2936,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-1000",
+      "id": "PED-1020",
       "itemImageUrl": "/images/catalogo/capa-de-garrafao.png",
       "itemNome": "Adesivo Perfurado",
       "productId": "prod_037",
@@ -2988,7 +2988,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-0999",
+      "id": "PED-1019",
       "itemImageUrl": "/images/catalogo/pasta-orelha.png",
       "itemNome": "Pasta Orelha",
       "productId": "prod_018",
@@ -3045,7 +3045,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-0998",
+      "id": "PED-1018",
       "itemImageUrl": "/images/catalogo/cartao-de-visita.png",
       "itemNome": "Cartão de Visita",
       "productId": "prod_008",
@@ -3097,7 +3097,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-0997",
+      "id": "PED-1017",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -3143,7 +3143,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-0996",
+      "id": "PED-1016",
       "itemImageUrl": "/images/catalogo/phalis-kekw.png",
       "itemNome": "Criação de Arte",
       "productId": "prod_099",
@@ -3205,7 +3205,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-0995",
+      "id": "PED-1015",
       "itemImageUrl": "/images/catalogo/caixa-de-batata.png",
       "itemNome": "Caixas de Batata",
       "productId": "prod_new_01",
@@ -3257,7 +3257,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Lucas Alves"
          }
       ],
-      "id": "PED-0994",
+      "id": "PED-1014",
       "itemImageUrl": "/images/catalogo/banner.png",
       "itemNome": "Lona",
       "productId": "prod_001",
@@ -3319,7 +3319,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-0993",
+      "id": "PED-1013",
       "itemImageUrl": "/images/catalogo/calendario-parede.png",
       "itemNome": "Calendário de Parede",
       "productId": "prod_006",
@@ -3381,7 +3381,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-0992",
+      "id": "PED-1012",
       "itemImageUrl": "/images/catalogo/cartao-de-visita.png",
       "itemNome": "Cartão de Visita",
       "productId": "prod_008",
@@ -3438,7 +3438,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "user": "Bob Silva"
          }
       ],
-      "id": "PED-0991",
+      "id": "PED-1011",
       "itemImageUrl": "/images/catalogo/capa-de-garrafao.png",
       "itemNome": "Adesivo Perfurado",
       "productId": "prod_037",

@@ -71,7 +71,7 @@ export const statusFinanceiroOptions: { value: StatusFinanceiro, label: string }
 ];
 
 export const statusProducaoOptions: { value: StatusProducao, label: string }[] = [
-   { value: 'pre_prod', label: 'Pré-Produção' },
+   // { value: 'pre_prod', label: 'Pré-Produção' },
    { value: 'em_producao', label: 'Em Produção' },
    { value: 'pronto_retirada', label: 'Pronto p/ Retirada' },
    { value: 'concluido', label: 'Concluído' },

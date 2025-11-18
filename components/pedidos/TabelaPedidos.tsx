@@ -16,7 +16,13 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@/components/ui/select";
-import { Pedido, StatusFinanceiro, StatusProducao } from '@/lib/orderData';
+import {
+   Pedido,
+   StatusFinanceiro,
+   StatusProducao,
+   statusFinanceiroOptions,
+   statusProducaoOptions
+} from '@/lib/orderData';
 import DetalhesPedidoRow from './DetalhesPedidoRow';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
@@ -29,24 +35,17 @@ interface TabelaPedidosProps {
    currentUser: User;
 }
 
-// --- Listas de Opções ---
-const statusFinanceiroOptions: { value: StatusFinanceiro, label: string }[] = [
-   { value: 'nao_pago', label: 'Não Pago' },
-   { value: 'pago_50', label: 'Pago 50%' },
-   { value: 'pago', label: 'Pago' },
-];
-const statusProducaoOptions: { value: Exclude<StatusProducao, 'pre_prod'>, label: string }[] = [
-   { value: 'em_producao', label: 'Em Produção' },
-   { value: 'pronto_retirada', label: 'Pronto p/ Retirada' },
-   { value: 'concluido', label: 'Concluído' },
-];
-
-// --- Mapeamento de Cores para os Badges ---
 const financeiroBadgeColors: Record<StatusFinanceiro, string> = {
-   nao_pago: 'bg-red-600 text-white hover:bg-red-700',
-   pago_50: 'bg-yellow-500 text-black hover:bg-yellow-600',
-   pago: 'bg-green-600 text-white hover:bg-green-700',
+   nao_pago: 'bg-red-600 text-white',
+   pago_50: 'bg-yellow-500 text-black',
+   pago: 'bg-green-600 text-white',
 };
+const financeiroHoverColors: Record<StatusFinanceiro, string> = {
+   nao_pago: 'hover:bg-red-700',
+   pago_50: 'hover:bg-yellow-600',
+   pago: 'hover:bg-green-700',
+};
+
 const producaoBadgeColors: Record<StatusProducao, string> = {
    pre_prod: 'bg-gray-500 text-white hover:bg-gray-600',
    em_producao: 'bg-blue-600 text-white hover:bg-blue-700',
@@ -81,7 +80,6 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
       tipo: 'financeiro' | 'producao',
       value: string
    ) => {
-      // ... (lógica de salvar, sem mudança)
       const loadingKey = `${tipo}-${pedidoId}`;
       setLoadingStatus(prev => ({ ...prev, [loadingKey]: true }));
       try {
@@ -125,7 +123,6 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
 
          <TableBody>
             {pedidos.map((pedido) => {
-               // 2. MUDANÇA: Checa se o pedido está cancelado
                const isCanceled = pedido.statusProducao === 'cancelado';
 
                return (
@@ -133,11 +130,10 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
 
                      <TableRow
                         data-state={openRowId === pedido.id ? 'open' : 'closed'}
-                        // 3. MUDANÇA: Adiciona estilo de "riscado"
                         className={cn(
                            "cursor-pointer hover:bg-phalis-gray/50 data-[state=open]:bg-phalis-gray",
                            pedido.id === highlightId && 'animate-flashCiano',
-                           isCanceled && 'line-through text-gray-600 hover:bg-phalis-gray/30' // <-- Estilo de cancelado
+                           isCanceled && 'line-through text-gray-600 hover:bg-phalis-gray/30'
                         )}
                         onClick={() => toggleRow(pedido.id)}
                      >
@@ -153,7 +149,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                               rel="noopener noreferrer"
                               className={cn(
                                  "text-white hover:text-phalis-action hover:underline",
-                                 isCanceled && "pointer-events-none" // Desabilita o link
+                                 isCanceled && "pointer-events-none"
                               )}
                               onClick={(e) => e.stopPropagation()}
                            >
@@ -161,19 +157,21 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                            </a>
                         </TableCell>
                         <TableCell>{pedido.itemNome}</TableCell>
-
-                        {/* 4. MUDANÇA: Desabilita os selects se cancelado */}
                         <TableCell>
                            <Select
                               value={pedido.statusFinanceiro}
                               onValueChange={(value) => handleStatusChange(pedido.id, 'financeiro', value)}
-                              disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled} // <-- DESABILITADO
+                              disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled}
                            >
                               <SelectTrigger
                                  className={cn(
                                     "font-semibold border-0 rounded-full px-3 py-1 text-xs",
+                                    // 1. Aplica a cor base
                                     financeiroBadgeColors[pedido.statusFinanceiro],
-                                    isCanceled && "bg-gray-700 text-gray-400" // Cor de cancelado
+                                    // 2. Aplica o hover SÓ SE NÃO ESTIVER cancelado
+                                    !isCanceled && financeiroHoverColors[pedido.statusFinanceiro],
+                                    // 3. Aplica o override de cancelado (que agora não tem hover)
+                                    isCanceled && "bg-gray-700 text-gray-400"
                                  )}
                                  onClick={(e) => e.stopPropagation()}
                               >
@@ -197,7 +195,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                            <Select
                               value={pedido.statusProducao}
                               onValueChange={(value) => handleStatusChange(pedido.id, 'producao', value)}
-                              disabled={loadingStatus[`producao-${pedido.id}`] || isCanceled} // <-- DESABILITADO
+                              disabled={loadingStatus[`producao-${pedido.id}`] || isCanceled}
                            >
                               <SelectTrigger
                                  className={cn(
@@ -213,7 +211,6 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                                  )}
                               </SelectTrigger>
                               <SelectContent className="bg-phalis-gray border-0">
-                                 {/* Mostra "Cancelado" se for o status atual, mas não como opção */}
                                  {isCanceled && (
                                     <SelectItem value="cancelado" disabled>Cancelado</SelectItem>
                                  )}
@@ -231,7 +228,6 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                      {openRowId === pedido.id && (
                         <TableRow className="bg-phalis-dark hover:bg-phalis-dark">
                            <TableCell colSpan={8} className="p-4">
-                              {/* 5. MUDANÇA: Passa 'onPedidoUpdated' para o DetalhesRow */}
                               <DetalhesPedidoRow
                                  pedido={pedido}
                                  onPedidoUpdated={onPedidoUpdated}

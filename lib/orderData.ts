@@ -22,6 +22,7 @@ type DetalhesPedidoUnidade = {
       precoCusto: number;
       precoVenda: number;
       precoArte: number;
+      desconto: number;
       total: number;
       custoTotal: number;
       vendaTotal: number;
@@ -37,6 +38,7 @@ type DetalhesPedidoMetro = {
       m2Custo: number;
       m2Venda: number;
       valorArte: number;
+      desconto: number;
       total: number;
       valorTotalCusto: number;
       valorTotalVenda: number;
@@ -45,7 +47,7 @@ type DetalhesPedidoMetro = {
 
 type DetalhesPedidoArte = {
    type: 'arte';
-   preco: { observacao: string; valorVenda: number, pagamento: string };
+   preco: { observacao: string; valorVenda: number, desconto: number, pagamento: string };
 };
 
 export type Pedido = {
@@ -107,7 +109,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 180,
             "valorArte": 0,
             "valorTotalCusto": 90,
-            "valorTotalVenda": 180
+            "valorTotalVenda": 180,
+            "desconto": 10
          },
          "type": "metro"
       },
@@ -159,7 +162,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 300,
             "quantidade": 1000,
             "total": 350,
-            "vendaTotal": 300
+            "vendaTotal": 300,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -210,7 +214,8 @@ export let MOCK_ORDERS: Pedido[] = [
          "preco": {
             "observacao": "Logo para Instagram e Facebook",
             "pagamento": "pago",
-            "valorVenda": 150
+            "valorVenda": 150,
+            "desconto": 5
          },
          "type": "arte"
       },
@@ -270,7 +275,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 200,
             "quantidade": 500,
             "total": 200,
-            "vendaTotal": 200
+            "vendaTotal": 200,
+            "desconto": 15
          },
          "type": "unidade"
       },
@@ -322,7 +328,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 180,
             "quantidade": 1,
             "total": 180,
-            "vendaTotal": 180
+            "vendaTotal": 180,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -384,7 +391,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 80,
             "valorArte": 0,
             "valorTotalCusto": 32,
-            "valorTotalVenda": 80
+            "valorTotalVenda": 80,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -436,7 +444,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 250,
             "quantidade": 1000,
             "total": 250,
-            "vendaTotal": 250
+            "vendaTotal": 250,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -498,7 +507,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 150,
             "quantidade": 500,
             "total": 150,
-            "vendaTotal": 150
+            "vendaTotal": 150,
+            "desconto": 13
          },
          "type": "unidade"
       },
@@ -560,7 +570,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 400,
             "quantidade": 1000,
             "total": 400,
-            "vendaTotal": 400
+            "vendaTotal": 400,
+            "desconto": 5
          },
          "type": "unidade"
       },
@@ -612,7 +623,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 60,
             "valorArte": 0,
             "valorTotalCusto": 29,
-            "valorTotalVenda": 60
+            "valorTotalVenda": 60,
+            "desconto": 10
          },
          "type": "metro"
       },
@@ -668,7 +680,8 @@ export let MOCK_ORDERS: Pedido[] = [
          "preco": {
             "observacao": "Pacote de 5 artes para feed",
             "pagamento": "pago",
-            "valorVenda": 250
+            "valorVenda": 250,
+            "desconto": 5
          },
          "type": "arte"
       },
@@ -725,7 +738,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 500,
             "quantidade": 1000,
             "total": 500,
-            "vendaTotal": 500
+            "vendaTotal": 500,
+            "desconto": 15
          },
          "type": "unidade"
       },
@@ -787,7 +801,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 240,
             "valorArte": 0,
             "valorTotalCusto": 120,
-            "valorTotalVenda": 240
+            "valorTotalVenda": 240,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -839,7 +854,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 450,
             "quantidade": 1000,
             "total": 450,
-            "vendaTotal": 450
+            "vendaTotal": 450,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -891,7 +907,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 1200,
             "quantidade": 500,
             "total": 1200,
-            "vendaTotal": 1200
+            "vendaTotal": 1200,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -953,7 +970,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 300,
             "valorArte": 0,
             "valorTotalCusto": 145,
-            "valorTotalVenda": 300
+            "valorTotalVenda": 300,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -1005,7 +1023,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 220,
             "quantidade": 1,
             "total": 220,
-            "vendaTotal": 220
+            "vendaTotal": 220,
+            "desconto": 15
          },
          "type": "unidade"
       },
@@ -1067,7 +1086,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 90,
             "valorArte": 0,
             "valorTotalCusto": 40,
-            "valorTotalVenda": 90
+            "valorTotalVenda": 90,
+            "desconto": 5
          },
          "type": "metro"
       },
@@ -1108,7 +1128,8 @@ export let MOCK_ORDERS: Pedido[] = [
          "preco": {
             "observacao": "Ajuste de arte para banner",
             "pagamento": "pago_50",
-            "valorVenda": 80
+            "valorVenda": 80,
+            "desconto": 10
          },
          "type": "arte"
       },
@@ -1170,7 +1191,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 180,
             "quantidade": 500,
             "total": 180,
-            "vendaTotal": 180
+            "vendaTotal": 180,
+            "desconto": 15
          },
          "type": "unidade"
       },
@@ -1232,7 +1254,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 180,
             "valorArte": 0,
             "valorTotalCusto": 90,
-            "valorTotalVenda": 180
+            "valorTotalVenda": 180,
+            "desconto": 5
          },
          "type": "metro"
       },
@@ -1284,7 +1307,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 300,
             "quantidade": 1000,
             "total": 350,
-            "vendaTotal": 300
+            "vendaTotal": 300,
+            "desconto": 30
          },
          "type": "unidade"
       },
@@ -1335,7 +1359,8 @@ export let MOCK_ORDERS: Pedido[] = [
          "preco": {
             "observacao": "Logo para Instagram e Facebook",
             "pagamento": "pago",
-            "valorVenda": 150
+            "valorVenda": 150,
+            "desconto": 10
          },
          "type": "arte"
       },
@@ -1395,7 +1420,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 200,
             "quantidade": 500,
             "total": 200,
-            "vendaTotal": 200
+            "vendaTotal": 200,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -1447,7 +1473,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 180,
             "quantidade": 1,
             "total": 180,
-            "vendaTotal": 180
+            "vendaTotal": 180,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -1509,7 +1536,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 80,
             "valorArte": 0,
             "valorTotalCusto": 32,
-            "valorTotalVenda": 80
+            "valorTotalVenda": 80,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -1561,7 +1589,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 250,
             "quantidade": 1000,
             "total": 250,
-            "vendaTotal": 250
+            "vendaTotal": 250,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -1623,7 +1652,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 150,
             "quantidade": 500,
             "total": 150,
-            "vendaTotal": 150
+            "vendaTotal": 150,
+            "desconto": 5
          },
          "type": "unidade"
       },
@@ -1685,7 +1715,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 400,
             "quantidade": 1000,
             "total": 400,
-            "vendaTotal": 400
+            "vendaTotal": 400,
+            "desconto": 30
          },
          "type": "unidade"
       },
@@ -1737,7 +1768,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 60,
             "valorArte": 0,
             "valorTotalCusto": 29,
-            "valorTotalVenda": 60
+            "valorTotalVenda": 60,
+            "desconto": 10
          },
          "type": "metro"
       },
@@ -1793,7 +1825,8 @@ export let MOCK_ORDERS: Pedido[] = [
          "preco": {
             "observacao": "Pacote de 5 artes para feed",
             "pagamento": "pago",
-            "valorVenda": 250
+            "valorVenda": 250,
+            "desconto": 5
          },
          "type": "arte"
       },
@@ -1850,7 +1883,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 500,
             "quantidade": 1000,
             "total": 500,
-            "vendaTotal": 500
+            "vendaTotal": 500,
+            "desconto": 50
          },
          "type": "unidade"
       },
@@ -1912,7 +1946,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 240,
             "valorArte": 0,
             "valorTotalCusto": 120,
-            "valorTotalVenda": 240
+            "valorTotalVenda": 240,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -1964,7 +1999,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 450,
             "quantidade": 1000,
             "total": 450,
-            "vendaTotal": 450
+            "vendaTotal": 450,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -2016,7 +2052,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 1200,
             "quantidade": 500,
             "total": 1200,
-            "vendaTotal": 1200
+            "vendaTotal": 1200,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -2078,7 +2115,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 300,
             "valorArte": 0,
             "valorTotalCusto": 145,
-            "valorTotalVenda": 300
+            "valorTotalVenda": 300,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -2130,7 +2168,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 220,
             "quantidade": 1,
             "total": 220,
-            "vendaTotal": 220
+            "vendaTotal": 220,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -2192,7 +2231,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 90,
             "valorArte": 0,
             "valorTotalCusto": 40,
-            "valorTotalVenda": 90
+            "valorTotalVenda": 90,
+            "desconto": 15
          },
          "type": "metro"
       },
@@ -2233,7 +2273,8 @@ export let MOCK_ORDERS: Pedido[] = [
          "preco": {
             "observacao": "Ajuste de arte para banner",
             "pagamento": "pago_50",
-            "valorVenda": 80
+            "valorVenda": 80,
+            "desconto": 5
          },
          "type": "arte"
       },
@@ -2295,7 +2336,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 180,
             "quantidade": 500,
             "total": 180,
-            "vendaTotal": 180
+            "vendaTotal": 180,
+            "desconto": 5
          },
          "type": "unidade"
       },
@@ -2357,7 +2399,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 600,
             "valorArte": 0,
             "valorTotalCusto": 290,
-            "valorTotalVenda": 600
+            "valorTotalVenda": 600,
+            "desconto": 15
          },
          "type": "metro"
       },
@@ -2424,7 +2467,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 130,
             "quantidade": 500,
             "total": 130,
-            "vendaTotal": 130
+            "vendaTotal": 130,
+            "desconto": 10
          },
          "type": "unidade"
       },
@@ -2476,7 +2520,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 300,
             "quantidade": 10,
             "total": 300,
-            "vendaTotal": 300
+            "vendaTotal": 300,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -2533,7 +2578,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 45,
             "valorArte": 0,
             "valorTotalCusto": 21.75,
-            "valorTotalVenda": 45
+            "valorTotalVenda": 45,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -2588,7 +2634,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 100,
             "quantidade": 100,
             "total": 100,
-            "vendaTotal": 100
+            "vendaTotal": 100,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -2629,7 +2676,8 @@ export let MOCK_ORDERS: Pedido[] = [
          "preco": {
             "observacao": "Ajuste simples de cor",
             "pagamento": "pago",
-            "valorVenda": 50
+            "valorVenda": 50,
+            "desconto": 0
          },
          "type": "arte"
       },
@@ -2686,7 +2734,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 200,
             "quantidade": 1000,
             "total": 200,
-            "vendaTotal": 200
+            "vendaTotal": 200,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -2738,7 +2787,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 300,
             "quantidade": 2500,
             "total": 300,
-            "vendaTotal": 300
+            "vendaTotal": 300,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -2795,7 +2845,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 30,
             "valorArte": 0,
             "valorTotalCusto": 14.5,
-            "valorTotalVenda": 30
+            "valorTotalVenda": 30,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -2847,7 +2898,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 500,
             "quantidade": 200,
             "total": 500,
-            "vendaTotal": 500
+            "vendaTotal": 500,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -2914,7 +2966,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 450,
             "valorArte": 0,
             "valorTotalCusto": 200,
-            "valorTotalVenda": 450
+            "valorTotalVenda": 450,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -2971,7 +3024,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 700,
             "quantidade": 100,
             "total": 700,
-            "vendaTotal": 700
+            "vendaTotal": 700,
+            "desconto": 50
          },
          "type": "unidade"
       },
@@ -3023,7 +3077,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 250,
             "quantidade": 1000,
             "total": 250,
-            "vendaTotal": 250
+            "vendaTotal": 250,
+            "desconto": 30
          },
          "type": "unidade"
       },
@@ -3080,7 +3135,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 120,
             "valorArte": 0,
             "valorTotalCusto": 58,
-            "valorTotalVenda": 120
+            "valorTotalVenda": 120,
+            "desconto": 20
          },
          "type": "metro"
       },
@@ -3121,7 +3177,8 @@ export let MOCK_ORDERS: Pedido[] = [
          "preco": {
             "observacao": "Arte para rede social",
             "pagamento": "pago",
-            "valorVenda": 100
+            "valorVenda": 100,
+            "desconto": 0
          },
          "type": "arte"
       },
@@ -3178,7 +3235,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 300,
             "quantidade": 500,
             "total": 300,
-            "vendaTotal": 300
+            "vendaTotal": 300,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -3240,7 +3298,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 210,
             "valorArte": 0,
             "valorTotalCusto": 105,
-            "valorTotalVenda": 210
+            "valorTotalVenda": 210,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -3292,7 +3351,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 600,
             "quantidade": 100,
             "total": 600,
-            "vendaTotal": 600
+            "vendaTotal": 600,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -3354,7 +3414,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "precoVenda": 300,
             "quantidade": 1000,
             "total": 350,
-            "vendaTotal": 300
+            "vendaTotal": 300,
+            "desconto": 0
          },
          "type": "unidade"
       },
@@ -3416,7 +3477,8 @@ export let MOCK_ORDERS: Pedido[] = [
             "total": 135,
             "valorArte": 0,
             "valorTotalCusto": 60,
-            "valorTotalVenda": 135
+            "valorTotalVenda": 135,
+            "desconto": 0
          },
          "type": "metro"
       },
@@ -3477,18 +3539,18 @@ export const updateStatusProducao = async (id: string, newStatus: StatusProducao
 };
 
 export const cancelarPedido = async (id: string, userName: string, motivo: string): Promise<Pedido | null> => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const pedido = MOCK_ORDERS.find(p => p.id === id);
-  if (!pedido) return null;
+   await new Promise(resolve => setTimeout(resolve, 300));
+   const pedido = MOCK_ORDERS.find(p => p.id === id);
+   if (!pedido) return null;
 
-  pedido.statusProducao = 'cancelado';
-  // Adiciona o evento de cancelamento ao histórico
-  pedido.historicoProducao.push({
-    status: 'cancelado',
-    data: new Date().toISOString(),
-    user: userName,
-    motivo: motivo
-  });
+   pedido.statusProducao = 'cancelado';
+   // Adiciona o evento de cancelamento ao histórico
+   pedido.historicoProducao.push({
+      status: 'cancelado',
+      data: new Date().toISOString(),
+      user: userName,
+      motivo: motivo
+   });
 
-  return pedido;
+   return pedido;
 };

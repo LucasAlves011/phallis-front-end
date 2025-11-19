@@ -1,6 +1,6 @@
 // Arquivo: components/pedidos/DetalhesPedidoRow.tsx
 import React, { useMemo, useState } from 'react';
-import { Pedido, HistoricoItem, StatusFinanceiro, StatusProducao } from '@/lib/orderData';
+import { Pedido } from '@/lib/orderData';
 import { optionGroupsConfig, getProductById, type Product } from '@/lib/productData';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
@@ -191,6 +191,7 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
                      <DetailRow label="Custo (Total)" value={`R$ ${detalhes.preco.custoTotal.toFixed(2)}`} />
                      <DetailRow label="Venda (Total)" value={`R$ ${detalhes.preco.vendaTotal.toFixed(2)}`} />
                      <DetailRow label="Arte" value={`R$ ${detalhes.preco.precoArte.toFixed(2)}`} />
+                     <DetailRow label="Desconto" value={`R$ ${detalhes.preco.desconto?.toFixed(2) || '0.00'}`} />
                      <DetailRow label="TOTAL" value={
                         <span className="text-xl font-bold text-phalis-action">
 
@@ -209,6 +210,7 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
                      <DetailRow label="Venda (m²)" value={`R$ ${detalhes.preco.m2Venda.toFixed(2)}`} />
                      <DetailRow label="Venda Total" value={`R$ ${detalhes.preco.valorTotalVenda.toFixed(2)}`} />
                      <DetailRow label="Arte" value={`R$ ${detalhes.preco.valorArte.toFixed(2)}`} />
+                     <DetailRow label="Desconto" value={`R$ ${detalhes.preco.desconto?.toFixed(2) || '0.00'}`} />
                      <DetailRow label="TOTAL" value={
                         <span className="text-xl font-bold text-phalis-action">
 

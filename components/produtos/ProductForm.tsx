@@ -1,29 +1,21 @@
 // Arquivo: components/produtos/ProductForm.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Plus, X, Loader2, ImageOff, FileUp } from 'lucide-react';
 import { type Product, type ProductOptions, type ProductOption } from '@/lib/productData';
-// 1. MUDANÇA: Importar o MoneyInput
 import { MoneyInput } from '@/components/ui/money-input';
 
 // ==========================================================
 // 1. Sub-Componente: O Grupo de Input de Opções
-// (Sem mudanças)
+// (Mantido igual, pois h3 aqui funciona bem como título de seção)
 // ==========================================================
 interface OptionInputGroupProps {
    title: string;
@@ -93,12 +85,12 @@ const OptionInputGroup: React.FC<OptionInputGroupProps> = ({ title, options, set
 };
 
 // ==========================================================
-// 2. O Formulário Principal (COM MUDANÇAS)
+// 2. O Formulário Principal
 // ==========================================================
 interface ProductFormProps {
    initialData?: Product;
 }
-// ... (funções 'unformatOpcoes' e 'formatarOpcoes' - sem mudança)
+
 const unformatOpcoes = (options: ProductOption[] | undefined): string[] => {
    if (!options) return [];
    return options.map(op => op.name);
@@ -126,7 +118,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
    const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
    const [imageFile, setImageFile] = useState<File | null>(null);
 
-   // 2. MUDANÇA: Novos estados para preços padrão (Metro)
+   // Estados para preços padrão (Metro)
    const [defaultM2Custo, setDefaultM2Custo] = useState(initialData?.defaultM2Custo?.toString() || '');
    const [defaultM2Venda, setDefaultM2Venda] = useState(initialData?.defaultM2Venda?.toString() || '');
 
@@ -157,7 +149,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
          acabamento: formatarOpcoes(acabamentoOptions),
       };
 
-      // 3. MUDANÇA: Adiciona os novos campos ao payload
       const produtoData: Product = {
          id: initialData?.id || `prod_${Math.random().toString(36).substr(2, 9)}`,
          nome,
@@ -165,7 +156,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
          descricao: descricao || "",
          pricingType,
          options: isOptionsDisabled ? undefined : options,
-         // Adiciona os preços padrão (converte para número ou undefined)
          defaultM2Custo: pricingType === 'metro' ? (Number(defaultM2Custo) || undefined) : undefined,
          defaultM2Venda: pricingType === 'metro' ? (Number(defaultM2Venda) || undefined) : undefined,
       };
@@ -182,7 +172,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
 
          if (!response.ok) throw new Error('Falha ao salvar o produto');
 
-         alert(`Produto "${produtoData.nome}" salvo com sucesso!`);
+         // alert(`Produto "${produtoData.nome}" salvo com sucesso!`);
          router.push('/catalogo');
 
       } catch (error) {
@@ -206,23 +196,36 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                <div className="flex flex-col-reverse md:flex-row gap-6">
 
                   {/* Coluna da Direita (Inputs) */}
-                  <div className="flex-1 space-y-4">
-                     <Input
-                        placeholder="Nome do Produto *"
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        required
-                        className="bg-phalis-gray border-0"
-                     />
-                     <Textarea
-                        placeholder="Descrição (Opcional)"
-                        value={descricao}
-                        onChange={(e) => setDescricao(e.target.value)}
-                        className="bg-phalis-gray border-0"
-                     />
+                  <div className="flex-1 space-y-5">
 
-                     <div>
-                        <h3 className="text-sm font-medium text-white mb-2">Tipo de Precificação *</h3>
+                     {/* Campo Nome (Estilo Label Clássica) */}
+                     <div className="space-y-1">
+                        <Label htmlFor="nome" className="text-gray-300 text-sm ml-1">Nome do Produto *</Label>
+                        <Input
+                           id="nome"
+                           placeholder="Ex: Cartão de Visita"
+                           value={nome}
+                           onChange={(e) => setNome(e.target.value)}
+                           required
+                           className="bg-phalis-gray border-0"
+                        />
+                     </div>
+
+                     {/* Campo Descrição (Estilo Label Clássica) */}
+                     <div className="space-y-1">
+                        <Label htmlFor="desc" className="text-gray-300 text-sm ml-1">Descrição (Opcional)</Label>
+                        <Textarea
+                           id="desc"
+                           placeholder="Detalhes sobre o produto..."
+                           value={descricao}
+                           onChange={(e) => setDescricao(e.target.value)}
+                           className="bg-phalis-gray border-0"
+                        />
+                     </div>
+
+                     {/* Campo Tipo Precificação (Estilo Label Clássica) */}
+                     <div className="space-y-2">
+                        <Label className="text-gray-300 text-sm ml-1">Tipo de Precificação *</Label>
                         <RadioGroup
                            value={pricingType}
                            onValueChange={(value) => setPricingType(value as any)}
@@ -230,36 +233,42 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                         >
                            <div className="flex items-center space-x-2">
                               <RadioGroupItem value="unidade" id="r-unidade" className="border-gray-500" />
-                              <Label htmlFor="r-unidade" className="text-white">Unidade</Label>
+                              <Label htmlFor="r-unidade" className="text-white cursor-pointer">Unidade</Label>
                            </div>
                            <div className="flex items-center space-x-2">
                               <RadioGroupItem value="metro" id="r-metro" className="border-gray-500" />
-                              <Label htmlFor="r-metro" className="text-white">Metro (m²)</Label>
+                              <Label htmlFor="r-metro" className="text-white cursor-pointer">Metro (m²)</Label>
                            </div>
                            <div className="flex items-center space-x-2">
                               <RadioGroupItem value="arte" id="r-arte" className="border-gray-500" />
-                              <Label htmlFor="r-arte" className="text-white">Arte (Serviço)</Label>
+                              <Label htmlFor="r-arte" className="text-white cursor-pointer">Arte (Serviço)</Label>
                            </div>
                         </RadioGroup>
                      </div>
 
-                     {/* ========================================================== */}
-                     {/* 4. MUDANÇA: Campos condicionais para 'metro' */}
-                     {/* ========================================================== */}
+                     {/* Campos Condicionais (Estilo Label Clássica) */}
                      {pricingType === 'metro' && (
                         <div className="pt-4 space-y-4 animate-in fade-in duration-300">
                            <h3 className="text-sm font-medium text-white">Preços Padrão (Opcional)</h3>
                            <div className="grid grid-cols-2 gap-4">
-                              <MoneyInput
-                                 placeholder="Preço Custo (p/ m²)"
-                                 value={defaultM2Custo}
-                                 onChange={(e) => setDefaultM2Custo(e.target.value)}
-                              />
-                              <MoneyInput
-                                 placeholder="Preço Venda (p/ m²)"
-                                 value={defaultM2Venda}
-                                 onChange={(e) => setDefaultM2Venda(e.target.value)}
-                              />
+                              <div className="space-y-1">
+                                 <Label htmlFor="m2custo" className="text-gray-300 text-sm ml-1">Preço Custo (p/ m²)</Label>
+                                 <MoneyInput
+                                    id="m2custo"
+                                    placeholder="0,00"
+                                    value={defaultM2Custo}
+                                    onChange={(e) => setDefaultM2Custo(e.target.value)}
+                                 />
+                              </div>
+                              <div className="space-y-1">
+                                 <Label htmlFor="m2venda" className="text-gray-300 text-sm ml-1">Preço Venda (p/ m²)</Label>
+                                 <MoneyInput
+                                    id="m2venda"
+                                    placeholder="0,00"
+                                    value={defaultM2Venda}
+                                    onChange={(e) => setDefaultM2Venda(e.target.value)}
+                                 />
+                              </div>
                            </div>
                         </div>
                      )}
@@ -267,16 +276,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                   </div>
 
                   {/* Coluna da Esquerda (Upload da Imagem) */}
-                  <div className="flex flex-col items-center gap-2">
-                     <p className="text-sm text-gray-400">Imagem (125x125)</p>
-                     <div className="flex items-center justify-center w-[125px] h-[125px] rounded-md bg-phalis-dark overflow-hidden">
+                  <div className="flex flex-col items-center gap-2 pt-6 md:pt-0">
+                     <Label className="text-xs text-gray-400">Imagem (125x125)</Label>
+                     <div className="flex items-center justify-center w-[125px] h-[125px] rounded-md bg-phalis-dark overflow-hidden border border-phalis-gray">
                         {imagePreview ? (
                            <Image
                               src={imagePreview}
                               alt="Preview"
                               width={125}
                               height={125}
-                              className="object-cover"
+                              className="object-cover h-full w-full"
                            />
                         ) : (
                            <ImageOff className="h-12 w-12 text-gray-500" />
@@ -284,10 +293,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                      </div>
                      <Label
                         htmlFor="file-upload"
-                        className="cursor-pointer text-sm text-phalis-action hover:text-phalis-action-hover"
+                        className="cursor-pointer text-xs text-phalis-action hover:text-phalis-action-hover mt-1"
                      >
-                        <FileUp className="h-4 w-4 inline mr-1" />
-                        {imageFile ? 'Trocar imagem' : 'Anexar imagem'}
+                        <div className="flex items-center">
+                           <FileUp className="h-3 w-3 inline mr-1" />
+                           {imageFile ? 'Trocar imagem' : 'Anexar imagem'}
+                        </div>
                      </Label>
                      <Input
                         id="file-upload"

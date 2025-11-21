@@ -283,17 +283,20 @@ export const handlers = [
             opcoes: dadosDoFormulario.opcoes,
             dimensoesPersonalizadas: dadosDoFormulario.dimensoesPersonalizadas, // <-- SALVO AQUI
             preco: dadosDoFormulario.preco, // Já contém custoTotal, vendaTotal, etc.
+            observacao: dadosDoFormulario.observacao,
          };
       } else if (dadosDoFormulario.produto.pricingType === 'metro') {
          detalhesDoPedido = {
             type: 'metro',
             opcoes: dadosDoFormulario.opcoes,
             preco: dadosDoFormulario.preco, // Já contém valorTotalCusto, valorTotalVenda, etc.
+            observacao: dadosDoFormulario.observacao,
          };
       } else {
          detalhesDoPedido = {
             type: 'servico',
             preco: dadosDoFormulario.preco,
+            observacao: dadosDoFormulario.observacao,
          };
       }
 

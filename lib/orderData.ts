@@ -17,6 +17,7 @@ type DetalhesPedidoUnidade = {
    type: 'unidade';
    opcoes: Record<string, string | null>;
    dimensoesPersonalizadas?: { larguraCm: string, alturaCm: string } | null;
+   observacao?: string;
    preco: {
       quantidade: number;
       precoCusto: number;
@@ -32,6 +33,7 @@ type DetalhesPedidoUnidade = {
 type DetalhesPedidoMetro = {
    type: 'metro';
    opcoes: Record<string, string | null>;
+   observacao?: string;
    preco: {
       largura: number;
       altura: number;
@@ -47,7 +49,8 @@ type DetalhesPedidoMetro = {
 
 type DetalhesPedidoServico = {
    type: 'servico';
-   preco: { observacao: string; valorVenda: number, desconto: number, pagamento: string };
+   observacao?: string;
+   preco: { valorVenda: number, desconto: number, pagamento: string };
 };
 
 export type Pedido = {
@@ -211,8 +214,8 @@ export let MOCK_ORDERS: Pedido[] = [
       "criadoPor": "Bob Silva",
       "dataCriacao": "2025-11-17T11:00:00.000Z",
       "detalhes": {
+         "observacao": "Logo para Instagram e Facebook",
          "preco": {
-            "observacao": "Logo para Instagram e Facebook",
             "pagamento": "pago",
             "valorVenda": 150,
             "desconto": 5
@@ -677,8 +680,8 @@ export let MOCK_ORDERS: Pedido[] = [
       "criadoPor": "Lucas Alves",
       "dataCriacao": "2025-11-11T10:00:00.000Z",
       "detalhes": {
+         "observacao": "Pacote de 5 artes para feed",
          "preco": {
-            "observacao": "Pacote de 5 artes para feed",
             "pagamento": "pago",
             "valorVenda": 250,
             "desconto": 5
@@ -1125,8 +1128,8 @@ export let MOCK_ORDERS: Pedido[] = [
       "criadoPor": "Bob Silva",
       "dataCriacao": "2025-11-04T16:00:00.000Z",
       "detalhes": {
+         "observacao": "Ajuste de arte para banner",
          "preco": {
-            "observacao": "Ajuste de arte para banner",
             "pagamento": "pago_50",
             "valorVenda": 80,
             "desconto": 10
@@ -1356,8 +1359,8 @@ export let MOCK_ORDERS: Pedido[] = [
       "criadoPor": "Bob Silva",
       "dataCriacao": "2025-11-17T11:00:00.000Z",
       "detalhes": {
+         "observacao": "Logo para Instagram e Facebook",
          "preco": {
-            "observacao": "Logo para Instagram e Facebook",
             "pagamento": "pago",
             "valorVenda": 150,
             "desconto": 10
@@ -1822,8 +1825,8 @@ export let MOCK_ORDERS: Pedido[] = [
       "criadoPor": "Lucas Alves",
       "dataCriacao": "2025-11-11T10:00:00.000Z",
       "detalhes": {
+         "observacao": "Pacote de 5 artes para feed",
          "preco": {
-            "observacao": "Pacote de 5 artes para feed",
             "pagamento": "pago",
             "valorVenda": 250,
             "desconto": 5
@@ -2270,8 +2273,8 @@ export let MOCK_ORDERS: Pedido[] = [
       "criadoPor": "Bob Silva",
       "dataCriacao": "2025-11-04T16:00:00.000Z",
       "detalhes": {
+         "observacao": "Ajuste de arte para banner",
          "preco": {
-            "observacao": "Ajuste de arte para banner",
             "pagamento": "pago_50",
             "valorVenda": 80,
             "desconto": 5
@@ -2673,8 +2676,8 @@ export let MOCK_ORDERS: Pedido[] = [
       "criadoPor": "Lucas Alves",
       "dataCriacao": "2025-10-27T12:00:00.000Z",
       "detalhes": {
+         "observacao": "Ajuste simples de cor",
          "preco": {
-            "observacao": "Ajuste simples de cor",
             "pagamento": "pago",
             "valorVenda": 50,
             "desconto": 0
@@ -3174,8 +3177,8 @@ export let MOCK_ORDERS: Pedido[] = [
       "criadoPor": "Bob Silva",
       "dataCriacao": "2025-10-18T09:00:00.000Z",
       "detalhes": {
+         "observacao": "Arte para rede social",
          "preco": {
-            "observacao": "Arte para rede social",
             "pagamento": "pago",
             "valorVenda": 100,
             "desconto": 0

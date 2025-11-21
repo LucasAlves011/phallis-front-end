@@ -147,7 +147,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
       if (pedidoParaEditar && pedidoParaEditar.detalhes.type === 'unidade') {
          const { detalhes } = pedidoParaEditar;
          setSelections(detalhes.opcoes);
-         setObservacao(detalhes.preco.observacao || '');
+         setObservacao(detalhes.observacao || '');
          setQuantidade(detalhes.preco.quantidade.toString());
          setPrecoCusto(detalhes.preco.precoCusto.toString());
          setPrecoVenda(detalhes.preco.precoVenda.toString());
@@ -425,7 +425,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
       if (pedidoParaEditar && pedidoParaEditar.detalhes.type === 'metro') {
          const { detalhes } = pedidoParaEditar;
          setSelections(detalhes.opcoes);
-         setObservacoes(detalhes.preco.observacao || '');
+         setObservacoes(detalhes.observacao || '');
          setLargura(detalhes.preco.largura.toString());
          setAltura(detalhes.preco.altura.toString());
          setM2Custo(detalhes.preco.m2Custo.toString());
@@ -613,7 +613,7 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, cliente,
 
       if (pedidoParaEditar && pedidoParaEditar.detalhes.type === 'servico') {
          const { detalhes } = pedidoParaEditar;
-         setObservacao(detalhes.preco.observacao || '');
+         setObservacao(detalhes.observacao || '');
          setValorVenda(detalhes.preco.valorVenda.toString());
          setDesconto(detalhes.preco.desconto?.toString() || '');
          setPagamento(pedidoParaEditar.statusFinanceiro);
@@ -628,7 +628,8 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, cliente,
       setIsLoading(true);
       const payload = {
          user, cliente, produto,
-         preco: { observacao, descricao: observacao, valorVenda: Number(valorVenda), desconto: Number(desconto), pagamento }
+         observacao: observacao,
+         preco: { descricao: observacao, valorVenda: Number(valorVenda), desconto: Number(desconto), pagamento }
       };
       try {
          const url = pedidoParaEditar ? `/api/pedidos/${pedidoParaEditar.id}` : '/api/pedidos';

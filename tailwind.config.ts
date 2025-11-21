@@ -26,6 +26,7 @@ const config = {
 				'phalis-ciano-hover': '#009cb1ff',
 				'phalis-rosa': '#d80683',
 				'phalis-yellow': '#ffeb3b',
+				'phalis-green': '#00f0b5',
 				'phalis-nav': '#d80683',
 				'phalis-nav-hover': '#b8006eff',
 				'phalis-action': '#00f0b5',

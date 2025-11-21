@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Pencil, XOctagon, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { usePermission } from '@/lib/auth/usePermission';
 
 type DetalhesProps = {
    pedido: Pedido;
@@ -83,6 +84,8 @@ const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, 
 // --- Renderizadores Específicos ---
 
 const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ pedido, produto, onPedidoUpdated }) => {
+   const { hasPermission } = usePermission();
+
    const { detalhes, itemImageUrl, itemNome } = pedido;
    const router = useRouter();
    const { user } = useAuth();
@@ -234,7 +237,7 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
                   ))}
                </ol>
                <div className="flex flex-col space-y-2">
-                  <Button
+                  {hasPermission('pedidos.editar') && ( <Button
                      variant="outline"
                      size="sm"
                      className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
@@ -243,8 +246,9 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
                   >
                      <Pencil className="h-4 w-4 mr-2" />
                      Editar Pedido
-                  </Button>
-                  <Button
+                  </Button> )}
+
+                  {hasPermission('pedidos.cancelar') && ( <Button
                      variant="outline"
                      size="sm"
                      className="w-full bg-phalis-danger/20 text-phalis-danger border-phalis-danger/30 hover:bg-phalis-danger/30 hover:text-red-400"
@@ -253,7 +257,7 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
                   >
                      <XOctagon className="h-4 w-4 mr-2" />
                      Cancelar Pedido
-                  </Button>
+                  </Button>)}
                </div>
             </div>
          </div>
@@ -322,6 +326,8 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
 
 // ... (O componente DetalhesArte precisa da mesma restauração)
 const DetalhesArte: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ pedido, onPedidoUpdated }) => {
+   const { hasPermission } = usePermission();
+
    const { detalhes, itemImageUrl, itemNome } = pedido;
    const router = useRouter();
    const { user } = useAuth();
@@ -432,7 +438,7 @@ const DetalhesArte: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido)
                </ol>
 
                <div className="flex flex-col space-y-2">
-                  <Button
+                  {hasPermission('pedidos.editar') && ( <Button
                      variant="outline"
                      size="sm"
                      className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
@@ -441,7 +447,9 @@ const DetalhesArte: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido)
                   >
                      <Pencil className="h-4 w-4 mr-2" />
                      Editar Pedido
-                  </Button>
+                  </Button> )}
+
+                  {hasPermission('pedidos.cancelar') && (
                   <Button
                      variant="outline"
                      size="sm"
@@ -451,7 +459,7 @@ const DetalhesArte: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido)
                   >
                      <XOctagon className="h-4 w-4 mr-2" />
                      Cancelar Pedido
-                  </Button>
+                  </Button>)}
                </div>
             </div>
          </div>

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { type Product } from '@/lib/productData';
 import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { usePermission } from '@/lib/auth/usePermission';
 
 // Importar tudo do dnd-kit
 import {
@@ -40,6 +41,7 @@ import { SortableProductItem } from '@/components/produtos/SortableProductItem';
 
 
 export default function GerenciarProdutosPage() {
+   const { hasPermission } = usePermission();
    const [produtos, setProdutos] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
    const router = useRouter();
@@ -64,6 +66,25 @@ export default function GerenciarProdutosPage() {
             setIsLoading(false);
          });
    }, []);
+
+   // Configura os sensores
+   const sensors = useSensors(
+      useSensor(PointerSensor, {
+         // CORREÇÃO: Inicia o "arrastar" após mover 5 pixels (quase instantâneo)
+         // Remove o delay padrão que causava a "travada".
+         activationConstraint: {
+            distance: 5,
+         },
+      }),
+      useSensor(KeyboardSensor, {
+         coordinateGetter: sortableKeyboardCoordinates,
+      })
+   );
+
+   // Proteção Básica de Rota
+   if (!hasPermission('produtos.cadastrar') && !hasPermission('produtos.editar')) {
+      return <div className="p-8 text-center text-gray-400">Acesso negado ao gerenciamento de produtos.</div>;
+   }
 
    const handleEdit = (id: string) => {
       router.push(`/adm/produtos/${id}`);
@@ -102,24 +123,6 @@ export default function GerenciarProdutosPage() {
       }
    };
 
-   // ==========================================================
-   // MUDANÇA AQUI: Lógica do Drag and Drop
-   // ==========================================================
-
-   // Configura os sensores
-   const sensors = useSensors(
-      useSensor(PointerSensor, {
-         // CORREÇÃO: Inicia o "arrastar" após mover 5 pixels (quase instantâneo)
-         // Remove o delay padrão que causava a "travada".
-         activationConstraint: {
-            distance: 5,
-         },
-      }),
-      useSensor(KeyboardSensor, {
-         coordinateGetter: sortableKeyboardCoordinates,
-      })
-   );
-
    // Função chamada ao soltar o item
    const handleDragEnd = (event: DragEndEvent) => {
       const { active, over } = event;
@@ -144,10 +147,11 @@ export default function GerenciarProdutosPage() {
       }
    };
 
+   const canReorder = hasPermission('produtos.ordenar');
 
    return (
       <DndContext
-         sensors={sensors}
+         sensors={canReorder ? sensors : undefined}
          collisionDetection={closestCenter}
          onDragEnd={handleDragEnd}
       >
@@ -156,12 +160,14 @@ export default function GerenciarProdutosPage() {
             {/* --- Cabeçalho (Sem mudança) --- */}
             <div className="flex justify-between items-center">
                <h1 className="text-3xl font-bold text-white">Gerenciar Produtos</h1>
-               <Button asChild className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover">
-                  <Link href="/adm/produtos/novo">
-                     <Plus className="mr-2 h-4 w-4" />
-                     Cadastrar Novo Produto
-                  </Link>
-               </Button>
+
+               {hasPermission('produtos.cadastrar') && (
+                  <Button asChild className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover">
+                     <Link href="/adm/produtos/novo">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Cadastrar Novo Produto
+                     </Link>
+                  </Button>)}
             </div>
 
             {/* --- Tabela/Lista Arrastável (Sem mudança) --- */}
@@ -190,6 +196,9 @@ export default function GerenciarProdutosPage() {
                            <SortableProductItem
                               key={produto.id}
                               product={produto}
+                              canEdit={hasPermission('produtos.editar')}
+                              canDelete={hasPermission('produtos.deletar')}
+                              canReorder={canReorder} // Passa prop nova
                               onEdit={handleEdit}
                               onDelete={openDeleteDialog}
                            />

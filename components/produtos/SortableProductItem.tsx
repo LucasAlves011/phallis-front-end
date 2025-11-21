@@ -8,14 +8,18 @@ import { type Product } from '@/lib/productData';
 import { Pencil, Trash2, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ca } from 'zod/v4/locales';
 
 interface SortableProductItemProps {
    product: Product;
    onEdit: (id: string) => void;
    onDelete: (product: Product) => void;
+   canEdit: boolean;
+   canDelete: boolean;
+   canReorder: boolean;
 }
 
-export const SortableProductItem: React.FC<SortableProductItemProps> = ({ product, onEdit, onDelete }) => {
+export const SortableProductItem: React.FC<SortableProductItemProps> = ({ product, onEdit, onDelete, canEdit, canDelete, canReorder }) => {
 
    // 1. Hooks do dnd-kit
    const {
@@ -43,14 +47,14 @@ export const SortableProductItem: React.FC<SortableProductItemProps> = ({ produc
          className="flex items-center p-4 bg-phalis-black border-b border-gray-800 text-white"
       >
          {/* 4. O "Pegador" (Drag Handle) */}
-         <button
+         {canReorder && (<button
             type="button"
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing p-2 text-gray-500"
          >
             <GripVertical className="h-5 w-5" />
-         </button>
+         </button>)}
 
          {/* Conteúdo da Linha (adaptado da <table>) */}
          <div className="w-[80px] px-4">
@@ -65,22 +69,25 @@ export const SortableProductItem: React.FC<SortableProductItemProps> = ({ produc
          <div className="flex-1 font-medium">{product.nome}</div>
          <div className="w-[100px] capitalize">{product.pricingType}</div>
          <div className="w-[140px] text-right space-x-2">
-            <Button
+
+            {canEdit && (<Button
                variant="ghost"
                size="icon"
                onClick={() => onEdit(product.id)}
                className="text-gray-400 hover:text-phalis-action hover:bg-phalis-action/10"
             >
                <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-               variant="ghost"
-               size="icon"
-               onClick={() => onDelete(product)}
-               className="text-gray-400 hover:text-phalis-danger hover:bg-phalis-danger/10"
-            >
-               <Trash2 className="h-4 w-4" />
-            </Button>
+            </Button>)}
+
+            {canDelete && (
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDelete(product)}
+                  className="text-gray-400 hover:text-phalis-danger hover:bg-phalis-danger/10"
+               >
+                  <Trash2 className="h-4 w-4" />
+               </Button>)}
          </div>
       </div>
    );

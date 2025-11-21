@@ -14,7 +14,8 @@ import {
    TableRow,
 } from "@/components/ui/table";
 import { AddClientModal } from '@/components/clientes/AddClientModal';
-import { Loader2, Plus, Edit } from 'lucide-react'; // Importar Edit
+import { Loader2, Plus, Edit } from 'lucide-react';
+import { usePermission } from '@/lib/auth/usePermission';
 
 // Função de formatar WhatsApp
 const formatarWhatsApp = (numero: string) => {
@@ -26,6 +27,7 @@ const formatarWhatsApp = (numero: string) => {
 
 export default function ClientesPage() {
    const [clientes, setClientes] = useState<Cliente[]>([]);
+   const { hasPermission } = usePermission();
    const [isLoading, setIsLoading] = useState(true);
    const [searchTerm, setSearchTerm] = useState('');
 
@@ -43,6 +45,11 @@ export default function ClientesPage() {
          c.nome.toLowerCase().includes(searchTerm.toLowerCase())
       );
    }, [clientes, searchTerm]);
+
+   // 1. Proteção de Rota (Bloqueia a tela toda)
+   if (!hasPermission('clientes.visualizar')) {
+      return <div className="p-8 text-center text-gray-400">Acesso negado.</div>;
+   }
 
    // ==========================================================
    // MUDANÇA AQUI: Callback unificado
@@ -81,16 +88,18 @@ export default function ClientesPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                />
                {/* MUDANÇA AQUI: Usando o novo modal */}
-               <AddClientModal
-                  mode="create"
-                  onClientSaved={handleClientSaved}
-                  triggerButton={
-                     <Button className="bg-phalis-nav hover:bg-phalis-nav-hover">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Cliente
-                     </Button>
-                  }
-               />
+               {hasPermission('clientes.alterar') && (
+                  <AddClientModal
+                     mode="create"
+                     onClientSaved={handleClientSaved}
+                     triggerButton={
+                        <Button className="bg-phalis-nav hover:bg-phalis-nav-hover">
+                           <Plus className="mr-2 h-4 w-4" />
+                           Cliente
+                        </Button>
+                     }
+                  />
+               )}
             </div>
          </div>
 
@@ -137,21 +146,22 @@ export default function ClientesPage() {
                                  {cliente.telefone1}
                               </a>
                            </TableCell>
-                           {/* MUDANÇA AQUI: Nova coluna */}
                            <TableCell>{cliente.telefone2 || '---'}</TableCell>
 
                            {/* MUDANÇA AQUI: Botão de Edição */}
                            <TableCell>
-                              <AddClientModal
-                                 mode="edit"
-                                 clienteToEdit={cliente}
-                                 onClientSaved={handleClientSaved}
-                                 triggerButton={
-                                    <Button variant="ghost" size="icon" className="text-white hover:text-phalis-action">
-                                       <Edit className="h-4 w-4" />
-                                    </Button>
-                                 }
-                              />
+                              {hasPermission('clientes.alterar') && (
+                                 <AddClientModal
+                                    mode="edit"
+                                    clienteToEdit={cliente}
+                                    onClientSaved={handleClientSaved}
+                                    triggerButton={
+                                       <Button variant="ghost" size="icon" className="text-white hover:text-phalis-action">
+                                          <Edit className="h-4 w-4" />
+                                       </Button>
+                                    }
+                                 />
+                              )}
                            </TableCell>
                         </TableRow>
                      ))

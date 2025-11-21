@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { type Product } from '@/lib/productData'; // 2. MUDANÇA: Importar apenas o *tipo*
 import { Loader2 } from 'lucide-react'; // 3. MUDANÇA: Importar o ícone de loading
+import { usePermission } from '@/lib/auth/usePermission';
 
 // --- O Componente do Card (Sem mudanças) ---
 // (Este subcomponente está perfeito como você colou)
@@ -46,10 +47,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
 
 
 // ==========================================================
-// MUDANÇA 4: A Página Principal do Catálogo 
+// MUDANÇA 4: A Página Principal do Catálogo
 // ==========================================================
 export default function CatalogoPage() {
    const router = useRouter();
+   const { hasPermission } = usePermission();
 
    // Estados para loading e dados
    const [produtos, setProdutos] = useState<Product[]>([]);
@@ -73,7 +75,13 @@ export default function CatalogoPage() {
 
    // Função de clique (como você definiu)
    const handleCardClick = (produto: Product) => {
-      // (Atenção: verifique se sua rota é /pedido ou /pedidos)
+
+      // Se não tiver permissão para REALIZAR pedido, não faz nada ou alerta
+      if (!hasPermission('pedidos.realizar')) {
+         alert("Você tem permissão para ver, mas não para criar novos pedidos.");
+         return;
+      }
+
       const pagePath = '/pedido';
       const url = `${pagePath}?id=${produto.id}`;
       router.push(url);

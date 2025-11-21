@@ -1,20 +1,97 @@
 // Arquivo: lib/clientData.ts
 
+// --- TIPOS ---
+export type Role = 'admin' | 'user' | 'atendente';
+
+export const PERMISSIONS_CONFIG = [
+   // PEDIDOS (CATÁLOGO)
+   { id: 'catalogo.ver', label: 'Ver Catálogo (Loja)', category: 'Pedidos' },
+   { id: 'pedidos.realizar', label: 'Realizar Pedidos', category: 'Pedidos' },
+
+   // PEDIDOS (GESTÃO)
+   { id: 'pedidos.visualizar', label: 'Ver Lista de Pedidos', category: 'Pedidos' },
+   { id: 'pedidos.editar', label: 'Editar Pedidos', category: 'Pedidos' },
+   { id: 'pedidos.cancelar', label: 'Cancelar Pedidos', category: 'Pedidos' },
+   { id: 'pedidos.status.producao', label: 'Evoluir Status de Produção', category: 'Pedidos' },
+   { id: 'pedidos.status.financeiro', label: 'Evoluir Status Financeiro', category: 'Pedidos' },
+
+   // CLIENTES
+   { id: 'clientes.visualizar', label: 'Verificar Lista de Clientes', category: 'Clientes' },
+   { id: 'clientes.alterar', label: 'Alterar Clientes (Criar/Editar)', category: 'Clientes' },
+
+   // PRODUTOS
+   { id: 'produtos.cadastrar', label: 'Cadastrar Produtos', category: 'Produtos' },
+   { id: 'produtos.editar', label: 'Editar Produtos', category: 'Produtos' },
+   { id: 'produtos.deletar', label: 'Deletar Produtos', category: 'Produtos' },
+   { id: 'produtos.ordenar', label: 'Alterar Ordem de Catálogo', category: 'Produtos' },
+
+   // USUÁRIOS
+   { id: 'usuarios.gerenciar', label: 'Gerenciar Usuários', category: 'Usuários' },
+] as const;
+
+export type Permission = typeof PERMISSIONS_CONFIG[number]['id'];
+
+// Mapa de Dependências: Chave precisa do Valor
+export const PERMISSION_DEPENDENCIES: Partial<Record<Permission, Permission>> = {
+   // Pedidos
+   'pedidos.realizar': 'catalogo.ver',
+   'pedidos.editar': 'pedidos.visualizar',
+   'pedidos.cancelar': 'pedidos.visualizar',
+   'pedidos.status.producao': 'pedidos.visualizar',
+   'pedidos.status.financeiro': 'pedidos.visualizar',
+
+   // Clientes
+   'clientes.alterar': 'clientes.visualizar',
+
+   // Produtos (Quem deleta ou ordena, precisa poder editar)
+   'produtos.deletar': 'produtos.editar',
+   'produtos.ordenar': 'produtos.editar',
+};
+
+export type User = {
+   id: string;
+   nome: string;
+   email: string;
+   telefone?: string;
+   cpfCnpj?: string;
+   // Novos campos de segurança
+   role: Role;
+   active: boolean; // Se false, não consegue logar
+   permissions: Permission[]; // Permissões granulares
+};
+
+export const ROLE_TEMPLATES: Record<string, Permission[]> = {
+   admin: [], // Admin tem acesso total via código (God Mode)
+
+   atendente: [
+      'catalogo.ver',
+      'pedidos.realizar',
+      'pedidos.visualizar',
+      'pedidos.editar',
+      'pedidos.status.producao',
+      'pedidos.status.financeiro',
+      'clientes.visualizar',
+      'clientes.alterar'
+   ],
+
+   user: [
+      'catalogo.ver',
+      'pedidos.realizar',
+      'pedidos.visualizar',
+      'clientes.visualizar'
+   ]
+};
+
 export type Cliente = {
    id: string;
    nome: string;
    cpfCnpj: string;
    email: string;
-   telefone1: string; // Obrigatório
+   telefone1: string;
    telefone2: string;
 };
 
-export type User = {
-  id: string;
-  nome: string;
-  email: string;
-};
-
+// --- MOCK DATA ---
 export const MOCK_CLIENTS: Cliente[] = [
    { id: 'cli_001', nome: 'Cliente Metro 1 (Original)', cpfCnpj: '111.222.333-44', email: 'cliente1@email.com', telefone1: '(81) 99999-0001', telefone2: '' },
    { id: 'cli_002', nome: 'Cliente Unidade 2 (Original)', cpfCnpj: '22.333.444/0001-55', email: 'cliente2@email.com', telefone1: '(81) 98888-0002', telefone2: '' },
@@ -47,36 +124,21 @@ export const MOCK_CLIENTS: Cliente[] = [
    { id: 'cli_029', nome: 'Amanda Borges', cpfCnpj: '', email: 'amanda.borges@email.com', telefone1: '(81) 99926-9926', telefone2: '' }
 ];
 
-// --- Funções de API Fictícias ---
-
+// Funções de cliente (mantidas iguais, mas agora com tipos exportados)
 export const fetchClients = async (): Promise<Cliente[]> => {
    await new Promise(resolve => setTimeout(resolve, 300));
    return MOCK_CLIENTS;
 };
-
 export const addClient = async (data: Omit<Cliente, 'id'>): Promise<Cliente> => {
    await new Promise(resolve => setTimeout(resolve, 500));
-   const novoCliente: Cliente = {
-      ...data,
-      id: `cli_${Math.random().toString(36).substr(2, 9)}`,
-   };
+   const novoCliente: Cliente = { ...data, id: `cli_${Math.random().toString(36).substr(2, 9)}` };
    MOCK_CLIENTS.unshift(novoCliente);
    return novoCliente;
 };
-
-// ==========================================================
-// MUDANÇA AQUI: Adicionada função de Edição
-// ==========================================================
 export const editClient = async (id: string, data: Omit<Cliente, 'id'>): Promise<Cliente | null> => {
    await new Promise(resolve => setTimeout(resolve, 500));
-
    const index = MOCK_CLIENTS.findIndex(c => c.id === id);
-   if (index === -1) {
-      return null; // Cliente não encontrado
-   }
-
-   const clienteAtualizado = { ...data, id: id };
-   MOCK_CLIENTS[index] = clienteAtualizado;
-
-   return clienteAtualizado;
+   if (index === -1) return null;
+   MOCK_CLIENTS[index] = { ...data, id };
+   return MOCK_CLIENTS[index];
 };

@@ -27,6 +27,7 @@ import DetalhesPedidoRow from './DetalhesPedidoRow';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { type User } from '@/lib/clientData';
+import { usePermission } from '@/lib/auth/usePermission';
 
 interface TabelaPedidosProps {
    pedidos: Pedido[];
@@ -74,6 +75,7 @@ const formatarData = (isoString: string) => {
 const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated, highlightId, currentUser }) => {
    const [openRowId, setOpenRowId] = useState<string | null>(null);
    const [loadingStatus, setLoadingStatus] = useState<Record<string, boolean>>({});
+   const { hasPermission } = usePermission();
 
    const handleStatusChange = async (
       pedidoId: string,
@@ -161,7 +163,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                            <Select
                               value={pedido.statusFinanceiro}
                               onValueChange={(value) => handleStatusChange(pedido.id, 'financeiro', value)}
-                              disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled}
+                              disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.financeiro')}
                            >
                               <SelectTrigger
                                  className={cn(
@@ -195,7 +197,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                            <Select
                               value={pedido.statusProducao}
                               onValueChange={(value) => handleStatusChange(pedido.id, 'producao', value)}
-                              disabled={loadingStatus[`producao-${pedido.id}`] || isCanceled}
+                              disabled={loadingStatus[`producao-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.producao')}
                            >
                               <SelectTrigger
                                  className={cn(

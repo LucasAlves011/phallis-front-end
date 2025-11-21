@@ -16,29 +16,57 @@ import { produtosDoCatalogo, deleteProduct, reorderProducts, type Product } from
 
 import { fetchClients, addClient, editClient, type Cliente, type User } from '@/lib/clientData';
 
-const MOCK_USERS_DB: (User & { password: string, username: string })[] = [
+// ==========================================================
+// MUDANÇA 1: Banco de Usuários com Roles e Permissões
+// ==========================================================
+let MOCK_USERS_DB: (User & { password: string, username: string })[] = [
    {
       id: 'user_1',
-      nome: 'Lucas Alves', // O usuário principal
+      nome: 'Lucas Alves',
       email: 'lucas@phalis.com',
-      username: 'lucas', // O login que já funciona
-      password: '123'
+      username: 'lucas',
+      password: '123',
+      role: 'admin',
+      active: true,
+      // Admin tem acesso a TUDO
+      permissions: [
+         'catalogo.ver', 'pedidos.realizar',
+         'pedidos.visualizar', 'pedidos.editar', 'pedidos.cancelar',
+         'pedidos.status.producao', 'pedidos.status.financeiro',
+         'clientes.visualizar', 'clientes.alterar',
+         'produtos.cadastrar', 'produtos.editar', 'produtos.deletar', 'produtos.ordenar',
+         'usuarios.gerenciar'
+      ]
    },
    {
       id: 'user_2',
-      nome: 'Phallis Admin', // Novo usuário
-      email: 'phallis@phalis.com',
-      username: 'phallis',
-      password: '123' // Senha simples para o mock
+      nome: 'Phalis Phillipe',
+      email: 'vendedor@phalis.com',
+      username: 'phalis',
+      password: '123',
+      role: 'user',
+      active: true,
+      // Vendedor típico
+      permissions: [
+         'catalogo.ver',
+         'pedidos.realizar',
+         'pedidos.visualizar',
+         'clientes.visualizar',
+         'clientes.alterar'
+      ]
    },
    {
       id: 'user_3',
-      nome: 'Bob Silva', // Segundo novo usuário
-      email: 'bob@phalis.com',
+      nome: 'Bob da Silva',
+      email: 'bloq@phalis.com',
       username: 'bob',
-      password: '123' // Senha simples para o mock
+      password: '123',
+      role: 'user',
+      active: false,
+      permissions: []
    }
 ];
+
 let currentlyLoggedInUser: User | null = null;
 let hasMockCookie = false; // Simula a existência do cookie
 
@@ -213,8 +241,8 @@ export const handlers = [
    }),
 
    // ==========================================================
-  //  NOVA ROTA (PUT - Cancelar)
-  // ==========================================================
+   //  NOVA ROTA (PUT - Cancelar)
+   // ==========================================================
    http.put('/api/pedidos/:id/cancelar', async ({ request, params }) => {
       const { id } = params;
       const { userName, motivo } = await request.json() as { userName: string, motivo: string };
@@ -376,41 +404,22 @@ export const handlers = [
    http.post('/api/auth/login', async ({ request }) => {
       const { username, password } = await request.json() as any;
 
-      console.log(`[MSW] Tentativa de login para: ${username}`);
-      // await delay(500);
-
-      // Procura o usuário no "banco"
-      const foundUser = MOCK_USERS_DB.find(
-         user => user.username === username && user.password === password
-      );
+      const foundUser = MOCK_USERS_DB.find(user => user.username === username && user.password === password);
 
       if (foundUser) {
-         // Extrai os dados públicos (sem a senha)
-         const { password, ...userPublicData } = foundUser;
+         // MUDANÇA: Checar se está ativo
+         if (!foundUser.active) {
+            return HttpResponse.json({ message: 'Usuário desativado. Contate o administrador.' }, { status: 403 });
+         }
 
-         // Define o estado global do mock
+         const { password, ...userPublicData } = foundUser;
          currentlyLoggedInUser = userPublicData;
          hasMockCookie = true;
-
-         console.log(`[MSW] Login bem-sucedido para: ${userPublicData.nome}`);
-
-         return HttpResponse.json(userPublicData, {
-            status: 200,
-            headers: {
-               'Set-Cookie': 'session-token=mocked_jwt_token; HttpOnly; Path=/; Max-Age=3600'
-            }
-         });
+         return HttpResponse.json(userPublicData, { status: 200, headers: { 'Set-Cookie': 'session-token=mocked_jwt_token; HttpOnly; Path=/; Max-Age=3600' } });
       }
-
-      // Falha
       currentlyLoggedInUser = null;
       hasMockCookie = false;
-      console.log('[MSW] Login falhou: Credenciais inválidas');
-
-      return HttpResponse.json(
-         { message: 'Credenciais inválidas' },
-         { status: 401 }
-      );
+      return HttpResponse.json({ message: 'Credenciais inválidas' }, { status: 401 });
    }),
 
    // ==========================================================
@@ -453,6 +462,61 @@ export const handlers = [
    }),
 
    // ==========================================================
+   // MUDANÇA 2: Novas Rotas de Gerenciamento de Usuários
+   // ==========================================================
+
+   // Listar Usuários (Apenas Admin deveria ver, na teoria)
+   http.get('/api/users', async () => {
+      // Retorna os usuários sem a senha
+      const safeUsers = MOCK_USERS_DB.map(({ password, ...u }) => u);
+      return HttpResponse.json(safeUsers);
+   }),
+
+   // Criar Usuário
+   http.post('/api/users', async ({ request }) => {
+      const newUser = await request.json() as any;
+
+      const userWithId = {
+         ...newUser,
+         id: `user_${Math.random().toString(36).substr(2, 9)}`,
+         active: true, // Padrão
+      };
+
+      // (Em um app real, criptografaríamos a senha aqui)
+      MOCK_USERS_DB.push(userWithId);
+
+      const { password, ...safeUser } = userWithId;
+      return HttpResponse.json(safeUser, { status: 201 });
+   }),
+
+   // Editar Usuário (Permissões, Ativar/Desativar)
+   http.put('/api/users/:id', async ({ request, params }) => {
+      const { id } = params;
+      const updates = await request.json() as Partial<User>;
+
+      const actingUser = MOCK_USERS_DB.find(u => u.id === currentlyLoggedInUser.id);
+      const targetUser = MOCK_USERS_DB.find(u => u.id === params.id);
+
+      const index = MOCK_USERS_DB.findIndex(u => u.id === id);
+      if (index === -1) {
+         return HttpResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
+      }
+
+      if (targetUser.role === 'admin' && actingUser.role !== 'admin') {
+         return HttpResponse.json(
+            { message: 'Você não tem permissão para modificar um Administrador.' },
+            { status: 403 }
+         );
+      }
+
+      // Atualiza os campos
+      MOCK_USERS_DB[index] = { ...MOCK_USERS_DB[index], ...updates };
+
+      const { password, ...safeUser } = MOCK_USERS_DB[index];
+      return HttpResponse.json(safeUser);
+   }),
+
+   // ==========================================================
    // MUDANÇA AQUI: Nova rota POST para /consultar-preco
    // ==========================================================
    http.post('http://localhost:8030/consultar-preco/:nomeProduto', async ({ request, params }) => {
@@ -483,5 +547,37 @@ export const handlers = [
       };
 
       return HttpResponse.json(mockResponse);
+   }),
+
+   // ==========================================================
+   // MUDANÇA: Rota para Trocar Senha
+   // ==========================================================
+   http.put('/api/users/me/password', async ({ request }) => {
+      const { currentPassword, newPassword } = await request.json() as any;
+
+      console.log('[MSW] Tentativa de troca de senha');
+
+      // Verifica se há usuário logado no mock
+      if (!currentlyLoggedInUser) {
+         return HttpResponse.json({ message: 'Não autorizado' }, { status: 401 });
+      }
+
+      // Encontra o usuário no banco fictício
+      const userInDb = MOCK_USERS_DB.find(u => u.id === currentlyLoggedInUser!.id);
+
+      if (!userInDb) {
+         return HttpResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
+      }
+
+      // Verifica a senha atual
+      if (userInDb.password !== currentPassword) {
+         return HttpResponse.json({ message: 'Senha atual incorreta.' }, { status: 400 });
+      }
+
+      // Atualiza a senha
+      userInDb.password = newPassword;
+      console.log(`[MSW] Senha do usuário ${userInDb.username} alterada com sucesso.`);
+
+      return HttpResponse.json({ success: true });
    }),
 ];

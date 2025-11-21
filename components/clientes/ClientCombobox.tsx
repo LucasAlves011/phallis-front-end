@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { AddClientModal } from './AddClientModal';
 import { type Cliente } from '@/lib/clientData';
+import { usePermission } from '@/lib/auth/usePermission';
 
 interface ClientComboboxProps {
    selectedClientId: string | null;
@@ -29,6 +30,7 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
    const [open, setOpen] = useState(false);
    const [clientes, setClientes] = useState<Cliente[]>([]);
    const [isLoading, setIsLoading] = useState(false);
+   const { hasPermission } = usePermission();
 
    useEffect(() => {
       setIsLoading(true);
@@ -116,7 +118,7 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
                </Command>
 
                {/* O Modal de Adicionar */}
-               <div className="border-t border-phalis-gray p-1">
+               {hasPermission('clientes.alterar') && (<div className="border-t border-phalis-gray p-1">
                   <AddClientModal
                      mode="create"
                      onClientSaved={handleClientSaved}
@@ -134,7 +136,7 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
                         </Button>
                      }
                   />
-               </div>
+               </div>)}
             </PopoverContent>
          </Popover>
 

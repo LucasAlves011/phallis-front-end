@@ -324,8 +324,8 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
    );
 };
 
-// ... (O componente DetalhesArte precisa da mesma restauração)
-const DetalhesArte: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ pedido, onPedidoUpdated }) => {
+
+const DetalhesServico: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ pedido, onPedidoUpdated }) => {
    const { hasPermission } = usePermission();
 
    const { detalhes, itemImageUrl, itemNome } = pedido;
@@ -337,7 +337,7 @@ const DetalhesArte: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido)
    const [cancelLoading, setCancelLoading] = useState(false);
    const [cancelError, setCancelError] = useState('');
 
-   if (detalhes.type !== 'arte') return null;
+   if (detalhes.type !== 'servico') return null;
    const { preco } = detalhes;
 
    const historicoCompleto = useMemo(() => {
@@ -485,9 +485,9 @@ const DetalhesArte: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido)
                            </div>
                         )}
                         <div className="space-y-2 pt-2">
-                           <Label htmlFor="motivo-arte" className="text-white">Motivo do Cancelamento (Obrigatório)</Label>
+                           <Label htmlFor="motivo-servico" className="text-white">Motivo do Cancelamento (Obrigatório)</Label>
                            <Textarea
-                              id="motivo-arte"
+                              id="motivo-servico"
                               placeholder="Ex: Cliente desistiu, erro no pedido..."
                               className="bg-phalis-gray border-0"
                               value={cancelMotivo}
@@ -534,8 +534,8 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
       case 'unidade':
       case 'metro':
          return <DetalhesUnidadeMetro pedido={pedido} produto={produto} onPedidoUpdated={onPedidoUpdated} />;
-      case 'arte':
-         return <DetalhesArte pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
+      case 'servico':
+         return <DetalhesServico pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
       default:
          return <div>Detalhes indisponíveis.</div>;
    }

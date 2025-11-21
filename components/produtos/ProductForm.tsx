@@ -113,7 +113,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
    // Estados do Formulário
    const [nome, setNome] = useState(initialData?.nome || '');
    const [descricao, setDescricao] = useState(initialData?.descricao || '');
-   const [pricingType, setPricingType] = useState<'unidade' | 'metro' | 'arte'>(initialData?.pricingType || 'unidade');
+   const [pricingType, setPricingType] = useState<'unidade' | 'metro' | 'servico'>(initialData?.pricingType || 'unidade');
 
    const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
    const [imageFile, setImageFile] = useState<File | null>(null);
@@ -128,7 +128,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
    const [coresOptions, setCoresOptions] = useState<string[]>(unformatOpcoes(initialData?.options?.cores));
    const [acabamentoOptions, setAcabamentoOptions] = useState<string[]>(unformatOpcoes(initialData?.options?.acabamento));
 
-   const isOptionsDisabled = pricingType === 'arte';
+   const isOptionsDisabled = pricingType === 'servico';
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -240,8 +240,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                               <Label htmlFor="r-metro" className="text-white cursor-pointer">Metro (m²)</Label>
                            </div>
                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="arte" id="r-arte" className="border-gray-500" />
-                              <Label htmlFor="r-arte" className="text-white cursor-pointer">Arte (Serviço)</Label>
+                              <RadioGroupItem value="servico" id="r-servico" className="border-gray-500" />
+                              <Label htmlFor="r-servico" className="text-white cursor-pointer">Serviço</Label>
                            </div>
                         </RadioGroup>
                      </div>

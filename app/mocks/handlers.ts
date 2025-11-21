@@ -269,7 +269,7 @@ export const handlers = [
       const dadosDoFormulario = await request.json() as any;
       const dataCriacao = new Date().toISOString();
 
-      const valorDoPedido = dadosDoFormulario.produto.pricingType === 'arte'
+      const valorDoPedido = dadosDoFormulario.produto.pricingType === 'servico'
          ? dadosDoFormulario.preco.valorVenda
          : dadosDoFormulario.preco.total;
 
@@ -292,7 +292,7 @@ export const handlers = [
          };
       } else {
          detalhesDoPedido = {
-            type: 'arte',
+            type: 'servico',
             preco: dadosDoFormulario.preco,
          };
       }

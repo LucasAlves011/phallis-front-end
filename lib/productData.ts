@@ -20,7 +20,7 @@ export type Product = {
   nome: string;
   descricao?: string; // Descrição é opcional
   imageUrl: string;
-  pricingType: 'metro' | 'unidade' | 'arte';
+  pricingType: 'metro' | 'unidade' | 'servico';
   consultaPreco?: boolean;
   options?: ProductOptions;
   defaultM2Custo?: number;
@@ -44,7 +44,7 @@ export let produtosDoCatalogo: Product[] = [
     "nome": "Criação de Arte",
     "descricao": "",
     "imageUrl": "/images/catalogo/phalis-kekw.png",
-    "pricingType": "arte"
+    "pricingType": "servico"
   },
   {
     "id": "prod_001",

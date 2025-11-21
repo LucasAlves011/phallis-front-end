@@ -45,8 +45,8 @@ type DetalhesPedidoMetro = {
    };
 };
 
-type DetalhesPedidoArte = {
-   type: 'arte';
+type DetalhesPedidoServico = {
+   type: 'servico';
    preco: { observacao: string; valorVenda: number, desconto: number, pagamento: string };
 };
 
@@ -63,7 +63,7 @@ export type Pedido = {
    statusProducao: StatusProducao;
    historicoFinanceiro: HistoricoItem[];
    historicoProducao: HistoricoItem[];
-   detalhes: DetalhesPedidoUnidade | DetalhesPedidoMetro | DetalhesPedidoArte;
+   detalhes: DetalhesPedidoUnidade | DetalhesPedidoMetro | DetalhesPedidoServico;
 };
 
 export const statusFinanceiroOptions: { value: StatusFinanceiro, label: string }[] = [
@@ -217,7 +217,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "valorVenda": 150,
             "desconto": 5
          },
-         "type": "arte"
+         "type": "servico"
       },
       "historicoFinanceiro": [
          {
@@ -683,7 +683,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "valorVenda": 250,
             "desconto": 5
          },
-         "type": "arte"
+         "type": "servico"
       },
       "historicoFinanceiro": [
          {
@@ -1131,7 +1131,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "valorVenda": 80,
             "desconto": 10
          },
-         "type": "arte"
+         "type": "servico"
       },
       "historicoFinanceiro": [
          {
@@ -1362,7 +1362,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "valorVenda": 150,
             "desconto": 10
          },
-         "type": "arte"
+         "type": "servico"
       },
       "historicoFinanceiro": [
          {
@@ -1828,7 +1828,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "valorVenda": 250,
             "desconto": 5
          },
-         "type": "arte"
+         "type": "servico"
       },
       "historicoFinanceiro": [
          {
@@ -2276,7 +2276,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "valorVenda": 80,
             "desconto": 5
          },
-         "type": "arte"
+         "type": "servico"
       },
       "historicoFinanceiro": [
          {
@@ -2679,7 +2679,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "valorVenda": 50,
             "desconto": 0
          },
-         "type": "arte"
+         "type": "servico"
       },
       "historicoFinanceiro": [
          {
@@ -3180,7 +3180,7 @@ export let MOCK_ORDERS: Pedido[] = [
             "valorVenda": 100,
             "desconto": 0
          },
-         "type": "arte"
+         "type": "servico"
       },
       "historicoFinanceiro": [
          {

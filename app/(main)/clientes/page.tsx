@@ -1,8 +1,8 @@
 // Arquivo: app/(main)/clientes/page.tsx
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { type Cliente } from '@/lib/clientData';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { type Cliente } from '@/types/client'; // MUDANÇA: Importando do tipo, não do arquivo de mock
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,9 +14,9 @@ import {
    TableRow,
 } from "@/components/ui/table";
 import { AddClientModal } from '@/components/clientes/AddClientModal';
-import { Loader2, Plus, Edit } from 'lucide-react';
+import { Loader2, Plus, Edit, RefreshCw, AlertCircle } from 'lucide-react';
 import { usePermission } from '@/lib/auth/usePermission';
-import { authenticatedFetch } from '@/lib/api'; // Adicionado
+import { authenticatedFetch } from '@/lib/api';
 
 // Função de formatar WhatsApp
 const formatarWhatsApp = (numero: string) => {
@@ -30,20 +30,46 @@ export default function ClientesPage() {
    const [clientes, setClientes] = useState<Cliente[]>([]);
    const { hasPermission } = usePermission();
    const [isLoading, setIsLoading] = useState(true);
+   const [error, setError] = useState('');
    const [searchTerm, setSearchTerm] = useState('');
 
-   useEffect(() => {
+   const fetchClientes = useCallback(() => {
+      setIsLoading(true);
+      setError('');
       authenticatedFetch('/api/clientes')
-         .then(res => res.json())
+         .then(async (res) => {
+            if (!res.ok) {
+               // Tenta ler o erro do backend ou usa genérico
+               const text = await res.text();
+               throw new Error(text || 'Falha ao buscar clientes do servidor.');
+            }
+            return res.json();
+         })
          .then((data: Cliente[]) => {
-            setClientes(data);
+            if (Array.isArray(data)) {
+               setClientes(data);
+            } else {
+               throw new Error('Formato de dados inválido recebido do servidor.');
+            }
+         })
+         .catch(err => {
+            console.error("Erro ao carregar clientes:", err);
+            setError('Não foi possível carregar a lista de clientes. Verifique sua conexão.');
+         })
+         .finally(() => {
             setIsLoading(false);
          });
    }, []);
 
+   useEffect(() => {
+      fetchClientes();
+   }, [fetchClientes]);
+
    const clientesFiltrados = useMemo(() => {
       return clientes.filter(c =>
-         c.nome.toLowerCase().includes(searchTerm.toLowerCase())
+         c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         c.cpfCnpj?.includes(searchTerm) ||
+         c.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
    }, [clientes, searchTerm]);
 
@@ -52,51 +78,51 @@ export default function ClientesPage() {
       return <div className="p-8 text-center text-gray-400">Acesso negado.</div>;
    }
 
-   // ==========================================================
-   // MUDANÇA AQUI: Callback unificado
-   // ==========================================================
    const handleClientSaved = (savedCliente: Cliente) => {
-      let clienteExiste = false;
-
-      // Atualiza o cliente na lista se ele já existir (edição)
-      const clientesAtualizados = clientes.map(c => {
-         if (c.id === savedCliente.id) {
-            clienteExiste = true;
-            return savedCliente; // Retorna o cliente atualizado
+      setClientes(prev => {
+         const exists = prev.some(c => c.id === savedCliente.id);
+         if (exists) {
+            return prev.map(c => c.id === savedCliente.id ? savedCliente : c);
          }
-         return c;
+         return [savedCliente, ...prev];
       });
-
-      if (clienteExiste) {
-         setClientes(clientesAtualizados);
-      } else {
-         // Adiciona o novo cliente no topo (criação)
-         setClientes([savedCliente, ...clientesAtualizados]);
-      }
    };
 
    return (
       <div className="space-y-6">
 
          {/* Barra de Título, Pesquisa e Botão de Adicionar */}
-         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-            <h1 className="text-3xl font-bold text-white">Clientes</h1>
+         <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-phalis-black/50 p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+               <h1 className="text-3xl font-bold text-white">Clientes</h1>
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={fetchClientes}
+                  disabled={isLoading}
+                  title="Recarregar Lista"
+                  className="text-gray-400 hover:text-white"
+               >
+                  <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+               </Button>
+            </div>
+
             <div className="flex w-full md:w-auto gap-2">
                <Input
-                  placeholder="Pesquisar por nome..."
-                  className="bg-phalis-gray border-0 w-full md:w-64"
+                  placeholder="Pesquisar por nome, CPF ou email..."
+                  className="bg-phalis-gray border-0 w-full md:w-80"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                />
-               {/* MUDANÇA AQUI: Usando o novo modal */}
+
                {hasPermission('clientes.alterar') && (
                   <AddClientModal
                      mode="create"
                      onClientSaved={handleClientSaved}
                      triggerButton={
-                        <Button className="bg-phalis-nav hover:bg-phalis-nav-hover">
+                        <Button className="bg-phalis-nav hover:bg-phalis-nav-hover whitespace-nowrap">
                            <Plus className="mr-2 h-4 w-4" />
-                           Cliente
+                           Novo Cliente
                         </Button>
                      }
                   />
@@ -104,52 +130,64 @@ export default function ClientesPage() {
             </div>
          </div>
 
+         {/* Estado de Erro */}
+         {error && (
+            <div className="bg-red-900/20 border border-red-900/50 text-red-200 p-4 rounded-md flex items-center gap-3">
+               <AlertCircle className="h-5 w-5" />
+               <p>{error}</p>
+               <Button variant="link" onClick={fetchClientes} className="text-white underline ml-auto">
+                  Tentar novamente
+               </Button>
+            </div>
+         )}
+
          {/* Tabela de Clientes */}
-         <div className="bg-phalis-black rounded-lg">
+         <div className="bg-phalis-black rounded-lg border border-gray-800">
             <Table>
                <TableHeader>
-                  <TableRow>
-                     <TableHead>Nome</TableHead>
-                     <TableHead>CPF/CNPJ</TableHead>
-                     <TableHead>Email</TableHead>
-                     {/* MUDANÇA AQUI: Adicionadas colunas */}
-                     <TableHead>Telefone 1</TableHead>
-                     <TableHead>Telefone 2</TableHead>
-                     <TableHead className="w-[50px]">Ações</TableHead>
+                  <TableRow className="hover:bg-transparent border-gray-800">
+                     <TableHead className="text-gray-400">Nome</TableHead>
+                     <TableHead className="text-gray-400">CPF/CNPJ</TableHead>
+                     <TableHead className="text-gray-400">Email</TableHead>
+                     <TableHead className="text-gray-400">Telefone 1</TableHead>
+                     <TableHead className="text-gray-400">Telefone 2</TableHead>
+                     <TableHead className="text-gray-400 w-[50px]">Ações</TableHead>
                   </TableRow>
                </TableHeader>
                <TableBody>
                   {isLoading ? (
-                     <TableRow>
-                        <TableCell colSpan={6} className="text-center">
-                           <Loader2 className="h-6 w-6 animate-spin inline-block" />
+                     <TableRow className="hover:bg-transparent border-gray-800">
+                        <TableCell colSpan={6} className="h-32 text-center">
+                           <div className="flex justify-center items-center">
+                              <Loader2 className="h-8 w-8 animate-spin text-phalis-action" />
+                              <span className="ml-2 text-gray-400">Carregando clientes...</span>
+                           </div>
                         </TableCell>
                      </TableRow>
                   ) : clientesFiltrados.length === 0 ? (
-                     <TableRow>
-                        <TableCell colSpan={6} className="text-center text-gray-400">
-                           Nenhum cliente encontrado.
+                     <TableRow className="hover:bg-transparent border-gray-800">
+                        <TableCell colSpan={6} className="h-32 text-center text-gray-500">
+                           {error ? 'Não foi possível carregar os dados.' : 'Nenhum cliente encontrado.'}
                         </TableCell>
                      </TableRow>
                   ) : (
                      clientesFiltrados.map((cliente) => (
-                        <TableRow key={cliente.id}>
-                           <TableCell>{cliente.nome}</TableCell>
-                           <TableCell>{cliente.cpfCnpj || '---'}</TableCell>
-                           <TableCell>{cliente.email || '---'}</TableCell>
+                        <TableRow key={cliente.id} className="hover:bg-gray-900/50 border-gray-800">
+                           <TableCell className="font-medium text-white">{cliente.nome}</TableCell>
+                           <TableCell className="text-gray-300">{cliente.cpfCnpj || '-'}</TableCell>
+                           <TableCell className="text-gray-300">{cliente.email || '-'}</TableCell>
                            <TableCell>
                               <a
                                  href={formatarWhatsApp(cliente.telefone1)}
                                  target="_blank"
                                  rel="noopener noreferrer"
-                                 className="text-white hover:text-phalis-action hover:underline"
+                                 className="text-phalis-action hover:underline flex items-center gap-1"
                               >
                                  {cliente.telefone1}
                               </a>
                            </TableCell>
-                           <TableCell>{cliente.telefone2 || '---'}</TableCell>
+                           <TableCell className="text-gray-300">{cliente.telefone2 || '-'}</TableCell>
 
-                           {/* MUDANÇA AQUI: Botão de Edição */}
                            <TableCell>
                               {hasPermission('clientes.alterar') && (
                                  <AddClientModal
@@ -157,7 +195,7 @@ export default function ClientesPage() {
                                     clienteToEdit={cliente}
                                     onClientSaved={handleClientSaved}
                                     triggerButton={
-                                       <Button variant="ghost" size="icon" className="text-white hover:text-phalis-action">
+                                       <Button variant="ghost" size="icon" className="text-gray-400 hover:text-phalis-action hover:bg-phalis-action/10">
                                           <Edit className="h-4 w-4" />
                                        </Button>
                                     }

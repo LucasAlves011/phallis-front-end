@@ -9,6 +9,7 @@ import {
    type Product,
    type ProductOptions
 } from '@/lib/productData';
+import { authenticatedFetch } from '@/lib/api';
 import { type Pedido } from '@/lib/orderData';
 import { type Cliente } from '@/lib/clientData';
 import { Button } from "@/components/ui/button";
@@ -146,7 +147,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
    useEffect(() => {
       if (pedidoParaEditar && pedidoParaEditar.detalhes.type === 'unidade') {
          const { detalhes } = pedidoParaEditar;
-         setSelections(detalhes.opcoes);
+         setSelections(detalhes.opcoes as Selections);
          setObservacao(detalhes.observacao || '');
          setQuantidade(detalhes.preco.quantidade.toString());
          setPrecoCusto(detalhes.preco.precoCusto.toString());
@@ -239,9 +240,8 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
       const acabamentoName = produto.options.acabamento.find(o => o.id === selections.acabamento)?.name;
 
       try {
-         const response = await fetch(`http://localhost:8030/consultar-preco/${produto.nome}`, {
+         const response = await authenticatedFetch(`/api/consultar-preco/${encodeURIComponent(produto.nome)}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ papel: papelName, tamanho: tamanhoName, cores: coresName, acabamento: acabamentoName }),
          });
          if (!response.ok) throw new Error('API de preço falhou');
@@ -362,7 +362,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
                <div className="lg:col-span-1 space-y-4">
                   <div className="space-y-3 pt-2">
                      <h3 className="text-base font-medium text-white">Custo</h3>
-                     <div className="space-y-1"><Label htmlFor="qtd" className="text-gray-300 text-sm ml-1">Quantidade *</Label><Input id="qtd" type="number" value={quantidade} onChange={e => setQuantidade(e.target.value)} className="bg-phalis-gray border-0" min={1} /></div>
+                     <div className="space-y-1"><Label htmlFor="qtd" className="text-gray-300 text-sm ml-1">Quantidade *</Label><Input id="qtd" type="number" value={quantidade} onChange={e => setQuantidade(e.target.value)} className="bg-phalis-gray border-0 h-10 max-h-10" min={1} /></div>
                      <div className="space-y-1"><Label htmlFor="custo" className="text-gray-300 text-sm ml-1">Preço Custo (Total) *</Label><MoneyInput id="custo" value={precoCusto} onChange={e => setPrecoCusto(e.target.value)} /></div>
                      <div className="bg-phalis-black rounded-md p-3 text-white text-sm">Custo Total: <span className="font-bold">R$ {custoTotal.toFixed(2)}</span></div>
                   </div>
@@ -424,7 +424,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
    useEffect(() => {
       if (pedidoParaEditar && pedidoParaEditar.detalhes.type === 'metro') {
          const { detalhes } = pedidoParaEditar;
-         setSelections(detalhes.opcoes);
+         setSelections(detalhes.opcoes as Selections);
          setObservacoes(detalhes.observacao || '');
          setLargura(detalhes.preco.largura.toString());
          setAltura(detalhes.preco.altura.toString());
@@ -524,8 +524,10 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
                </div>
                <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-white">{optionGroupsConfig[1].name}</h3>
-                  <SuffixInput id="largura" suffix="m" type="number" step="0.01" placeholder="Largura (m) *" value={largura} onChange={e => setLargura(e.target.value)} disabled={!selections.papel} className={`bg-phalis-gray border-0 flex-1 ${!selections.papel ? 'disabled:opacity-30' : ''}`} />
-                  <SuffixInput id="altura" suffix="m" type="number" step="0.01" placeholder="Altura (m) *" value={altura} onChange={e => setAltura(e.target.value)} disabled={!selections.papel} className={`bg-phalis-gray border-0 flex-1 ${!selections.papel ? 'disabled:opacity-30' : ''}`} />
+                  <div className="flex gap-2">
+                     <SuffixInput id="largura" suffix="m" type="number" step="0.01" placeholder="Largura (m) *" value={largura} onChange={e => setLargura(e.target.value)} disabled={!selections.papel} className={`bg-phalis-gray border-0 flex-1 ${!selections.papel ? 'disabled:opacity-30' : ''}`} />
+                     <SuffixInput id="altura" suffix="m" type="number" step="0.01" placeholder="Altura (m) *" value={altura} onChange={e => setAltura(e.target.value)} disabled={!selections.papel} className={`bg-phalis-gray border-0 flex-1 ${!selections.papel ? 'disabled:opacity-30' : ''}`} />
+                  </div>
                   <div className="bg-phalis-black rounded-md p-3 text-white">Total m²: <span className="font-bold">{metrosQuadrados.toFixed(2)} m²</span></div>
                </div>
                <div className="space-y-2">
@@ -721,19 +723,34 @@ export default function PedidosPage() {
       setLoading(true); setProduto(null); setPedidoParaEditar(null); setSelectedClient(null);
       if (!produtoId) { setLoading(false); return; }
 
-      const produtoEncontrado = getProductById(produtoId);
-      if (!produtoEncontrado) { setLoading(false); return; }
-      setProduto(produtoEncontrado);
+      // MUDANÇA: Buscar produto do BACKEND, não do arquivo local
+      authenticatedFetch(`/api/produtos/${produtoId}`)
+         .then(res => {
+            if (!res.ok) throw new Error('Produto não encontrado');
+            return res.json();
+         })
+         .then((produtoBackend: Product) => {
+            setProduto(produtoBackend);
 
-      if (editPedidoId) {
-         fetch(`/api/pedidos/${editPedidoId}`).then(res => res.json()).then((pedidoData: Pedido) => {
-            setPedidoParaEditar(pedidoData);
-            setSelectedClient(pedidoData.cliente);
+            // Se tiver editando pedido, busca os dados dele também
+            if (editPedidoId) {
+               fetch(`/api/pedidos/${editPedidoId}`)
+                  .then(res => res.json())
+                  .then((pedidoData: Pedido) => {
+                     setPedidoParaEditar(pedidoData);
+                     setSelectedClient(pedidoData.cliente);
+                  })
+                  .catch(err => console.error("Erro ao buscar pedido:", err))
+                  .finally(() => setLoading(false));
+            } else {
+               setLoading(false);
+            }
+         })
+         .catch(err => {
+            console.error("Erro ao buscar produto:", err);
             setLoading(false);
-         }).catch(err => { console.error("Erro ao buscar pedido:", err); setLoading(false); });
-      } else {
-         setLoading(false);
-      }
+         });
+
    }, [produtoId, editPedidoId]);
 
    if (loading || !user) return <div className="flex justify-center items-center p-12"><Loader2 className="h-12 w-12 animate-spin text-phalis-action" /></div>;

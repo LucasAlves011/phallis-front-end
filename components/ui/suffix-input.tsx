@@ -14,7 +14,7 @@ const SuffixInput = React.forwardRef<HTMLInputElement, SuffixInputProps>(
          // 2. Este 'div' é o wrapper que VAI PARECER o input
          <div
             className={cn(
-               "flex h-10 w-full items-center rounded-md border border-input bg-phalis-gray px-3 py-2 text-sm",
+               "flex h-10 max-h-10 w-full items-center rounded-md border border-input bg-phalis-gray px-3 text-sm",
                "ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
                "placeholder:text-muted-foreground",
                "disabled:cursor-not-allowed disabled:opacity-50",

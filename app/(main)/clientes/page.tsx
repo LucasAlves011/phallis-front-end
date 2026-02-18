@@ -16,6 +16,7 @@ import {
 import { AddClientModal } from '@/components/clientes/AddClientModal';
 import { Loader2, Plus, Edit } from 'lucide-react';
 import { usePermission } from '@/lib/auth/usePermission';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
 
 // Função de formatar WhatsApp
 const formatarWhatsApp = (numero: string) => {
@@ -32,7 +33,7 @@ export default function ClientesPage() {
    const [searchTerm, setSearchTerm] = useState('');
 
    useEffect(() => {
-      fetch('/api/clientes')
+      authenticatedFetch('/api/clientes')
          .then(res => res.json())
          .then((data: Cliente[]) => {
             setClientes(data);

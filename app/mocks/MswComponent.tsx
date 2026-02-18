@@ -11,8 +11,10 @@ export function MswComponent({ children }: { children: React.ReactNode }) {
 
    useEffect(() => {
       const initMsw = async () => {
-         // Só roda em 'development' E se ainda não foi iniciado
-         if (process.env.NODE_ENV === 'development' && !isMockingEnabled) {
+         // Só roda em 'development' E se ainda não foi iniciado E se não estiver desabilitado por env
+         const isMswDisabled = process.env.NEXT_PUBLIC_DISABLE_MSW === 'true';
+
+         if (process.env.NODE_ENV === 'development' && !isMockingEnabled && !isMswDisabled) {
 
             const { worker } = await import('./browser');
 
@@ -37,8 +39,9 @@ export function MswComponent({ children }: { children: React.ReactNode }) {
    }
 
    // 6. Se estivermos em 'development', SÓ renderiza o app
-   //    DEPOIS que o MSW estiver pronto
-   if (isMockingEnabled) {
+   //    DEPOIS que o MSW estiver pronto OU se estiver desabilitado
+   const isMswDisabled = process.env.NEXT_PUBLIC_DISABLE_MSW === 'true';
+   if (isMockingEnabled || isMswDisabled) {
       return <>{children}</>;
    }
 

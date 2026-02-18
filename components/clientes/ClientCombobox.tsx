@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown, PlusCircle, Loader2, Edit } from 'lucide-react';
+import { Check, ChevronsUpDown, PlusCircle, Loader2, Edit, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,8 @@ import { AddClientModal } from './AddClientModal';
 import { type Cliente } from '@/lib/clientData';
 import { usePermission } from '@/lib/auth/usePermission';
 
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
+
 interface ClientComboboxProps {
    selectedClientId: string | null;
    onSelectClient: (cliente: Cliente | null) => void;
@@ -34,10 +36,25 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
 
    useEffect(() => {
       setIsLoading(true);
-      fetch('/api/clientes')
-         .then(res => res.json())
+      // MUDANÇA: Usando authenticatedFetch para enviar o token
+      authenticatedFetch('/api/clientes')
+         .then(res => {
+            if (!res.ok) throw new Error('Falha ao buscar clientes');
+            return res.json();
+         })
          .then((data: Cliente[]) => {
-            setClientes(data);
+            if (Array.isArray(data)) {
+               setClientes(data);
+            } else {
+               console.error("API de clientes não retornou um array:", data);
+               setClientes([]);
+            }
+         })
+         .catch(err => {
+            console.error(err);
+            setClientes([]);
+         })
+         .finally(() => {
             setIsLoading(false);
          });
    }, []);
@@ -72,7 +89,7 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
                   variant="outline"
                   role="combobox"
                   aria-expanded={open}
-                  className="w-full justify-between bg-phalis-nav hover:bg-phalis-nav-hover font-medium text-lg py-6 text-white border-0"
+                  className="flex-1 justify-between bg-phalis-nav hover:bg-phalis-nav-hover font-medium text-lg py-6 text-white border-0"
                >
                   {isLoading ? (
                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -83,17 +100,14 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
                </Button>
             </PopoverTrigger>
 
-            {/* ========================================================== */}
-            {/* MUDANÇA 1: Removido 'bg-phalis-black'. Agora ele usará
-            o 'bg-popover' padrão (phalis-dark) que definimos no globals.css */}
-            {/* ========================================================== */}
+            {/* ... */}
+
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0 border-phalis-gray text-white">
+               {/* ... (conteúdo do popover) */}
                <Command>
                   <CommandInput placeholder="Pesquisar cliente..." className="border-0" />
                   <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
                   <CommandList>
-
-                     {/* A Lista de Clientes */}
                      <CommandGroup heading="Clientes Cadastrados">
                         {clientes.map((cliente) => (
                            <CommandItem
@@ -125,10 +139,6 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
                      triggerButton={
                         <Button
                            variant="ghost"
-                           // ==========================================================
-                           // MUDANÇA 2: Adicionado 'hover:bg-phalis-gray' para
-                           // imitar o hover dos itens da lista.
-                           // ==========================================================
                            className="w-full justify-start text-phalis-action hover:text-phalis-action hover:bg-phalis-gray"
                         >
                            <PlusCircle className="mr-2 h-4 w-4" />
@@ -147,8 +157,12 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
                clienteToEdit={selectedClient}
                onClientSaved={handleClientSaved}
                triggerButton={
-                  <Button variant="outline" size="icon" className="h-full bg-phalis-gray border-0 py-6">
-                     <Edit className="h-5 w-5" />
+                  <Button
+                     variant="ghost"
+                     size="icon"
+                     className="h-auto aspect-square shrink-0 bg-phalis-gray text-white hover:bg-phalis-gray/80 hover:text-white border-0 flex items-center justify-center p-0"
+                  >
+                     <Pencil className="h-5 w-5 text-white" />
                   </Button>
                }
             />

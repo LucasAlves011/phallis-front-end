@@ -33,6 +33,7 @@ type DetalhesPedidoUnidade = {
 type DetalhesPedidoMetro = {
    type: 'metro';
    opcoes: Record<string, string | null>;
+   dimensoesPersonalizadas?: { larguraCm: string, alturaCm: string } | null;
    observacao?: string;
    preco: {
       largura: number;
@@ -49,6 +50,8 @@ type DetalhesPedidoMetro = {
 
 type DetalhesPedidoServico = {
    type: 'servico';
+   opcoes?: Record<string, string | null>;
+   dimensoesPersonalizadas?: { larguraCm: string, alturaCm: string } | null;
    observacao?: string;
    preco: { valorVenda: number, desconto: number, pagamento: string };
 };

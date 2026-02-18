@@ -25,6 +25,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { type Cliente } from '@/lib/clientData';
 import { Loader2 } from 'lucide-react';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
 
 // Schema de Validação (sem mudança)
 const formSchema = z.object({
@@ -84,11 +85,10 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
    const onSubmit = async (data: FormData) => {
       setIsLoading(true);
       try {
-         const response = await fetch(
+         const response = await authenticatedFetch(
             isEditMode ? `/api/clientes/${clienteToEdit?.id}` : '/api/clientes',
             {
                method: isEditMode ? 'PUT' : 'POST',
-               headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify(data),
             }
          );

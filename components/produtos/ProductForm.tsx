@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, X, Loader2, ImageOff, FileUp } from 'lucide-react';
 import { type Product, type ProductOptions, type ProductOption } from '@/lib/productData';
 import { MoneyInput } from '@/components/ui/money-input';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
 
 // ==========================================================
 // 1. Sub-Componente: O Grupo de Input de Opções
@@ -43,21 +44,21 @@ const OptionInputGroup: React.FC<OptionInputGroupProps> = ({ title, options, set
    return (
       <div className={`space-y-3 ${disabled ? 'opacity-50' : ''}`}>
          <h3 className="text-sm font-semibold text-white">{title}</h3>
-         <div className="flex gap-2">
+         <div className="flex gap-2 items-center">
             <Input
                placeholder="Digite a opção..."
                value={inputValue}
                onChange={(e) => setInputValue(e.target.value)}
                onKeyDown={handleKeyDown}
                disabled={disabled}
-               className="bg-phalis-gray border-0"
+               className="bg-phalis-gray border-0 h-10"
             />
             <Button
                type="button"
                size="icon"
                onClick={handleAddOption}
                disabled={disabled}
-               className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover"
+               className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover h-10 w-10 shrink-0"
             >
                <Plus className="h-4 w-4" />
             </Button>
@@ -142,31 +143,60 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
       e.preventDefault();
       setIsLoading(true);
 
-      const options: ProductOptions = {
-         papel: formatarOpcoes(papelOptions),
-         tamanho: formatarOpcoes(tamanhoOptions),
-         cores: formatarOpcoes(coresOptions),
-         acabamento: formatarOpcoes(acabamentoOptions),
-      };
-
-      const produtoData: Product = {
-         id: initialData?.id || `prod_${Math.random().toString(36).substr(2, 9)}`,
-         nome,
-         imageUrl: imagePreview || "/images/catalogo/phalis-kekw.png",
-         descricao: descricao || "",
-         pricingType,
-         options: isOptionsDisabled ? undefined : options,
-         defaultM2Custo: pricingType === 'metro' ? (Number(defaultM2Custo) || undefined) : undefined,
-         defaultM2Venda: pricingType === 'metro' ? (Number(defaultM2Venda) || undefined) : undefined,
-      };
-
       try {
+         let finalImageUrl = imagePreview || "/images/catalogo/phalis-kekw.png";
+
+         // 1. Se houver arquivo selecionado, fazer upload primeiro
+         if (imageFile) {
+            const formData = new FormData();
+            formData.append('file', imageFile);
+
+            const token = localStorage.getItem('phallis_auth_token');
+            const uploadHeaders: HeadersInit = {};
+            if (token) {
+               uploadHeaders['Authorization'] = `Bearer ${token}`;
+            }
+
+            const uploadResponse = await fetch('/api/upload', {
+               method: 'POST',
+               headers: uploadHeaders, // Não setar Content-Type com FormData, o browser faz isso
+               body: formData
+            });
+
+            if (!uploadResponse.ok) {
+               throw new Error('Falha no upload da imagem');
+            }
+
+            const uploadData = await uploadResponse.json();
+            // O backend retorna: { fileName, fileDownloadUri, ... }
+            if (uploadData.fileDownloadUri) {
+               finalImageUrl = uploadData.fileDownloadUri;
+            }
+         }
+
+         const options: ProductOptions = {
+            papel: formatarOpcoes(papelOptions),
+            tamanho: formatarOpcoes(tamanhoOptions),
+            cores: formatarOpcoes(coresOptions),
+            acabamento: formatarOpcoes(acabamentoOptions),
+         };
+
+         const produtoData: Product = {
+            id: initialData?.id || `prod_${Math.random().toString(36).substr(2, 9)}`,
+            nome,
+            imageUrl: finalImageUrl,
+            descricao: descricao || "",
+            pricingType,
+            options: isOptionsDisabled ? undefined : options,
+            defaultM2Custo: pricingType === 'metro' ? (Number(defaultM2Custo) || undefined) : undefined,
+            defaultM2Venda: pricingType === 'metro' ? (Number(defaultM2Venda) || undefined) : undefined,
+         };
+
          const url = isEditMode ? `/api/produtos/${initialData.id}` : '/api/produtos';
          const method = isEditMode ? 'PUT' : 'POST';
 
-         const response = await fetch(url, {
+         const response = await authenticatedFetch(url, {
             method: method,
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(produtoData),
          });
 
@@ -258,6 +288,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                                     placeholder="0,00"
                                     value={defaultM2Custo}
                                     onChange={(e) => setDefaultM2Custo(e.target.value)}
+                                    className="text-white"
                                  />
                               </div>
                               <div className="space-y-1">
@@ -267,6 +298,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                                     placeholder="0,00"
                                     value={defaultM2Venda}
                                     onChange={(e) => setDefaultM2Venda(e.target.value)}
+                                    className="text-white"
                                  />
                               </div>
                            </div>
@@ -347,9 +379,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                <Button
                   type="submit"
                   disabled={isLoading}
-                  className="bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50"
+                  className="bg-phalis-action text-phalis-black font-semibold h-11 px-8 hover:bg-phalis-action-hover disabled:opacity-50"
                >
-                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'Salvar Produto'}
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                  {isLoading ? 'Salvando...' : 'Salvar Produto'}
                </Button>
             </div>
          </form>

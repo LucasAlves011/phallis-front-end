@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { ProductForm } from '@/components/produtos/ProductForm';
 import { type Product } from '@/lib/productData';
 import { Loader2 } from 'lucide-react';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
 
 export default function EditarProdutoPage() {
    const params = useParams();
@@ -17,7 +18,7 @@ export default function EditarProdutoPage() {
    useEffect(() => {
       if (id) {
          setIsLoading(true);
-         fetch(`/api/produtos/${id}`)
+         authenticatedFetch(`/api/produtos/${id}`)
             .then(res => res.json())
             .then(data => {
                setProduto(data);

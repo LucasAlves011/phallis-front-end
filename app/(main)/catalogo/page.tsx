@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { type Product } from '@/lib/productData'; // 2. MUDANÇA: Importar apenas o *tipo*
 import { Loader2 } from 'lucide-react'; // 3. MUDANÇA: Importar o ícone de loading
+import { authenticatedFetch } from '@/lib/api'; // 4. MUDANÇA: Importar fetch autenticado
 import { usePermission } from '@/lib/auth/usePermission';
 
 // --- O Componente do Card (Sem mudanças) ---
@@ -29,13 +30,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
                  p-4
                  flex flex-col items-center gap-3"
       >
-         <Image
+         <img
             src={product.imageUrl}
             alt={product.nome}
             width={125}
             height={125}
-            className="object-cover rounded-md"
-            priority={true}
+            className="object-cover rounded-md h-[125px] w-[125px]"
          />
          <div className="w-full text-left">
             <h3 className="font-bold text-gray-900">{product.nome}</h3>
@@ -61,10 +61,18 @@ export default function CatalogoPage() {
    useEffect(() => {
       setIsLoading(true);
 
-      fetch('/api/produtos')
-         .then(res => res.json())
+      authenticatedFetch('/api/produtos')
+         .then(res => {
+            if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+            return res.json();
+         })
          .then((data: Product[]) => {
-            setProdutos(data);
+            if (Array.isArray(data)) {
+               setProdutos(data);
+            } else {
+               console.error("Dados recebidos não são um array:", data);
+               setProdutos([]);
+            }
             setIsLoading(false);
          })
          .catch(err => {

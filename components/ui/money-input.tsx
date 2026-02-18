@@ -14,7 +14,7 @@ const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
       return (
          <div
             className={cn(
-               "flex h-10 w-full items-center rounded-md border border-input bg-phalis-gray px-3 py-2 text-sm",
+               "flex h-10 max-h-10 min-h-10 w-full items-center rounded-md border border-input bg-phalis-gray px-3 text-sm", // min-h-10 force height
                "ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
                "placeholder:text-muted-foreground",
                "disabled:cursor-not-allowed disabled:opacity-50",
@@ -41,7 +41,7 @@ const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
                   // ==========================================================
                   // MUDANÇA 2: Removido 'text-right'
                   // ==========================================================
-                  "w-full p-0 pl-2 bg-transparent border-0", // <-- A CORREÇÃO
+                  "w-full h-full p-0 pl-2 bg-transparent border-0", // <-- h-full added
                   "focus-visible:ring-0 focus-visible:ring-offset-0",
                   "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                )}

@@ -13,6 +13,7 @@ import TabelaPedidos from '@/components/pedidos/TabelaPedidos';
 import { useInView } from 'react-intersection-observer';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
 import { Input } from '@/components/ui/input';
 import {
    Select,
@@ -67,7 +68,7 @@ export default function HistoricoPedidosPage() {
       if (filtroStatus !== 'todos') params.append('status', filtroStatus);
 
       try {
-         const response = await fetch(`/api/pedidos?${params.toString()}`);
+         const response = await authenticatedFetch(`/api/pedidos?${params.toString()}`);
          if (!response.ok) throw new Error('Falha ao buscar pedidos da API');
 
          const novosPedidos: Pedido[] = await response.json();

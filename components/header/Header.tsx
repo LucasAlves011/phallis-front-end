@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, LogOut, Lock, KeyRound, Loader2, ChevronDown } from 'lucide-react'; // Adicionei ChevronDown para indicar menu
+import { User, LogOut, KeyRound, Loader2, ChevronDown } from 'lucide-react'; // Adicionei ChevronDown para indicar menu
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import {
@@ -177,7 +177,7 @@ const Header: React.FC = () => {
             <DialogContent className="bg-phalis-black border-gray-800 text-white sm:max-w-[425px]">
                <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                     <Lock className="h-5 w-5 text-phalis-action" />
+                     <KeyRound size={20} className="h-5 w-5 text-phalis-action shrink-0 min-w-[1.25rem] min-h-[1.25rem]" />
                      Alterar Senha
                   </DialogTitle>
                   <DialogDescription className="text-gray-400">

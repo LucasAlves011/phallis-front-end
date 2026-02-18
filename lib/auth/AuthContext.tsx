@@ -29,16 +29,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
    // Função de "Verificar Login" (sem mudança)
    const checkAuth = async () => {
+      const savedToken = localStorage.getItem('phallis_auth_token');
+
+      if (!savedToken) {
+         setIsLoading(false);
+         return;
+      }
+
       try {
-         const response = await fetch('/api/users/me');
+         const response = await fetch('/api/users/me', {
+            headers: {
+               'Authorization': `Bearer ${savedToken}`,
+               'Content-Type': 'application/json'
+            }
+         });
          if (response.ok) {
             const userData = await response.json();
             setUser(userData);
          } else {
             setUser(null);
+            localStorage.removeItem('phallis_auth_token');
          }
       } catch (error) {
          setUser(null);
+         localStorage.removeItem('phallis_auth_token');
       } finally {
          setIsLoading(false); // <--- Este é o loading global da sessão
       }
@@ -50,35 +64,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
    // ==========================================================
    // MUDANÇA AQUI: Função de Login
-   // Removemos todos os 'setIsLoading' daqui.
    // ==========================================================
    const login = async (username: string, pass: string) => {
-      // REMOVIDO: setIsLoading(true);
       try {
-         const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password: pass }),
+         const basicAuth = btoa(`${username}:${pass}`);
+         const response = await fetch(`/api/auth/login`, {
+            method: 'GET',
+            headers: {
+               'Content-Type': 'application/json',
+               'Authorization': `Basic ${basicAuth}`
+            },
          });
 
          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-            // REMOVIDO: setIsLoading(false);
-            return true; // Sucesso
+            const tokenData = await response.json(); // TokenOutDTO { token, type, ... }
+            const jwtToken = tokenData.token;
+
+            // Agora busca os dados do usuário logado usando o novo token
+            const meResponse = await fetch('/api/users/me', {
+               headers: {
+                  'Authorization': `Bearer ${jwtToken}`,
+                  'Content-Type': 'application/json'
+               }
+            });
+
+            if (meResponse.ok) {
+               const userData = await meResponse.json();
+               setUser(userData);
+               localStorage.setItem('phallis_auth_token', jwtToken);
+               return true;
+            }
+            return false;
          } else {
-            // REMOVIDO: setIsLoading(false);
-            return false; // Falha
+            return false;
          }
       } catch (error) {
-         // REMOVIDO: setIsLoading(false);
          return false; // Falha
       }
    };
 
    // Função de Logout (sem mudança)
    const logout = async () => {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      // Opcional: Avisar o backend. Mas o importante é limpar localmente.
+      try {
+         const token = localStorage.getItem('phallis_auth_token');
+         await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+         });
+      } catch (e) { }
+
+      localStorage.removeItem('phallis_auth_token');
       setUser(null);
       router.push('/login');
    };

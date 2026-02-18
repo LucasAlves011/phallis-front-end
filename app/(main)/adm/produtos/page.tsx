@@ -19,6 +19,7 @@ import { type Product } from '@/lib/productData';
 import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePermission } from '@/lib/auth/usePermission';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
 
 // Importar tudo do dnd-kit
 import {
@@ -55,7 +56,7 @@ export default function GerenciarProdutosPage() {
 
    useEffect(() => {
       setIsLoading(true);
-      fetch('/api/produtos')
+      authenticatedFetch('/api/produtos')
          .then(res => res.json())
          .then((data: Product[]) => {
             setProdutos(data);
@@ -103,9 +104,8 @@ export default function GerenciarProdutosPage() {
       setDeleteLoading(true);
       setDeleteError('');
       try {
-         const response = await fetch(`/api/produtos/${productToDelete.id}`, {
+         const response = await authenticatedFetch(`/api/produtos/${productToDelete.id}`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password: password }),
          });
          if (response.status === 403) {
@@ -136,9 +136,8 @@ export default function GerenciarProdutosPage() {
             const newOrderIds = newOrderList.map(item => item.id);
 
             // Envia a nova ordem para a API (sem esperar)
-            fetch('/api/produtos/reorder', {
+            authenticatedFetch('/api/produtos/reorder', {
                method: 'PUT',
-               headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify({ productIds: newOrderIds }),
             }).catch(err => console.error("Falha ao salvar a nova ordem.", err));
 

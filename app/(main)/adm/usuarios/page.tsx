@@ -24,6 +24,7 @@ import {
 } from '@/lib/clientData';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
 
 // Helper para agrupar permissões por categoria
 const groupedPermissions = PERMISSIONS_CONFIG.reduce((acc, perm) => {
@@ -143,13 +144,13 @@ export default function GerenciarUsuariosPage() {
       const url = editingUser.id ? `/api/users/${editingUser.id}` : '/api/users';
       const method = editingUser.id ? 'PUT' : 'POST';
 
-      await fetch(url, {
+      await authenticatedFetch(url, {
          method,
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify(payload)
       });
 
-      const res = await fetch('/api/users');
+      const res = await authenticatedFetch('/api/users');
       const data = await res.json();
       setUsers(data);
       setIsDialogOpen(false);
@@ -157,7 +158,7 @@ export default function GerenciarUsuariosPage() {
 
    const toggleActive = async (user: User) => {
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, active: !u.active } : u));
-      await fetch(`/api/users/${user.id}`, {
+      await authenticatedFetch(`/api/users/${user.id}`, {
          method: 'PUT',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ active: !user.active })

@@ -43,17 +43,15 @@ export default function GerenciarUsuariosPage() {
    const [selectedPermissions, setSelectedPermissions] = useState<Permission[]>([]);
 
    useEffect(() => {
-      authenticatedFetch('/api/users')
+      authenticatedFetch('/api/users?size=100')
          .then(res => {
             if (!res.ok) throw new Error('Falha ao buscar usuários');
             return res.json();
          })
          .then(data => {
-            if (Array.isArray(data)) {
-               setUsers(data);
-            } else {
-               console.error("Formato inválido:", data);
-            }
+            // Spring retorna Page<T> com .content, suportamos fallback para array
+            const lista: User[] = Array.isArray(data) ? data : (data?.content ?? []);
+            setUsers(lista);
             setIsLoading(false);
          })
          .catch(err => {
@@ -164,9 +162,10 @@ export default function GerenciarUsuariosPage() {
 
          if (!res.ok) throw new Error('Erro ao salvar');
 
-         const userRes = await authenticatedFetch('/api/users');
+         const userRes = await authenticatedFetch('/api/users?size=100');
          const data = await userRes.json();
-         setUsers(data);
+         const lista: User[] = Array.isArray(data) ? data : (data?.content ?? []);
+         setUsers(lista);
          setIsDialogOpen(false);
       } catch (err) {
          console.error(err);

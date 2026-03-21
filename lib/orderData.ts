@@ -56,20 +56,36 @@ type DetalhesPedidoServico = {
    preco: { valorVenda: number, desconto: number, pagamento: string };
 };
 
-export type Pedido = {
-   id: string;
-   dataCriacao: string;
-   criadoPor: string;
-   cliente: Cliente;
+export type ItemPedido = {
+   id: string | number;
+   productId: string | number;
    itemNome: string;
    itemImageUrl: string;
-   productId: string;
+   valor: number;
+   statusProducao: StatusProducao | null;
+   historicoProducao: HistoricoItem[] | null;
+   detalhes: DetalhesPedidoUnidade | DetalhesPedidoMetro | DetalhesPedidoServico;
+};
+
+export type Pedido = {
+   id: string | number;
+   codigoVisual?: string;
+   dataCriacao: string;
+   criadoPor: any;
+   cliente: Cliente;
    valor: number;
    statusFinanceiro: StatusFinanceiro;
-   statusProducao: StatusProducao;
-   historicoFinanceiro: HistoricoItem[];
-   historicoProducao: HistoricoItem[];
-   detalhes: DetalhesPedidoUnidade | DetalhesPedidoMetro | DetalhesPedidoServico;
+   statusProducao: StatusProducao | null;
+   historicoFinanceiro: HistoricoItem[] | null;
+   historicoProducao: HistoricoItem[] | null;
+   itens?: ItemPedido[];
+   motivoCancelamento?: string | null;
+
+   // Legado (Mantido como opcional para não quebrar o MOCK_ORDERS imediatamente)
+   itemNome?: string;
+   itemImageUrl?: string;
+   productId?: string;
+   detalhes?: DetalhesPedidoUnidade | DetalhesPedidoMetro | DetalhesPedidoServico;
 };
 
 export const statusFinanceiroOptions: { value: StatusFinanceiro, label: string }[] = [

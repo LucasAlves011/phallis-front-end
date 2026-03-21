@@ -37,18 +37,15 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
    useEffect(() => {
       setIsLoading(true);
       // MUDANÇA: Usando authenticatedFetch para enviar o token
-      authenticatedFetch('/api/clientes')
+      authenticatedFetch('/api/clientes?size=200')
          .then(res => {
             if (!res.ok) throw new Error('Falha ao buscar clientes');
             return res.json();
          })
-         .then((data: Cliente[]) => {
-            if (Array.isArray(data)) {
-               setClientes(data);
-            } else {
-               console.error("API de clientes não retornou um array:", data);
-               setClientes([]);
-            }
+         .then((data) => {
+            // Spring retorna Page<T> com .content, suportamos fallback para array
+            const lista: Cliente[] = Array.isArray(data) ? data : (data?.content ?? []);
+            setClientes(lista);
          })
          .catch(err => {
             console.error(err);

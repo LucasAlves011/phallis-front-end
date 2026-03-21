@@ -49,21 +49,18 @@ export default function ClientesPage() {
    const fetchClientes = useCallback(() => {
       setIsLoading(true);
       setError('');
-      authenticatedFetch('/api/clientes')
+      authenticatedFetch('/api/clientes?size=200')
          .then(async (res) => {
             if (!res.ok) {
-               // Tenta ler o erro do backend ou usa genérico
                const text = await res.text();
                throw new Error(text || 'Falha ao buscar clientes do servidor.');
             }
             return res.json();
          })
-         .then((data: Cliente[]) => {
-            if (Array.isArray(data)) {
-               setClientes(data);
-            } else {
-               throw new Error('Formato de dados inválido recebido do servidor.');
-            }
+         .then((data) => {
+            // Spring retorna Page<T> com .content, mas suportamos fallback para array direto
+            const lista: Cliente[] = Array.isArray(data) ? data : (data?.content ?? []);
+            setClientes(lista);
          })
          .catch(err => {
             console.error("Erro ao carregar clientes:", err);

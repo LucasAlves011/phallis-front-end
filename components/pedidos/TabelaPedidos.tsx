@@ -138,7 +138,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                            pedido.id === highlightId && 'animate-flashCiano',
                            isCanceled && 'line-through text-gray-600 hover:bg-phalis-gray/30'
                         )}
-                        onClick={() => toggleRow(pedido.id)}
+                        onClick={() => toggleRow(String(pedido.id))}
                      >
                         <TableCell>{pedido.id}</TableCell>
                         <TableCell className="text-xs" suppressHydrationWarning={true}>
@@ -159,11 +159,24 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                               {pedido.cliente.telefone1 || '---'}
                            </a>
                         </TableCell>
-                        <TableCell>{pedido.itemNome}</TableCell>
+                        <TableCell>
+                           {pedido.itens && pedido.itens.length > 0 ? (
+                              <div className="flex items-center gap-2">
+                                 <span>{pedido.itens[0].itemNome}</span>
+                                 {pedido.itens.length > 1 && (
+                                    <span className="bg-phalis-gray text-gray-300 text-xs px-2 py-0.5 rounded-full">
+                                       +{pedido.itens.length - 1} item(s)
+                                    </span>
+                                 )}
+                              </div>
+                           ) : (
+                              pedido.itemNome || 'Sem itens'
+                           )}
+                        </TableCell>
                         <TableCell>
                            <Select
                               value={pedido.statusFinanceiro}
-                              onValueChange={(value) => handleStatusChange(pedido.id, 'financeiro', value)}
+                              onValueChange={(value) => handleStatusChange(String(pedido.id), 'financeiro', value)}
                               disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.financeiro')}
                            >
                               <SelectTrigger
@@ -192,38 +205,24 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                            </Select>
                         </TableCell>
 
-                        <TableCell>R$ {pedido.valor.toFixed(2)}</TableCell>
+                        <TableCell>R$ {(Number(pedido.valor) || 0).toFixed(2)}</TableCell>
 
                         <TableCell>
+                           {/* Na visualização agregada, apenas exibimos um badge ou o select desabilitado */}
                            <Select
-                              value={pedido.statusProducao}
-                              onValueChange={(value) => handleStatusChange(pedido.id, 'producao', value)}
-                              disabled={loadingStatus[`producao-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.producao')}
+                              value={pedido.statusProducao || ""}
+                              onValueChange={() => {}}
+                              disabled={true} // A produção agora é por item (detalhes)
                            >
                               <SelectTrigger
                                  className={cn(
                                     "font-semibold border-0 rounded-full px-3 py-1 text-xs",
-                                    producaoBadgeColors[pedido.statusProducao]
+                                    pedido.statusProducao ? producaoBadgeColors[pedido.statusProducao] : "bg-gray-700 text-gray-400"
                                  )}
                                  onClick={(e) => e.stopPropagation()}
                               >
-                                 {loadingStatus[`producao-${pedido.id}`] ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                 ) : (
-                                    <SelectValue className="flex-1 text-center" />
-                                 )}
+                                 <SelectValue placeholder="Múltiplos Itens (Ver Detalhes)" className="flex-1 text-center truncate" />
                               </SelectTrigger>
-                              <SelectContent className="bg-phalis-gray border-0">
-                                 {isCanceled && (
-                                    <SelectItem value="cancelado" disabled>Cancelado</SelectItem>
-                                 )}
-                                 {pedido.statusProducao === 'pre_prod' && (
-                                    <SelectItem value="pre_prod" disabled>Pré-Produção</SelectItem>
-                                 )}
-                                 {statusProducaoOptions.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                 ))}
-                              </SelectContent>
                            </Select>
                         </TableCell>
                      </TableRow>

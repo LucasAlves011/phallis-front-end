@@ -164,8 +164,9 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
    const autoPersonalizado = useMemo(() => produto.options.tamanho.length === 0, [produto]);
 
    useEffect(() => {
-      if (pedidoParaEditar && pedidoParaEditar.detalhes.type === 'unidade') {
-         const { detalhes } = pedidoParaEditar;
+      const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
+      if (pedidoParaEditar && d?.type === 'unidade') {
+         const detalhes = d as any;
          setSelections(detalhes.opcoes as Selections);
          setObservacao(detalhes.observacao || '');
          setQuantidade(detalhes.preco.quantidade.toString());
@@ -437,8 +438,9 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
    const autoPersonalizado = useMemo(() => produto.options.tamanho.length === 0, [produto]);
 
    useEffect(() => {
-      if (pedidoParaEditar && pedidoParaEditar.detalhes.type === 'metro') {
-         const { detalhes } = pedidoParaEditar;
+      const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
+      if (pedidoParaEditar && d?.type === 'metro') {
+         const detalhes = d as any;
          setSelections(detalhes.opcoes as Selections);
          setObservacoes(detalhes.observacao || '');
          setLargura(detalhes.preco.largura.toString());
@@ -624,9 +626,9 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
    const [desconto, setDesconto] = useState('');
 
    useEffect(() => {
-
-      if (pedidoParaEditar && pedidoParaEditar.detalhes.type === 'servico') {
-         const { detalhes } = pedidoParaEditar;
+      const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
+      if (pedidoParaEditar && d?.type === 'servico') {
+         const detalhes = d as any;
          setObservacao(detalhes.observacao || '');
          setValorVenda(detalhes.preco.valorVenda.toString());
          setDesconto(detalhes.preco.desconto?.toString() || '');

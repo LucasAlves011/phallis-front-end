@@ -1,6 +1,6 @@
 // Arquivo: components/pedidos/DetalhesPedidoRow.tsx
 import React, { useMemo, useState } from 'react';
-import { Pedido } from '@/lib/orderData';
+import { Pedido, ItemPedido } from '@/lib/orderData';
 import { optionGroupsConfig, getProductById, type Product } from '@/lib/productData';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
@@ -116,9 +116,10 @@ const MoneyRow = ({
 
 // --- RENDERIZADORES ---
 
-const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ pedido, produto, onPedidoUpdated }) => {
+const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto: Product; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ item, pedido, produto, onPedidoUpdated }) => {
    const { hasPermission } = usePermission();
-   const { detalhes, itemImageUrl, itemNome } = pedido;
+   const { detalhes, itemImageUrl, itemNome } = item;
+   if (!detalhes) return null;
    const router = useRouter();
    const { user } = useAuth();
 
@@ -166,17 +167,19 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
    }
 
    const historicoCompleto = useMemo(() => {
-      const statusInicialFinanceiro = pedido.historicoFinanceiro[0]?.status || 'nao_pago';
+      const histFin = pedido.historicoFinanceiro || [];
+      const histProd = item.historicoProducao || pedido.historicoProducao || [];
+      const statusInicialFinanceiro = histFin[0]?.status || 'nao_pago';
       const criacaoEvent = {
          status: 'CRIADO', subStatus: `(${STATUS_NOME_MAP[statusInicialFinanceiro]})`,
-         data: pedido.dataCriacao, user: pedido.criadoPor,
+         data: pedido.dataCriacao, user: pedido.criadoPor?.nome || pedido.criadoPor || 'Sistema',
       };
-      const eventosFinanceiros = pedido.historicoFinanceiro.slice(1);
-      const eventosProducao = pedido.historicoProducao.slice(1);
+      const eventosFinanceiros = histFin.length > 0 ? histFin.slice(1) : [];
+      const eventosProducao = histProd;
       const todosEventos = [criacaoEvent, ...eventosFinanceiros, ...eventosProducao];
       todosEventos.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
       return todosEventos;
-   }, [pedido]);
+   }, [pedido, item]);
 
    const handleEdit = (e: React.MouseEvent) => { e.stopPropagation(); router.push(`/pedido?id=${pedido.productId}&edit=${pedido.id}`); };
    const openCancelDialog = (e: React.MouseEvent) => { e.stopPropagation(); setCancelMotivo(''); setCancelError(''); setCancelLoading(false); setIsCancelDialogOpen(true); };
@@ -186,7 +189,7 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
       if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
       setCancelLoading(true); setCancelError('');
       try {
-         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, { // MUDANÇA AQUI
+         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
          });
@@ -197,7 +200,7 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
       } catch (error: any) { setCancelError(error.message); } finally { setCancelLoading(false); }
    };
 
-   const isCanceled = pedido.statusProducao === 'cancelado';
+   const isCanceled = (item.statusProducao || pedido.statusProducao) === 'cancelado';
 
    return (
       <>
@@ -356,7 +359,7 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
                   <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
                   <AlertDialogDescription asChild>
                      <div className="text-gray-400 space-y-3">
-                        <p>Cliente: <span className="font-medium text-white">{pedido.cliente.nome}</span><br />Produto: <span className="font-medium text-white">{pedido.itemNome}</span></p>
+                        <p>Cliente: <span className="font-medium text-white">{pedido.cliente?.nome}</span><br />Produto: <span className="font-medium text-white">{itemNome}</span></p>
                         <p className="text-yellow-400">Esta ação não pode ser desfeita.</p>
                         <div className="space-y-2 pt-2">
                            <Label htmlFor="motivo" className="text-white">Motivo (Obrigatório)</Label>
@@ -376,9 +379,10 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
    );
 };
 
-const DetalhesServico: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ pedido, onPedidoUpdated }) => {
+const DetalhesServico: React.FC<{ item: ItemPedido; pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ item, pedido, onPedidoUpdated }) => {
    const { hasPermission } = usePermission();
-   const { detalhes, itemImageUrl, itemNome } = pedido;
+   const { detalhes, itemImageUrl, itemNome } = item;
+   if (!detalhes) return null;
    const router = useRouter();
    const { user } = useAuth();
 
@@ -391,17 +395,19 @@ const DetalhesServico: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedi
    const { preco } = detalhes;
 
    const historicoCompleto = useMemo(() => {
-      const statusInicialFinanceiro = pedido.historicoFinanceiro[0]?.status || 'nao_pago';
+      const histFin = pedido.historicoFinanceiro || [];
+      const histProd = item.historicoProducao || pedido.historicoProducao || [];
+      const statusInicialFinanceiro = histFin[0]?.status || 'nao_pago';
       const criacaoEvent = {
          status: 'CRIADO', subStatus: `(${STATUS_NOME_MAP[statusInicialFinanceiro]})`,
-         data: pedido.dataCriacao, user: pedido.criadoPor,
+         data: pedido.dataCriacao, user: pedido.criadoPor?.nome || pedido.criadoPor || 'Sistema',
       };
-      const eventosFinanceiros = pedido.historicoFinanceiro.slice(1);
-      const eventosProducao = pedido.historicoProducao.slice(1);
+      const eventosFinanceiros = histFin.length > 0 ? histFin.slice(1) : [];
+      const eventosProducao = histProd;
       const todosEventos = [criacaoEvent, ...eventosFinanceiros, ...eventosProducao];
       todosEventos.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
       return todosEventos;
-   }, [pedido]);
+   }, [pedido, item]);
 
    const handleEdit = (e: React.MouseEvent) => { e.stopPropagation(); router.push(`/pedido?id=${pedido.productId}&edit=${pedido.id}`); };
    const openCancelDialog = (e: React.MouseEvent) => { e.stopPropagation(); setCancelMotivo(''); setCancelError(''); setCancelLoading(false); setIsCancelDialogOpen(true); };
@@ -422,7 +428,7 @@ const DetalhesServico: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedi
       } catch (error: any) { setCancelError(error.message); } finally { setCancelLoading(false); }
    };
 
-   const isCanceled = pedido.statusProducao === 'cancelado';
+   const isCanceled = (item.statusProducao || pedido.statusProducao) === 'cancelado';
 
    return (
       <>
@@ -509,8 +515,8 @@ const DetalhesServico: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedi
                   <AlertDialogDescription asChild>
                      <div className="text-gray-400 space-y-3">
                         <p>
-                           Cliente: <span className="font-medium text-white">{pedido.cliente.nome}</span><br />
-                           Produto: <span className="font-medium text-white">{pedido.itemNome}</span>
+                           Cliente: <span className="font-medium text-white">{pedido.cliente?.nome}</span><br />
+                           Produto: <span className="font-medium text-white">{itemNome}</span>
                         </p>
                         <p className="text-yellow-400">Esta ação não pode ser desfeita.</p>
                         <div className="space-y-2 pt-2">
@@ -540,18 +546,41 @@ const DetalhesServico: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedi
 };
 
 const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated }) => {
-   const produto = getProductById(pedido.productId);
-   if (!produto) return <div className="text-red-500 p-4">Erro: Produto original (ID: {pedido.productId}) não encontrado.</div>;
+   const itensToRender = pedido.itens && pedido.itens.length > 0 
+       ? pedido.itens 
+       : [
+           {
+              id: pedido.id,
+              productId: pedido.productId || 'unknown',
+              itemNome: pedido.itemNome || 'Item Desconhecido',
+              itemImageUrl: pedido.itemImageUrl || '',
+              valor: pedido.valor,
+              statusProducao: pedido.statusProducao,
+              historicoProducao: pedido.historicoProducao,
+              detalhes: pedido.detalhes
+           } as ItemPedido
+         ];
 
-   switch (pedido.detalhes.type) {
-      case 'unidade':
-      case 'metro':
-         return <DetalhesUnidadeMetro pedido={pedido} produto={produto} onPedidoUpdated={onPedidoUpdated} />;
-      case 'servico':
-         return <DetalhesServico pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
-      default:
-         return <div>Detalhes indisponíveis.</div>;
-   }
+   return (
+       <div className="space-y-4">
+          {itensToRender.map((item, idx) => {
+             const produto = getProductById(String(item.productId));
+             if (!produto) return <div key={idx} className="text-red-500 p-4 shrink-0">Erro: Produto (ID: {item.productId}) não encontrado.</div>;
+
+             if (!item.detalhes) return <div key={idx} className="p-4 shrink-0">Detalhes indisponíveis para este item.</div>;
+
+             switch (item.detalhes.type) {
+                case 'unidade':
+                case 'metro':
+                   return <DetalhesUnidadeMetro key={item.id || idx} item={item} pedido={pedido} produto={produto} onPedidoUpdated={onPedidoUpdated} />;
+                case 'servico':
+                   return <DetalhesServico key={item.id || idx} item={item} pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
+                default:
+                   return <div key={idx} className="p-4 shrink-0">Tipo de detalhe não reconhecido.</div>;
+             }
+          })}
+       </div>
+   );
 };
 
 export default DetalhesPedidoRow;

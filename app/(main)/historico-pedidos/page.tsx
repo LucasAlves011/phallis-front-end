@@ -26,7 +26,7 @@ import { useDebounce } from 'use-debounce';
 
 export default function HistoricoPedidosPage() {
    const [pedidos, setPedidos] = useState<Pedido[]>([]);
-   const [page, setPage] = useState(1);
+   const [page, setPage] = useState(0);
    const [hasMore, setHasMore] = useState(true);
    const [isLoading, setIsLoading] = useState(false);
 
@@ -58,11 +58,14 @@ export default function HistoricoPedidosPage() {
       if (isLoading) return;
       setIsLoading(true);
 
-      const pageToFetch = isReset ? 1 : page;
+      // Spring Data usa índice 0. Na primeira carga (isReset) sempre busca página 0.
+      const pageToFetch = isReset ? 0 : page;
 
       // 1. Monta a URL com os parâmetros de filtro
       const params = new URLSearchParams();
       params.append('page', pageToFetch.toString());
+      params.append('size', '20');
+      params.append('sort', 'dataCriacao,desc');
       if (debouncedCliente) params.append('cliente', debouncedCliente);
       if (filtroFinanceiro !== 'todos') params.append('financeiro', filtroFinanceiro);
       if (filtroStatus !== 'todos') params.append('status', filtroStatus);
@@ -71,15 +74,17 @@ export default function HistoricoPedidosPage() {
          const response = await authenticatedFetch(`/api/pedidos?${params.toString()}`);
          if (!response.ok) throw new Error('Falha ao buscar pedidos da API');
 
-         const novosPedidos: Pedido[] = await response.json();
+         // Spring retorna um objeto Page com `content`, `last`, `totalElements`, etc.
+         const paginaRetornada = await response.json();
+         const novosPedidos: Pedido[] = paginaRetornada.content ?? paginaRetornada;
+         const isLast: boolean = paginaRetornada.last ?? (novosPedidos.length < 20);
 
          if (novosPedidos.length > 0) {
-            // Se for um 'reset', substitui a lista. Senão, anexa.
             setPedidos(prev => (isReset ? novosPedidos : [...prev, ...novosPedidos]));
             setPage(pageToFetch + 1);
-            setHasMore(true);
+            setHasMore(!isLast);
          } else {
-            if (isReset) setPedidos([]); // Limpa se a busca não retornar nada
+            if (isReset) setPedidos([]);
             setHasMore(false);
          }
       } catch (error) {

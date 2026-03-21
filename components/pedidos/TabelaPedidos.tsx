@@ -26,7 +26,7 @@ import {
 import DetalhesPedidoRow from './DetalhesPedidoRow';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { type User } from '@/lib/clientData';
+import { type User } from '@/types/client';
 import { usePermission } from '@/lib/auth/usePermission';
 import { authenticatedFetch } from '@/lib/api'; // Adicionado
 

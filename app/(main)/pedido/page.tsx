@@ -4,14 +4,13 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
-   getProductById,
    optionGroupsConfig,
    type Product,
    type ProductOptions
 } from '@/lib/productData';
 import { authenticatedFetch } from '@/lib/api';
 import { type Pedido } from '@/lib/orderData';
-import { type Cliente } from '@/lib/clientData';
+import { type Cliente } from '@/types/client';
 import { useCart } from '@/lib/cartStore';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,7 +164,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
 
    useEffect(() => {
       const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
-      if (pedidoParaEditar && d?.type === 'unidade') {
+      if (pedidoParaEditar && d?.type === 'UNIDADE') {
          const detalhes = d as any;
          setSelections(detalhes.opcoes as Selections);
          setObservacao(detalhes.observacao || '');
@@ -439,7 +438,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
 
    useEffect(() => {
       const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
-      if (pedidoParaEditar && d?.type === 'metro') {
+      if (pedidoParaEditar && d?.type === 'METRO') {
          const detalhes = d as any;
          setSelections(detalhes.opcoes as Selections);
          setObservacoes(detalhes.observacao || '');
@@ -627,7 +626,7 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
 
    useEffect(() => {
       const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
-      if (pedidoParaEditar && d?.type === 'servico') {
+      if (pedidoParaEditar && d?.type === 'SERVICO') {
          const detalhes = d as any;
          setObservacao(detalhes.observacao || '');
          setValorVenda(detalhes.preco.valorVenda.toString());
@@ -783,11 +782,11 @@ export default function PedidosPage() {
    );
 
    switch (produto.pricingType) {
-      case 'unidade':
+      case 'UNIDADE':
          return <FormularioUnidade produto={produto as Product & { options: ProductOptions }} pedidoParaEditar={pedidoParaEditar} />;
-      case 'metro':
+      case 'METRO':
          return <FormularioMetro produto={produto as Product & { options: ProductOptions }} pedidoParaEditar={pedidoParaEditar} />;
-      case 'servico':
+      case 'SERVICO':
          return <FormularioServico produto={produto} pedidoParaEditar={pedidoParaEditar} />;
       default:
          return <div>Tipo de produto desconhecido.</div>;

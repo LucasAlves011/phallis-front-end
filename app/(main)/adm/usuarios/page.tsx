@@ -21,7 +21,7 @@ import {
    PERMISSIONS_CONFIG,
    PERMISSION_DEPENDENCIES,
    ROLE_TEMPLATES
-} from '@/lib/clientData';
+} from '@/types/client';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { authenticatedFetch } from '@/lib/api'; // Adicionado

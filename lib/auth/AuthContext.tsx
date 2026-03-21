@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { type User } from '@/lib/clientData';
+import { type User } from '@/types/client';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

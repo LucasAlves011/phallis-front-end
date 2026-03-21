@@ -1,6 +1,6 @@
 // Arquivo: lib/auth/usePermission.ts
 import { useAuth } from './AuthContext';
-import { Permission } from '@/lib/clientData';
+import { Permission } from '@/types/client';
 
 export function usePermission() {
    const { user } = useAuth();

@@ -18,7 +18,7 @@ import {
    PopoverTrigger,
 } from "@/components/ui/popover";
 import { AddClientModal } from './AddClientModal';
-import { type Cliente } from '@/lib/clientData';
+import { type Cliente } from '@/types/client';
 import { usePermission } from '@/lib/auth/usePermission';
 
 import { authenticatedFetch } from '@/lib/api'; // Adicionado

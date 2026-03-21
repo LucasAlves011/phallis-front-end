@@ -23,7 +23,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { type Cliente } from '@/lib/clientData';
+import { type Cliente } from '@/types/client';
 import { Loader2 } from 'lucide-react';
 import { authenticatedFetch } from '@/lib/api'; // Adicionado
 

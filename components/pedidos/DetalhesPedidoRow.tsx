@@ -1,10 +1,10 @@
 // Arquivo: components/pedidos/DetalhesPedidoRow.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Pedido, ItemPedido } from '@/lib/orderData';
-import { optionGroupsConfig, getProductById, type Product } from '@/lib/productData';
+import { optionGroupsConfig, type Product } from '@/lib/productData';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
-import { useRouter } from 'next/navigation';
+import { authenticatedFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
    AlertDialog,
@@ -23,8 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
-import { authenticatedFetch } from '@/lib/api'; // Adicionado
-
+import { useRouter } from 'next/navigation';
 // Helper Types
 type DetalhesUnidade = Extract<Pedido['detalhes'], { type: 'unidade' }>;
 type DetalhesMetro = Extract<Pedido['detalhes'], { type: 'metro' }>;
@@ -116,7 +115,15 @@ const MoneyRow = ({
 
 // --- RENDERIZADORES ---
 
-const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto?: Product; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ item, pedido, produto, onPedidoUpdated }) => {
+const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ item, pedido, onPedidoUpdated }) => {
+   const [produtoFetched, setProdutoFetched] = useState<Product | null>(null);
+
+   useEffect(() => {
+      authenticatedFetch(`/api/produtos/${item.productId}`)
+         .then(res => res.ok ? res.json() : null)
+         .then(data => setProdutoFetched(data))
+         .catch(err => console.error("Erro ao buscar produto:", err));
+   }, [item.productId]);
    const { hasPermission } = usePermission();
    const { detalhes, itemImageUrl, itemNome } = item;
    if (!detalhes) return null;
@@ -131,9 +138,9 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto
    // Estado para expandir os detalhes financeiros
    const [showFinanceDetails, setShowFinanceDetails] = useState(false);
 
-   if (detalhes.type !== 'unidade' && detalhes.type !== 'metro') return null;
+   if (detalhes.type !== 'UNIDADE' && detalhes.type !== 'METRO') return null;
    // Cast para auxiliar se a inferência falhar em propriedades específicas overlap
-   const detalhesItem = detalhes as Extract<typeof detalhes, { type: 'unidade' } | { type: 'metro' }>;
+   const detalhesItem = detalhes as Extract<typeof detalhes, { type: 'UNIDADE' } | { type: 'METRO' }>;
    const { opcoes, preco } = detalhesItem;
 
    // ... (código segue)
@@ -141,22 +148,22 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto
    const getOptionLabel = (groupId: string) => {
       const optionId = opcoes[groupId];
       if (!optionId) return '---';
-      if (groupId === 'tamanho' && detalhesItem.type === 'unidade' && detalhesItem.dimensoesPersonalizadas) {
+      if (groupId === 'tamanho' && detalhesItem.type === 'UNIDADE' && detalhesItem.dimensoesPersonalizadas) {
          const { larguraCm, alturaCm } = detalhesItem.dimensoesPersonalizadas;
          return `Personalizado (${larguraCm}x${alturaCm}cm)`;
       }
-      return produto?.options?.[groupId as keyof typeof produto.options]?.find((o: any) => o.id === optionId)?.name || optionId;
+      return produtoFetched?.options?.[groupId as keyof typeof produtoFetched.options]?.find((o: any) => o.id === optionId)?.name || optionId;
    };
 
    // Cálculos Auxiliares para Exibição
-   const custoTotalReal = detalhesItem.type === 'unidade' ? detalhesItem.preco.custoTotal : detalhesItem.preco.valorTotalCusto;
+   const custoTotalReal = detalhesItem.type === 'UNIDADE' ? detalhesItem.preco.custoTotal : detalhesItem.preco.valorTotalCusto;
    const lucroEstimado = detalhesItem.preco.total - custoTotalReal;
 
    // Cálculo unitário / m2 para exibição
    let custoUnitarioOuM2 = 0;
    let vendaUnitarioOuM2 = 0;
 
-   if (detalhesItem.type === 'unidade') {
+   if (detalhesItem.type === 'UNIDADE') {
       const d = detalhesItem as DetalhesUnidade;
       custoUnitarioOuM2 = d.preco.custoTotal / (d.preco.quantidade || 1);
       vendaUnitarioOuM2 = d.preco.vendaTotal / (d.preco.quantidade || 1);
@@ -213,7 +220,7 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto
                </div>
                <h4 className="font-bold text-white text-lg leading-tight mb-1">{itemNome}</h4>
                <span className="text-xs text-gray-500 uppercase font-semibold bg-phalis-gray px-2 py-0.5 rounded">
-                  {detalhes.type === 'unidade' ? 'Produto Unitário' : 'Produto por Metro'}
+                  {detalhes.type === 'UNIDADE' ? 'Produto Unitário' : 'Produto por Metro'}
                </span>
             </div>
 
@@ -231,10 +238,10 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto
                      <InfoBlock label="Cores" value={getOptionLabel('cores')} />
                      <InfoBlock label="Acabamento" value={getOptionLabel('acabamento')} />
 
-                     {detalhesItem.type === 'unidade' && (
+                     {detalhesItem.type === 'UNIDADE' && (
                         <InfoBlock label="Quantidade" value={`${(detalhesItem as DetalhesUnidade).preco.quantidade} unid.`} highlight />
                      )}
-                     {detalhesItem.type === 'metro' && (
+                     {detalhesItem.type === 'METRO' && (
                         <InfoBlock label="Dimensões" value={`${(detalhesItem as DetalhesMetro).preco.largura.toFixed(2)}m x ${(detalhesItem as DetalhesMetro).preco.altura.toFixed(2)}m`} highlight />
                      )}
                   </div>
@@ -269,8 +276,7 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto
                   <div className="bg-black/30 rounded p-3 transition-all duration-300">
 
                      {/* Resumo Padrão (Sempre Visível) */}
-                     {/* Resumo Padrão (Sempre Visível) */}
-                     {detalhesItem.type === 'unidade' ? (
+                     {detalhesItem.type === 'UNIDADE' ? (
                         <>
                            <MoneyRow label="Valor Venda (Total)" value={(detalhesItem as DetalhesUnidade).preco.vendaTotal} />
                            {(detalhesItem as DetalhesUnidade).preco.precoArte > 0 && <MoneyRow label="Arte" value={(detalhesItem as DetalhesUnidade).preco.precoArte} />}
@@ -293,11 +299,11 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto
                            {/* Dados Unitários / m2 */}
                            <div className="grid grid-cols-2 gap-4 mb-2 pb-2 border-b border-gray-800">
                               <div>
-                                 <span className="text-xs text-gray-500 block">Custo {detalhes.type === 'unidade' ? 'Unit.' : 'm²'}</span>
+                                 <span className="text-xs text-gray-500 block">Custo {detalhes.type === 'UNIDADE' ? 'Unit.' : 'm²'}</span>
                                  <span className="text-sm text-gray-400 font-mono">R$ {custoUnitarioOuM2.toFixed(2)}</span>
                               </div>
                               <div className="text-right">
-                                 <span className="text-xs text-gray-500 block">Venda {detalhes.type === 'unidade' ? 'Unit.' : 'm²'}</span>
+                                 <span className="text-xs text-gray-500 block">Venda {detalhes.type === 'UNIDADE' ? 'Unit.' : 'm²'}</span>
                                  <span className="text-sm text-phalis-action font-mono">R$ {vendaUnitarioOuM2.toFixed(2)}</span>
                               </div>
                            </div>
@@ -391,7 +397,7 @@ const DetalhesServico: React.FC<{ item: ItemPedido; pedido: Pedido; onPedidoUpda
    const [cancelLoading, setCancelLoading] = useState(false);
    const [cancelError, setCancelError] = useState('');
 
-   if (detalhes.type !== 'servico') return null;
+   if (detalhes.type !== 'SERVICO') return null;
    const { preco } = detalhes;
 
    const historicoCompleto = useMemo(() => {
@@ -546,8 +552,8 @@ const DetalhesServico: React.FC<{ item: ItemPedido; pedido: Pedido; onPedidoUpda
 };
 
 const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated }) => {
-   const itensToRender = pedido.itens && pedido.itens.length > 0 
-       ? pedido.itens 
+   const itensToRender = pedido.itens && pedido.itens.length > 0
+       ? pedido.itens
        : [
            {
               id: pedido.id,
@@ -565,15 +571,14 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
        <div className="space-y-4">
           {itensToRender.map((item, idx) => {
              const productIdStr = String(item.productId);
-             const produto = getProductById(productIdStr);
-             
+
              if (!item.detalhes) return <div key={idx} className="p-4 shrink-0">Detalhes indisponíveis para este item.</div>;
 
              switch (item.detalhes.type) {
-                case 'unidade':
-                case 'metro':
-                   return <DetalhesUnidadeMetro key={item.id || idx} item={item} pedido={pedido} produto={produto} onPedidoUpdated={onPedidoUpdated} />;
-                case 'servico':
+                case 'UNIDADE':
+                case 'METRO':
+                   return <DetalhesUnidadeMetro key={item.id || idx} item={item} pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
+                case 'SERVICO':
                    return <DetalhesServico key={item.id || idx} item={item} pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
                 default:
                    return <div key={idx} className="p-4 shrink-0">Tipo de detalhe não reconhecido.</div>;

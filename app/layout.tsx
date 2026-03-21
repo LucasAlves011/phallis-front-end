@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { MswComponent } from "@/app/mocks/MswComponent";
+
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import { CartProvider } from "@/lib/cartStore";
 const inter = Inter({ subsets: ["latin"] });
@@ -20,13 +20,11 @@ export default function RootLayout({
       // 'dark' força o tema escuro do Shadcn
       <html lang="pt-BR" className="dark">
          <body className={inter.className}>
-            <MswComponent>
-               <AuthProvider>
-                  <CartProvider>
-                     {children}
-                  </CartProvider>
-               </AuthProvider>
-            </MswComponent>
+            <AuthProvider>
+               <CartProvider>
+                  {children}
+               </CartProvider>
+            </AuthProvider>
          </body>
       </html>
    );

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart, type CartItem } from '@/lib/cartStore';
-import { type Cliente } from '@/lib/clientData';
+import { type Cliente } from '@/types/client';
 import { ClientCombobox } from '@/components/clientes/ClientCombobox';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -79,7 +79,7 @@ export default function CarrinhoPage() {
    const router = useRouter();
    const { user } = useAuth();
 
-   const isFormCompleto = itens.length > 0 && !!cliente && !!pagamento && (pagamento === 'nao_pago' || !!formaPagamento);
+   const isFormCompleto = itens.length > 0 && !!cliente && !!pagamento && (pagamento === 'PENDENTE' || !!formaPagamento);
 
    const handleFinalizar = async () => {
       if (!isFormCompleto || !cliente || !user) return;
@@ -88,13 +88,29 @@ export default function CarrinhoPage() {
       const payload = {
          clientId: cliente.id,
          statusFinanceiro: pagamento,
-         formaPagamento: pagamento === 'nao_pago' ? null : formaPagamento,
-         total: valorTotal,   
-         itens: itens.map(item => ({
-            productId: item.productId,
-            valor: item.valor,
-            detalhes: item.detalhes,
-         })),
+         formaPagamento: pagamento === 'PENDENTE' ? null : formaPagamento,
+         statusProducao: 'PRE_PROD',
+         total: valorTotal,
+         criadoPor: user.email || user.nome || 'Sistema',
+         itens: itens.map(item => {
+            const det = item.detalhes as any;
+            const preco = det.preco || {};
+            const type = det.type;
+
+            return {
+               productId: item.productId,
+               valor: item.valor,
+               tipoPrecificacao: type,
+               valorCusto: type === 'unidade' ? preco.precoCusto : (type === 'metro' ? preco.m2Custo : null),
+               valorVenda: type === 'unidade' ? preco.precoVenda : (type === 'metro' ? preco.m2Venda : preco.valorVenda),
+               valorDesconto: preco.desconto || null,
+               quantidade: type === 'unidade' ? preco.quantidade : null,
+               largura: type === 'metro' ? preco.largura : null,
+               altura: type === 'metro' ? preco.altura : null,
+               observacao: det.observacao || null,
+               opcoes: det.opcoes || null,
+            };
+         }),
       };
 
       try {
@@ -182,15 +198,15 @@ export default function CarrinhoPage() {
                            <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                         <SelectContent className="bg-phalis-gray border-0">
-                           <SelectItem value="nao_pago">Não Pago</SelectItem>
-                           <SelectItem value="pago_50">Pago 50%</SelectItem>
-                           <SelectItem value="pago">Pago</SelectItem>
+                           <SelectItem value="PENDENTE">Não Pago</SelectItem>
+                           <SelectItem value="PARCIAL">Pago 50%</SelectItem>
+                           <SelectItem value="PAGO">Pago</SelectItem>
                         </SelectContent>
                      </Select>
                   </div>
 
                   {/* Forma de Pagamento */}
-                  {pagamento !== 'nao_pago' && (
+                  {pagamento !== 'PENDENTE' && (
                      <div className="space-y-1">
                         <Label className="text-gray-300 text-sm ml-1">Forma de Pagamento *</Label>
                         <Select value={formaPagamento || ""} onValueChange={setFormaPagamento}>
@@ -234,7 +250,7 @@ export default function CarrinhoPage() {
                   <p className="text-xs text-gray-500 text-center">
                      {!cliente && 'Selecione um cliente. '}
                      {!pagamento && 'Selecione o status financeiro. '}
-                     {pagamento && pagamento !== 'nao_pago' && !formaPagamento && 'Selecione a forma de pagamento.'}
+                     {pagamento && pagamento !== 'PENDENTE' && !formaPagamento && 'Selecione a forma de pagamento.'}
                   </p>
                )}
             </div>

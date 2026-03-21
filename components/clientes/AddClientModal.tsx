@@ -27,13 +27,44 @@ import { type Cliente } from '@/lib/clientData';
 import { Loader2 } from 'lucide-react';
 import { authenticatedFetch } from '@/lib/api'; // Adicionado
 
-// Schema de Validação (sem mudança)
+// Função de formatação de CPF/CNPJ
+const formatCpfCnpj = (value: string): string => {
+   const digits = value.replace(/\D/g, '');
+   if (digits.length === 11) {
+      return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+   }
+   if (digits.length === 14) {
+      return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+   }
+   return digits;
+};
+
+// Helpers para permitir apenas dígitos
+const onlyDigits = (value: string) => value.replace(/\D/g, '');
+
+// Schema de Validação
 const formSchema = z.object({
    nome: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres." }),
-   cpfCnpj: z.string().optional(),
-   email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
-   telefone1: z.string().min(10, { message: "Telefone principal é obrigatório." }),
-   telefone2: z.string().optional(),
+   cpfCnpj: z.string()
+      .transform(val => val.replace(/\D/g, ''))
+      .refine(val => val.length === 0 || val.length === 11 || val.length === 14, {
+         message: "CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos."
+      })
+      .optional()
+      .or(z.literal('')),
+   email: z.string()
+      .refine(val => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+         message: "Formato de email inválido."
+      })
+      .optional()
+      .or(z.literal('')),
+   telefone1: z.string().min(10, { message: "Telefone principal é obrigatório (mínimo 10 dígitos)." }),
+   telefone2: z.string()
+      .refine(val => !val || val.length >= 10, {
+         message: "Telefone deve ter no mínimo 10 dígitos."
+      })
+      .optional()
+      .or(z.literal('')),
 });
 type FormData = z.infer<typeof formSchema>;
 
@@ -144,7 +175,14 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                         <FormItem>
                            <FormLabel>CPF/CNPJ</FormLabel>
                            <FormControl>
-                              <Input placeholder="000.000.000-00" {...field} className="bg-phalis-gray border-0" />
+                              <Input
+                                 placeholder="Apenas números (11 ou 14 dígitos)"
+                                 {...field}
+                                 value={field.value ? formatCpfCnpj(field.value) : ''}
+                                 onChange={(e) => field.onChange(onlyDigits(e.target.value))}
+                                 maxLength={18}
+                                 className="bg-phalis-gray border-0"
+                              />
                            </FormControl>
                            <FormMessage />
                         </FormItem>
@@ -171,7 +209,13 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                            <FormItem>
                               <FormLabel>Telefone 1 (Principal) *</FormLabel>
                               <FormControl>
-                                 <Input placeholder="(81) 99999-9999" {...field} className="bg-phalis-gray border-0" />
+                                 <Input
+                                    placeholder="Apenas números"
+                                    {...field}
+                                    onChange={(e) => field.onChange(onlyDigits(e.target.value))}
+                                    maxLength={11}
+                                    className="bg-phalis-gray border-0"
+                                 />
                               </FormControl>
                               <FormMessage />
                            </FormItem>
@@ -184,7 +228,13 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                            <FormItem>
                               <FormLabel>Telefone 2 (Secundário)</FormLabel>
                               <FormControl>
-                                 <Input placeholder="(81) 3333-3333" {...field} className="bg-phalis-gray border-0" />
+                                 <Input
+                                    placeholder="Apenas números"
+                                    {...field}
+                                    onChange={(e) => field.onChange(onlyDigits(e.target.value))}
+                                    maxLength={11}
+                                    className="bg-phalis-gray border-0"
+                                 />
                               </FormControl>
                               <FormMessage />
                            </FormItem>

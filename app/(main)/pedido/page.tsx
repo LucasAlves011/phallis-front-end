@@ -88,26 +88,46 @@ const OrderFooter = ({
    isValid,
    isLoading,
    onConfirm,
-   labelTotal = "TOTAL"
+   labelTotal = "TOTAL",
+   missingItems = []
 }: {
    total: number,
    isValid: boolean,
    isLoading: boolean,
    onConfirm: () => void,
-   labelTotal?: string
+   labelTotal?: string,
+   missingItems?: string[]
 }) => (
    <div className="bg-phalis-black p-4 rounded-lg flex justify-between items-center">
       <div className="text-right text-white">
          <span className="text-sm text-gray-400 block">{labelTotal}</span>
          <span className="text-3xl font-bold">R$ {total.toFixed(2)}</span>
       </div>
-      <Button
-         disabled={!isValid || isLoading}
-         onClick={onConfirm}
-         className="w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50"
-      >
-         {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'CONCLUIR PRODUTO'}
-      </Button>
+      <div className="relative group">
+         <Button
+            disabled={!isValid || isLoading}
+            onClick={onConfirm}
+            className="w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50"
+         >
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'CONCLUIR PRODUTO'}
+         </Button>
+         {!isValid && missingItems.length > 0 && (
+            <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50 animate-in fade-in duration-200">
+               <div className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg p-3 shadow-xl max-w-xs">
+                  <p className="font-semibold text-yellow-400 mb-1.5">Campos pendentes:</p>
+                  <ul className="space-y-0.5">
+                     {missingItems.map((item, i) => (
+                        <li key={i} className="flex items-center gap-1.5 text-gray-300">
+                           <span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                           {item}
+                        </li>
+                     ))}
+                  </ul>
+                  <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-gray-900 border-r border-b border-gray-700 transform rotate-45" />
+               </div>
+            </div>
+         )}
+      </div>
    </div>
 );
 
@@ -305,6 +325,20 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
       }
    };
 
+   const missingItems = useMemo(() => {
+      const items: string[] = [];
+      if (!cliente) items.push('Cliente');
+      if (!selections.papel) items.push('Papel / Material');
+      if (!isTamanhoCompleto) items.push('Tamanho');
+      if (!selections.cores) items.push('Cores');
+      if (!selections.acabamento) items.push('Acabamento');
+      if (!(Number(quantidade) > 0)) items.push('Quantidade');
+      if (!precoCusto) items.push('Preço Custo');
+      if (!precoVenda) items.push('Preço Venda');
+      if (!pagamento) items.push('Forma de Pagamento');
+      return items;
+   }, [cliente, selections, isTamanhoCompleto, quantidade, precoCusto, precoVenda, pagamento]);
+
    return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-1 space-y-4">
@@ -404,7 +438,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
                </div>
             </div>
 
-            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto && !!cliente} isLoading={isLoading} onConfirm={handleConcluir} labelTotal="TOTAL (Venda + Arte - Desc)" />
+            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto && !!cliente} isLoading={isLoading} onConfirm={handleConcluir} labelTotal="TOTAL (Venda + Arte - Desc)" missingItems={missingItems} />
          </div>
       </div>
    );
@@ -537,6 +571,19 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
       }
    };
 
+   const missingItems = useMemo(() => {
+      const items: string[] = [];
+      if (!cliente) items.push('Cliente');
+      if (!selections.papel) items.push('Papel / Material');
+      if (!largura || !altura) items.push('Dimensões (Largura/Altura)');
+      if (!selections.cores) items.push('Cores');
+      if (!selections.acabamento) items.push('Acabamento');
+      if (!m2Custo) items.push('Valor m² de Custo');
+      if (!m2Venda) items.push('Valor m² de Venda');
+      if (!pagamento) items.push('Forma de Pagamento');
+      return items;
+   }, [cliente, selections, largura, altura, m2Custo, m2Venda, pagamento]);
+
    return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-1 space-y-4">
@@ -615,7 +662,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
                   </div>
                </div>
             </div>
-            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto && !!cliente} isLoading={isLoading} onConfirm={handleConcluir} labelTotal="TOTAL (Venda + Arte)" />
+            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto && !!cliente} isLoading={isLoading} onConfirm={handleConcluir} labelTotal="TOTAL (Venda + Arte)" missingItems={missingItems} />
          </div>
       </div>
    );
@@ -684,6 +731,15 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, cliente,
       }
    };
 
+   const missingItems = useMemo(() => {
+      const items: string[] = [];
+      if (!cliente) items.push('Cliente');
+      if (!observacao) items.push('Descrição / Observações');
+      if (!valorVenda) items.push('Valor Total da Venda');
+      if (!pagamento) items.push('Forma de Pagamento');
+      return items;
+   }, [cliente, observacao, valorVenda, pagamento]);
+
    return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-1 space-y-4">
@@ -733,9 +789,27 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, cliente,
                </div>
             </div>
             <div className="flex justify-end">
-               <Button disabled={!isFormCompleto || isLoading} onClick={handleConcluir} className="w-full md:w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50">
-                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'CONCLUIR PRODUTO'}
-               </Button>
+               <div className="relative group">
+                  <Button disabled={!isFormCompleto || isLoading} onClick={handleConcluir} className="w-full md:w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50">
+                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'CONCLUIR PRODUTO'}
+                  </Button>
+                  {!isFormCompleto && missingItems.length > 0 && (
+                     <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50 animate-in fade-in duration-200">
+                        <div className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg p-3 shadow-xl max-w-xs">
+                           <p className="font-semibold text-yellow-400 mb-1.5">Campos pendentes:</p>
+                           <ul className="space-y-0.5">
+                              {missingItems.map((item, i) => (
+                                 <li key={i} className="flex items-center gap-1.5 text-gray-300">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                                    {item}
+                                 </li>
+                              ))}
+                           </ul>
+                           <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-gray-900 border-r border-b border-gray-700 transform rotate-45" />
+                        </div>
+                     </div>
+                  )}
+               </div>
             </div>
          </div>
       </div>

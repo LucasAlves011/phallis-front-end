@@ -18,6 +18,19 @@ import { Loader2, Plus, Edit, RefreshCw, AlertCircle } from 'lucide-react';
 import { usePermission } from '@/lib/auth/usePermission';
 import { authenticatedFetch } from '@/lib/api';
 
+// Função de formatar CPF/CNPJ
+const formatCpfCnpj = (value: string): string => {
+   if (!value) return '-';
+   const digits = value.replace(/\D/g, '');
+   if (digits.length === 11) {
+      return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+   }
+   if (digits.length === 14) {
+      return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+   }
+   return value;
+};
+
 // Função de formatar WhatsApp
 const formatarWhatsApp = (numero: string) => {
    if (!numero) return '#';
@@ -174,7 +187,7 @@ export default function ClientesPage() {
                      clientesFiltrados.map((cliente) => (
                         <TableRow key={cliente.id} className="hover:bg-gray-900/50 border-gray-800">
                            <TableCell className="font-medium text-white">{cliente.nome}</TableCell>
-                           <TableCell className="text-gray-300">{cliente.cpfCnpj || '-'}</TableCell>
+                           <TableCell className="text-gray-300">{formatCpfCnpj(cliente.cpfCnpj)}</TableCell>
                            <TableCell className="text-gray-300">{cliente.email || '-'}</TableCell>
                            <TableCell>
                               <a

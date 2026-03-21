@@ -116,7 +116,7 @@ const MoneyRow = ({
 
 // --- RENDERIZADORES ---
 
-const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto: Product; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ item, pedido, produto, onPedidoUpdated }) => {
+const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto?: Product; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ item, pedido, produto, onPedidoUpdated }) => {
    const { hasPermission } = usePermission();
    const { detalhes, itemImageUrl, itemNome } = item;
    if (!detalhes) return null;
@@ -145,7 +145,7 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto
          const { larguraCm, alturaCm } = detalhesItem.dimensoesPersonalizadas;
          return `Personalizado (${larguraCm}x${alturaCm}cm)`;
       }
-      return produto.options?.[groupId as keyof typeof produto.options]?.find((o: any) => o.id === optionId)?.name || optionId;
+      return produto?.options?.[groupId as keyof typeof produto.options]?.find((o: any) => o.id === optionId)?.name || optionId;
    };
 
    // Cálculos Auxiliares para Exibição
@@ -208,7 +208,7 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; produto
 
             {/* COLUNA 1: Imagem e Info Básica */}
             <div className="md:col-span-3 p-4 bg-black/20 border-r border-phalis-gray/50 flex flex-col items-center text-center">
-               <div className="relative w-full aspect-square rounded-md overflow-hidden bg-phalis-dark mb-3 border border-phalis-gray/50">
+               <div className="relative w-28 h-28 shrink-0 rounded-md overflow-hidden bg-phalis-dark mb-3 border border-phalis-gray/50 mx-auto">
                   <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
                </div>
                <h4 className="font-bold text-white text-lg leading-tight mb-1">{itemNome}</h4>
@@ -436,7 +436,7 @@ const DetalhesServico: React.FC<{ item: ItemPedido; pedido: Pedido; onPedidoUpda
 
             {/* COLUNA 1: Imagem e Info (3 colunas) */}
             <div className="md:col-span-3 p-4 bg-black/20 border-r border-phalis-gray/50 flex flex-col items-center text-center">
-               <div className="relative w-full aspect-square rounded-md overflow-hidden bg-phalis-dark mb-3 border border-phalis-gray/50">
+               <div className="relative w-28 h-28 shrink-0 rounded-md overflow-hidden bg-phalis-dark mb-3 border border-phalis-gray/50 mx-auto">
                   <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
                </div>
                <h4 className="font-bold text-white text-lg leading-tight mb-1">{itemNome}</h4>
@@ -564,9 +564,9 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    return (
        <div className="space-y-4">
           {itensToRender.map((item, idx) => {
-             const produto = getProductById(String(item.productId));
-             if (!produto) return <div key={idx} className="text-red-500 p-4 shrink-0">Erro: Produto (ID: {item.productId}) não encontrado.</div>;
-
+             const productIdStr = String(item.productId);
+             const produto = getProductById(productIdStr);
+             
              if (!item.detalhes) return <div key={idx} className="p-4 shrink-0">Detalhes indisponíveis para este item.</div>;
 
              switch (item.detalhes.type) {

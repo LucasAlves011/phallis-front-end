@@ -132,7 +132,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                   <React.Fragment key={pedido.id}>
 
                      <TableRow
-                        data-state={openRowId === pedido.id ? 'open' : 'closed'}
+                        data-state={openRowId === String(pedido.id) ? 'open' : 'closed'}
                         className={cn(
                            "cursor-pointer hover:bg-phalis-gray/50 data-[state=open]:bg-phalis-gray",
                            pedido.id === highlightId && 'animate-flashCiano',
@@ -227,7 +227,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                         </TableCell>
                      </TableRow>
 
-                     {openRowId === pedido.id && (
+                     {openRowId === String(pedido.id) && (
                         <TableRow className="bg-phalis-dark hover:bg-phalis-dark">
                            <TableCell colSpan={8} className="p-4">
                               <DetalhesPedidoRow

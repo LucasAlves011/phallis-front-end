@@ -74,11 +74,12 @@ export default function CarrinhoPage() {
    const { itens, removeItem, clearCart, valorTotal } = useCart();
    const [cliente, setCliente] = useState<Cliente | null>(null);
    const [pagamento, setPagamento] = useState<string | null>(null);
+   const [formaPagamento, setFormaPagamento] = useState<string | null>(null);
    const [isLoading, setIsLoading] = useState(false);
    const router = useRouter();
    const { user } = useAuth();
 
-   const isFormCompleto = itens.length > 0 && !!cliente && !!pagamento;
+   const isFormCompleto = itens.length > 0 && !!cliente && !!pagamento && (pagamento === 'nao_pago' || !!formaPagamento);
 
    const handleFinalizar = async () => {
       if (!isFormCompleto || !cliente || !user) return;
@@ -87,6 +88,7 @@ export default function CarrinhoPage() {
       const payload = {
          clientId: cliente.id,
          statusFinanceiro: pagamento,
+         formaPagamento: pagamento === 'nao_pago' ? null : formaPagamento,
          total: valorTotal,   
          itens: itens.map(item => ({
             productId: item.productId,
@@ -172,9 +174,9 @@ export default function CarrinhoPage() {
                      <ClientCombobox selectedClientId={cliente?.id || null} onSelectClient={setCliente} />
                   </div>
 
-                  {/* Forma de Pagamento */}
+                  {/* Status Financeiro */}
                   <div className="space-y-1">
-                     <Label className="text-gray-300 text-sm ml-1">Forma de Pagamento *</Label>
+                     <Label className="text-gray-300 text-sm ml-1">Status Financeiro *</Label>
                      <Select value={pagamento || ""} onValueChange={setPagamento}>
                         <SelectTrigger className="bg-phalis-gray border-0">
                            <SelectValue placeholder="Selecione..." />
@@ -186,6 +188,24 @@ export default function CarrinhoPage() {
                         </SelectContent>
                      </Select>
                   </div>
+
+                  {/* Forma de Pagamento */}
+                  {pagamento !== 'nao_pago' && (
+                     <div className="space-y-1">
+                        <Label className="text-gray-300 text-sm ml-1">Forma de Pagamento *</Label>
+                        <Select value={formaPagamento || ""} onValueChange={setFormaPagamento}>
+                           <SelectTrigger className="bg-phalis-gray border-0">
+                              <SelectValue placeholder="Selecione..." />
+                           </SelectTrigger>
+                           <SelectContent className="bg-phalis-gray border-0">
+                              <SelectItem value="PIX">PIX</SelectItem>
+                              <SelectItem value="CREDITO">Crédito</SelectItem>
+                              <SelectItem value="DEBITO">Débito</SelectItem>
+                              <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
+                           </SelectContent>
+                        </Select>
+                     </div>
+                  )}
                </div>
 
                {/* Resumo de Valores */}
@@ -213,7 +233,8 @@ export default function CarrinhoPage() {
                {!isFormCompleto && (
                   <p className="text-xs text-gray-500 text-center">
                      {!cliente && 'Selecione um cliente. '}
-                     {!pagamento && 'Selecione a forma de pagamento.'}
+                     {!pagamento && 'Selecione o status financeiro. '}
+                     {pagamento && pagamento !== 'nao_pago' && !formaPagamento && 'Selecione a forma de pagamento.'}
                   </p>
                )}
             </div>

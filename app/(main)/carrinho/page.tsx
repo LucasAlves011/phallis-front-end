@@ -87,10 +87,9 @@ export default function CarrinhoPage() {
       const payload = {
          clientId: cliente.id,
          statusFinanceiro: pagamento,
+         total: valorTotal,   
          itens: itens.map(item => ({
             productId: item.productId,
-            itemNome: item.itemNome,
-            itemImageUrl: item.itemImageUrl,
             valor: item.valor,
             detalhes: item.detalhes,
          })),

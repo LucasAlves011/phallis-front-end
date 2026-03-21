@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, LogOut, KeyRound, Loader2, ChevronDown } from 'lucide-react'; // Adicionei ChevronDown para indicar menu
+import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
+import { useCart } from '@/lib/cartStore';
 import {
    Popover,
    PopoverContent,
@@ -34,6 +35,7 @@ const Header: React.FC = () => {
    const [confirmPassword, setConfirmPassword] = useState('');
    const [error, setError] = useState('');
    const { hasPermission, hasAnyPermission } = usePermission();
+   const { totalItens } = useCart();
 
    // Fecha o Popover ao clicar na opção
    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -123,6 +125,20 @@ const Header: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
+
+               {/* Ícone do Carrinho */}
+               {hasPermission('pedidos.realizar') && (
+                  <Link href="/carrinho" className="relative group">
+                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-phalis-gray text-gray-400 hover:bg-phalis-action hover:text-phalis-black transition-colors">
+                        <ShoppingCart className="h-5 w-5" />
+                     </div>
+                     {totalItens > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-phalis-danger text-white text-[10px] font-bold ring-2 ring-phalis-black">
+                           {totalItens > 9 ? '9+' : totalItens}
+                        </span>
+                     )}
+                  </Link>
+               )}
 
                {user && (
                   <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>

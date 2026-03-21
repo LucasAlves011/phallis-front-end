@@ -12,6 +12,7 @@ import {
 import { authenticatedFetch } from '@/lib/api';
 import { type Pedido } from '@/lib/orderData';
 import { type Cliente } from '@/lib/clientData';
+import { useCart } from '@/lib/cartStore';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from 'next/link';
@@ -33,7 +34,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { ClientCombobox } from '@/components/clientes/ClientCombobox';
 import { MoneyInput } from '@/components/ui/money-input';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { SuffixInput } from '@/components/ui/suffix-input';
 import { cn } from "@/lib/utils";
@@ -109,7 +110,7 @@ const OrderFooter = ({
             onClick={onConfirm}
             className="w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50"
          >
-            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'CONCLUIR PRODUTO'}
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <><ShoppingCart className="h-5 w-5 mr-2" />ADICIONAR AO CARRINHO</>}
          </Button>
          {!isValid && missingItems.length > 0 && (
             <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50 animate-in fade-in duration-200">
@@ -136,15 +137,14 @@ const OrderFooter = ({
 // ==========================================================
 interface FormularioUnidadeProps {
    produto: Product & { options: ProductOptions };
-   cliente: Cliente | null;
-   onSelectCliente: (cliente: Cliente | null) => void;
    pedidoParaEditar: Pedido | null;
 }
 
-const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente, onSelectCliente, pedidoParaEditar }) => {
+const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoParaEditar }) => {
    const router = useRouter();
    const [isLoading, setIsLoading] = useState(false);
    const { user } = useAuth();
+   const { addItem } = useCart();
 
    const [selections, setSelections] = useState<Selections>({ papel: null, tamanho: null, cores: null, acabamento: null });
    const [isPersonalizado, setIsPersonalizado] = useState(false);
@@ -155,7 +155,6 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
    const [precoCusto, setPrecoCusto] = useState('');
    const [precoVenda, setPrecoVenda] = useState('');
    const [precoArte, setPrecoArte] = useState('');
-   const [pagamento, setPagamento] = useState<string | null>(null);
    const [desconto, setDesconto] = useState('');
 
    const [isPrecoLoading, setIsPrecoLoading] = useState(false);
@@ -174,7 +173,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
          setPrecoVenda(detalhes.preco.precoVenda.toString());
          setPrecoArte(detalhes.preco.precoArte.toString());
          setDesconto(detalhes.preco.desconto?.toString() || '');
-         setPagamento(pedidoParaEditar.statusFinanceiro);
+
 
          if (detalhes.dimensoesPersonalizadas) {
             setIsPersonalizado(true);
@@ -232,7 +231,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
       return othersComplete && isTamanhoCompleto;
    }, [selections, isTamanhoCompleto]);
 
-   const isPrecoCompleto = useMemo(() => (Number(quantidade) || 0) > 0 && precoCusto && precoVenda && pagamento, [quantidade, precoCusto, precoVenda, pagamento]);
+   const isPrecoCompleto = useMemo(() => (Number(quantidade) || 0) > 0 && precoCusto && precoVenda, [quantidade, precoCusto, precoVenda]);
 
    const fichaDoPedido = useMemo(() => {
       return optionGroupsConfig.map((groupConfig, index) => {
@@ -277,17 +276,14 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
       }
    };
 
-   const handleConcluir = async () => {
-      if (!isBuilderCompleto || !isPrecoCompleto || !cliente) return;
-      setIsLoading(true);
+   const handleAdicionarAoCarrinho = () => {
+      if (!isBuilderCompleto || !isPrecoCompleto) return;
 
-      const payload = {
-         clientId: cliente.id,
+      addItem({
+         productId: produto.id,
          itemNome: produto.nome,
          itemImageUrl: produto.imageUrl,
-         productId: produto.id,
          valor: total,
-         statusFinanceiro: pagamento,
          detalhes: {
             type: 'unidade',
             opcoes: selections,
@@ -299,35 +295,16 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
                precoVenda: (Number(precoVenda) || 0),
                precoArte: (Number(precoArte) || 0),
                desconto: (Number(desconto) || 0),
-               pagamento, total, custoTotal, vendaTotal
+               total, custoTotal, vendaTotal
             }
          }
-      };
+      });
 
-      try {
-         const url = pedidoParaEditar ? `/api/pedidos/${pedidoParaEditar.id}` : '/api/pedidos';
-         const method = pedidoParaEditar ? 'PUT' : 'POST';
-
-         // MUDANÇA: Usando authenticatedFetch para enviar o token
-         const response = await authenticatedFetch(url, {
-            method,
-            body: JSON.stringify(payload)
-         });
-
-         if (!response.ok) throw new Error('Falha ao salvar');
-         const salvo = await response.json();
-         router.push(pedidoParaEditar ? '/historico-pedidos' : `/historico-pedidos?highlight=${salvo.id}`);
-      } catch (error) {
-         console.error(error);
-         alert('Erro ao salvar o pedido.');
-      } finally {
-         setIsLoading(false);
-      }
+      router.push('/catalogo');
    };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
-      if (!cliente) items.push('Cliente');
       if (!selections.papel) items.push('Papel / Material');
       if (!isTamanhoCompleto) items.push('Tamanho');
       if (!selections.cores) items.push('Cores');
@@ -335,14 +312,12 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
       if (!(Number(quantidade) > 0)) items.push('Quantidade');
       if (!precoCusto) items.push('Preço Custo');
       if (!precoVenda) items.push('Preço Venda');
-      if (!pagamento) items.push('Forma de Pagamento');
       return items;
-   }, [cliente, selections, isTamanhoCompleto, quantidade, precoCusto, precoVenda, pagamento]);
+   }, [selections, isTamanhoCompleto, quantidade, precoCusto, precoVenda]);
 
    return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-1 space-y-4">
-            <ClientCombobox selectedClientId={cliente?.id || null} onSelectClient={onSelectCliente} />
             <ProductInfoCard produto={produto} />
             <OrderSummaryCard ficha={fichaDoPedido} />
 
@@ -425,20 +400,12 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
                      <h3 className="text-base font-medium text-white">Finalização</h3>
                      <div className="space-y-1"><Label htmlFor="arte" className="text-gray-300 text-sm ml-1">Preço Arte (Opcional)</Label><MoneyInput id="arte" value={precoArte} onChange={e => setPrecoArte(e.target.value)} className="bg-phalis-gray border-0" placeholder="0,00" /></div>
                      <div className="space-y-1"><Label htmlFor="desconto" className="text-gray-300 text-sm ml-1">Desconto (Opcional)</Label><MoneyInput id="desconto" value={desconto} onChange={e => setDesconto(e.target.value)} className="bg-phalis-gray border-0" placeholder="0,00" /></div>
-                     <div className="space-y-1">
-                        <Label className="text-gray-300 text-sm ml-1">Forma de Pagamento *</Label>
-                        <Select value={pagamento || ""} onValueChange={setPagamento}>
-                           <SelectTrigger className="bg-phalis-gray border-0"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                           <SelectContent className="bg-phalis-gray border-0">
-                              <SelectItem value="nao_pago">Não Pago</SelectItem><SelectItem value="pago_50">Pago 50%</SelectItem><SelectItem value="pago">Pago</SelectItem>
-                           </SelectContent>
-                        </Select>
-                     </div>
+
                   </div>
                </div>
             </div>
 
-            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto && !!cliente} isLoading={isLoading} onConfirm={handleConcluir} labelTotal="TOTAL (Venda + Arte - Desc)" missingItems={missingItems} />
+            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto} isLoading={isLoading} onConfirm={handleAdicionarAoCarrinho} labelTotal="TOTAL (Venda + Arte - Desc)" missingItems={missingItems} />
          </div>
       </div>
    );
@@ -449,22 +416,20 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
 // ==========================================================
 interface FormularioMetroProps {
    produto: Product & { options: ProductOptions };
-   cliente: Cliente | null;
-   onSelectCliente: (cliente: Cliente | null) => void;
    pedidoParaEditar: Pedido | null;
 }
 
-const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onSelectCliente, pedidoParaEditar }) => {
+const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEditar }) => {
    const router = useRouter();
    const [isLoading, setIsLoading] = useState(false);
    const { user } = useAuth();
+   const { addItem } = useCart();
 
    const [selections, setSelections] = useState<Selections>({ papel: null, tamanho: null, cores: null, acabamento: null });
    const [observacoes, setObservacoes] = useState('');
    const [largura, setLargura] = useState('');
    const [altura, setAltura] = useState('');
    const [valorArte, setValorArte] = useState('');
-   const [pagamento, setPagamento] = useState<string | null>(null);
    const [m2Custo, setM2Custo] = useState('');
    const [m2Venda, setM2Venda] = useState('');
    const [desconto, setDesconto] = useState('');
@@ -482,7 +447,6 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
          setM2Venda(detalhes.preco.m2Venda.toString());
          setValorArte(detalhes.preco.valorArte.toString());
          setDesconto(detalhes.preco.desconto?.toString() || '');
-         setPagamento(pedidoParaEditar.statusFinanceiro);
       } else {
          setSelections({ papel: null, tamanho: autoPersonalizado ? 'personalizado' : null, cores: null, acabamento: null });
          setLargura(''); setAltura('');
@@ -516,7 +480,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
       return false;
    }, [selections, largura, altura]);
 
-   const isPrecoCompleto = useMemo(() => m2Custo && m2Venda && pagamento, [m2Custo, m2Venda, pagamento]);
+   const isPrecoCompleto = useMemo(() => m2Custo && m2Venda, [m2Custo, m2Venda]);
 
    const fichaDoPedido = useMemo(() => {
       return optionGroupsConfig.map((groupConfig, index) => {
@@ -533,61 +497,43 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
       });
    }, [produto, selections, largura, altura, metrosQuadrados]);
 
-   const handleConcluir = async () => {
-      if (!isBuilderCompleto || !isPrecoCompleto || !cliente) return;
-      setIsLoading(true);
-      const payload = {
-         clientId: cliente.id,
+   const handleAdicionarAoCarrinho = () => {
+      if (!isBuilderCompleto || !isPrecoCompleto) return;
+
+      addItem({
+         productId: produto.id,
          itemNome: produto.nome,
          itemImageUrl: produto.imageUrl,
-         productId: produto.id,
          valor: total,
-         statusFinanceiro: pagamento,
          detalhes: {
             type: 'metro',
             opcoes: selections,
             observacao: observacoes,
             preco: {
                largura: (Number(largura) || 0), altura: (Number(altura) || 0), valorArte: (Number(valorArte) || 0),
-               pagamento, m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),
+               m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),
                desconto: (Number(desconto) || 0), total, valorTotalCusto, valorTotalVenda
             }
          }
-      };
-      try {
-         const url = pedidoParaEditar ? `/api/pedidos/${pedidoParaEditar.id}` : '/api/pedidos';
-         const method = pedidoParaEditar ? 'PUT' : 'POST';
-         const response = await authenticatedFetch(url, {
-            method,
-            body: JSON.stringify(payload)
-         });
-         if (!response.ok) throw new Error('Falha ao salvar');
-         const salvo = await response.json();
-         router.push(pedidoParaEditar ? '/historico-pedidos' : `/historico-pedidos?highlight=${salvo.id}`);
-      } catch (error) {
-         console.error(error); alert('Erro ao salvar o pedido.');
-      } finally {
-         setIsLoading(false);
-      }
+      });
+
+      router.push('/catalogo');
    };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
-      if (!cliente) items.push('Cliente');
       if (!selections.papel) items.push('Papel / Material');
       if (!largura || !altura) items.push('Dimensões (Largura/Altura)');
       if (!selections.cores) items.push('Cores');
       if (!selections.acabamento) items.push('Acabamento');
       if (!m2Custo) items.push('Valor m² de Custo');
       if (!m2Venda) items.push('Valor m² de Venda');
-      if (!pagamento) items.push('Forma de Pagamento');
       return items;
-   }, [cliente, selections, largura, altura, m2Custo, m2Venda, pagamento]);
+   }, [selections, largura, altura, m2Custo, m2Venda]);
 
    return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-1 space-y-4">
-            <ClientCombobox selectedClientId={cliente?.id || null} onSelectClient={onSelectCliente} />
             <ProductInfoCard produto={produto} />
             <OrderSummaryCard ficha={fichaDoPedido} />
          </div>
@@ -650,19 +596,11 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
                         <Label className="text-gray-300 text-sm ml-1">Desconto (Opcional)</Label>
                         <MoneyInput value={desconto} onChange={e => setDesconto(e.target.value)} placeholder="0,00" />
                      </div>
-                     <div className="space-y-1">
-                        <Label className="text-gray-300 text-sm ml-1">Forma de Pagamento *</Label>
-                        <Select value={pagamento || ""} onValueChange={setPagamento}>
-                           <SelectTrigger className="bg-phalis-gray border-0"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                           <SelectContent className="bg-phalis-gray border-0">
-                              <SelectItem value="nao_pago">Não Pago</SelectItem><SelectItem value="pago_50">Pago 50%</SelectItem><SelectItem value="pago">Pago</SelectItem>
-                           </SelectContent>
-                        </Select>
-                     </div>
+
                   </div>
                </div>
             </div>
-            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto && !!cliente} isLoading={isLoading} onConfirm={handleConcluir} labelTotal="TOTAL (Venda + Arte)" missingItems={missingItems} />
+            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto} isLoading={isLoading} onConfirm={handleAdicionarAoCarrinho} labelTotal="TOTAL (Venda + Arte)" missingItems={missingItems} />
          </div>
       </div>
    );
@@ -673,19 +611,17 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
 // ==========================================================
 interface FormularioServicoProps {
    produto: Product;
-   cliente: Cliente | null;
-   onSelectCliente: (cliente: Cliente | null) => void;
    pedidoParaEditar: Pedido | null;
 }
-const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, cliente, onSelectCliente, pedidoParaEditar }) => {
+const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoParaEditar }) => {
    const router = useRouter();
    const [isLoading, setIsLoading] = useState(false);
    const { user } = useAuth();
+   const { addItem } = useCart();
 
    const [observacao, setObservacao] = useState('');
    const [valorVenda, setValorVenda] = useState('');
    const [desconto, setDesconto] = useState('');
-   const [pagamento, setPagamento] = useState<string | null>(null);
 
    useEffect(() => {
 
@@ -694,56 +630,40 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, cliente,
          setObservacao(detalhes.observacao || '');
          setValorVenda(detalhes.preco.valorVenda.toString());
          setDesconto(detalhes.preco.desconto?.toString() || '');
-         setPagamento(pedidoParaEditar.statusFinanceiro);
       }
    }, [pedidoParaEditar]);
 
-   const isFormCompleto = useMemo(() => observacao && valorVenda && pagamento && cliente, [observacao, valorVenda, pagamento, cliente]);
+   const isFormCompleto = useMemo(() => observacao && valorVenda, [observacao, valorVenda]);
    const total = useMemo(() => Math.max(0, (Number(valorVenda) || 0) - (Number(desconto) || 0)), [valorVenda, desconto]);
 
-   const handleConcluir = async () => {
-      if (!isFormCompleto || !cliente) return;
-      setIsLoading(true);
-      const payload = {
-         clientId: cliente.id,
+   const handleAdicionarAoCarrinho = () => {
+      if (!isFormCompleto) return;
+
+      addItem({
+         productId: produto.id,
          itemNome: produto.nome,
          itemImageUrl: produto.imageUrl,
-         productId: produto.id,
          valor: total,
-         statusFinanceiro: pagamento,
          detalhes: {
             type: 'servico',
             observacao: observacao,
-            preco: { descricao: observacao, valorVenda: Number(valorVenda), desconto: Number(desconto), pagamento }
+            preco: { descricao: observacao, valorVenda: Number(valorVenda), desconto: Number(desconto) }
          }
-      };
-      try {
-         const url = pedidoParaEditar ? `/api/pedidos/${pedidoParaEditar.id}` : '/api/pedidos';
-         const method = pedidoParaEditar ? 'PUT' : 'POST';
-         const response = await authenticatedFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-         if (!response.ok) throw new Error('Falha ao salvar');
-         const salvo = await response.json();
-         router.push(pedidoParaEditar ? '/historico-pedidos' : `/historico-pedidos?highlight=${salvo.id}`);
-      } catch (error) {
-         console.error(error); alert('Erro ao salvar o pedido.');
-      } finally {
-         setIsLoading(false);
-      }
+      });
+
+      router.push('/catalogo');
    };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
-      if (!cliente) items.push('Cliente');
       if (!observacao) items.push('Descrição / Observações');
       if (!valorVenda) items.push('Valor Total da Venda');
-      if (!pagamento) items.push('Forma de Pagamento');
       return items;
-   }, [cliente, observacao, valorVenda, pagamento]);
+   }, [observacao, valorVenda]);
 
    return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-1 space-y-4">
-            <ClientCombobox selectedClientId={cliente?.id || null} onSelectClient={onSelectCliente} />
             <ProductInfoCard produto={produto} />
             <div className="bg-phalis-black p-4 rounded-lg space-y-2 min-h-[100px]">
                <h3 className="text-lg font-medium text-white">Ficha do Pedido:</h3>
@@ -775,23 +695,14 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, cliente,
                      <MoneyInput value={desconto} onChange={e => setDesconto(e.target.value)} placeholder="0,00" />
                   </div>
 
-                  <div className="space-y-1">
-                     <Label className="text-gray-300 text-sm ml-1">Forma de Pagamento *</Label>
-                     <Select value={pagamento || ""} onValueChange={setPagamento}>
-                        <SelectTrigger className="bg-phalis-gray border-0"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent className="bg-phalis-gray border-0">
-                           <SelectItem value="nao_pago">Não Pago</SelectItem><SelectItem value="pago_50">Pago 50%</SelectItem><SelectItem value="pago">Pago</SelectItem>
-                        </SelectContent>
-                     </Select>
-                  </div>
 
                   <div className="bg-phalis-black rounded-lg p-4 text-center"><span className="text-sm text-gray-400 block">TOTAL</span><span className="text-3xl font-bold text-white">R$ {total.toFixed(2)}</span></div>
                </div>
             </div>
             <div className="flex justify-end">
                <div className="relative group">
-                  <Button disabled={!isFormCompleto || isLoading} onClick={handleConcluir} className="w-full md:w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50">
-                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'CONCLUIR PRODUTO'}
+                  <Button disabled={!isFormCompleto || isLoading} onClick={handleAdicionarAoCarrinho} className="w-full md:w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50">
+                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <><ShoppingCart className="h-5 w-5 mr-2" />ADICIONAR AO CARRINHO</>}
                   </Button>
                   {!isFormCompleto && missingItems.length > 0 && (
                      <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50 animate-in fade-in duration-200">
@@ -823,7 +734,6 @@ export default function PedidosPage() {
    const [produto, setProduto] = useState<Product | null>(null);
    const [loading, setLoading] = useState(true);
    const searchParams = useSearchParams();
-   const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
    const { user } = useAuth();
    const [pedidoParaEditar, setPedidoParaEditar] = useState<Pedido | null>(null);
 
@@ -831,10 +741,9 @@ export default function PedidosPage() {
    const editPedidoId = searchParams.get('edit');
 
    useEffect(() => {
-      setLoading(true); setProduto(null); setPedidoParaEditar(null); setSelectedClient(null);
+      setLoading(true); setProduto(null); setPedidoParaEditar(null);
       if (!produtoId) { setLoading(false); return; }
 
-      // MUDANÇA: Buscar produto do BACKEND, não do arquivo local
       authenticatedFetch(`/api/produtos/${produtoId}`)
          .then(res => {
             if (!res.ok) throw new Error('Produto não encontrado');
@@ -843,14 +752,11 @@ export default function PedidosPage() {
          .then((produtoBackend: Product) => {
             setProduto(produtoBackend);
 
-            // Se tiver editando pedido, busca os dados dele também
             if (editPedidoId) {
-               // MUDANÇA: Usando authenticatedFetch
                authenticatedFetch(`/api/pedidos/${editPedidoId}`)
                   .then(res => res.json())
                   .then((pedidoData: Pedido) => {
                      setPedidoParaEditar(pedidoData);
-                     setSelectedClient(pedidoData.cliente);
                   })
                   .catch(err => console.error("Erro ao buscar pedido:", err))
                   .finally(() => setLoading(false));
@@ -876,11 +782,11 @@ export default function PedidosPage() {
 
    switch (produto.pricingType) {
       case 'unidade':
-         return <FormularioUnidade produto={produto as Product & { options: ProductOptions }} cliente={selectedClient} onSelectCliente={setSelectedClient} pedidoParaEditar={pedidoParaEditar} />;
+         return <FormularioUnidade produto={produto as Product & { options: ProductOptions }} pedidoParaEditar={pedidoParaEditar} />;
       case 'metro':
-         return <FormularioMetro produto={produto as Product & { options: ProductOptions }} cliente={selectedClient} onSelectCliente={setSelectedClient} pedidoParaEditar={pedidoParaEditar} />;
+         return <FormularioMetro produto={produto as Product & { options: ProductOptions }} pedidoParaEditar={pedidoParaEditar} />;
       case 'servico':
-         return <FormularioServico produto={produto} cliente={selectedClient} onSelectCliente={setSelectedClient} pedidoParaEditar={pedidoParaEditar} />;
+         return <FormularioServico produto={produto} pedidoParaEditar={pedidoParaEditar} />;
       default:
          return <div>Tipo de produto desconhecido.</div>;
    }

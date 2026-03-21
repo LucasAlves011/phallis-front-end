@@ -57,9 +57,12 @@ export default function CatalogoPage() {
    const [produtos, setProdutos] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
 
+   const [error, setError] = useState('');
+
    // Hook para buscar os dados da API (MSW)
    useEffect(() => {
       setIsLoading(true);
+      setError('');
 
       authenticatedFetch('/api/produtos')
          .then(res => {
@@ -71,12 +74,13 @@ export default function CatalogoPage() {
                setProdutos(data);
             } else {
                console.error("Dados recebidos não são um array:", data);
-               setProdutos([]);
+               throw new Error('Formato inválido de resposta.');
             }
             setIsLoading(false);
          })
          .catch(err => {
             console.error("Falha ao buscar produtos do catálogo:", err);
+            setError('Não foi possível carregar o catálogo. Tente novamente mais tarde.');
             setIsLoading(false);
          });
    }, []); // O array vazio [] garante que isso rode apenas uma vez
@@ -99,11 +103,21 @@ export default function CatalogoPage() {
       <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6">
          <h1 className="text-3xl font-bold text-white">Catálogo de Produtos</h1>
 
+         {error && (
+            <div className="bg-red-900/20 border border-red-900/50 text-red-200 p-4 rounded-md">
+               <p>{error}</p>
+            </div>
+         )}
+
          {/* 5. MUDANÇA: Lógica de Loading */}
          {isLoading ? (
             // Se estiver carregando, mostra o spinner
             <div className="flex justify-center items-center p-12">
                <Loader2 className="h-12 w-12 animate-spin text-phalis-action" />
+            </div>
+         ) : !error && produtos.length === 0 ? (
+            <div className="text-center text-gray-400 p-12">
+               Nenhum produto encontrado.
             </div>
          ) : (
             // Se terminou, mostra a grade

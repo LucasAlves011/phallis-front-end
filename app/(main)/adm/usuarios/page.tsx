@@ -43,10 +43,21 @@ export default function GerenciarUsuariosPage() {
    const [selectedPermissions, setSelectedPermissions] = useState<Permission[]>([]);
 
    useEffect(() => {
-      fetch('/api/users')
-         .then(res => res.json())
+      authenticatedFetch('/api/users')
+         .then(res => {
+            if (!res.ok) throw new Error('Falha ao buscar usuários');
+            return res.json();
+         })
          .then(data => {
-            setUsers(data);
+            if (Array.isArray(data)) {
+               setUsers(data);
+            } else {
+               console.error("Formato inválido:", data);
+            }
+            setIsLoading(false);
+         })
+         .catch(err => {
+            console.error(err);
             setIsLoading(false);
          });
    }, []);
@@ -144,25 +155,42 @@ export default function GerenciarUsuariosPage() {
       const url = editingUser.id ? `/api/users/${editingUser.id}` : '/api/users';
       const method = editingUser.id ? 'PUT' : 'POST';
 
-      await authenticatedFetch(url, {
-         method,
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify(payload)
-      });
+      try {
+         const res = await authenticatedFetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+         });
 
-      const res = await authenticatedFetch('/api/users');
-      const data = await res.json();
-      setUsers(data);
-      setIsDialogOpen(false);
+         if (!res.ok) throw new Error('Erro ao salvar');
+
+         const userRes = await authenticatedFetch('/api/users');
+         const data = await userRes.json();
+         setUsers(data);
+         setIsDialogOpen(false);
+      } catch (err) {
+         console.error(err);
+         alert("Erro ao salvar usuário.");
+      }
    };
 
    const toggleActive = async (user: User) => {
+      // Otimista
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, active: !u.active } : u));
-      await authenticatedFetch(`/api/users/${user.id}`, {
-         method: 'PUT',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ active: !user.active })
-      });
+
+      try {
+         const res = await authenticatedFetch(`/api/users/${user.id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active: !user.active })
+         });
+         if (!res.ok) throw new Error("Falha ao atualizar status");
+      } catch (err) {
+         console.error(err);
+         // Reverte em caso de erro
+         setUsers(prev => prev.map(u => u.id === user.id ? { ...u, active: user.active } : u));
+         alert("Erro ao alterar status do usuário.");
+      }
    };
 
    return (
@@ -186,7 +214,13 @@ export default function GerenciarUsuariosPage() {
                   </TableRow>
                </TableHeader>
                <TableBody>
-                  {users.map(user => {
+                  {isLoading ? (
+                     <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                           <Loader2 className="animate-spin h-8 w-8 mx-auto text-phalis-action" />
+                        </TableCell>
+                     </TableRow>
+                  ) : users.map(user => {
                      const isAllowed = canManageTargetUser(user); // Calcula permissão para esta linha
 
                      return (
@@ -207,7 +241,7 @@ export default function GerenciarUsuariosPage() {
                                     className="data-[state=checked]:bg-phalis-action"
                                     disabled={!isAllowed} // <--- PROTEÇÃO AQUI
                                  />
-                                 <span className="...">
+                                 <span className="text-gray-300">
                                     {user.active ? 'Ativo' : 'Bloqueado'}
                                  </span>
                               </div>
@@ -239,7 +273,6 @@ export default function GerenciarUsuariosPage() {
                </DialogHeader>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                  {/* ... Campos de Nome, Username, Senha, Role (Mesmo código anterior) ... */}
                   <div className="space-y-2">
                      <Label>Nome</Label>
                      <Input
@@ -257,16 +290,17 @@ export default function GerenciarUsuariosPage() {
                         className="bg-phalis-gray border-0"
                      />
                   </div>
-                  {!editingUser?.id && (
-                     <div className="space-y-2 md:col-span-2">
-                        <Label>Senha Inicial</Label>
-                        <Input
-                           value={(editingUser as any)?.password || ''}
-                           onChange={e => setEditingUser(prev => ({ ...prev!, password: e.target.value }))}
-                           className="bg-phalis-gray border-0"
-                        />
-                     </div>
-                  )}
+                  {/* Campo de Senha - Se for edição, é opcional e label muda */}
+                  <div className="space-y-2 md:col-span-2">
+                     <Label>{editingUser?.id ? 'Nova Senha (deixe em branco para manter)' : 'Senha Inicial'}</Label>
+                     <Input
+                        type="password"
+                        value={(editingUser as any)?.password || ''}
+                        onChange={e => setEditingUser(prev => ({ ...prev!, password: e.target.value }))}
+                        className="bg-phalis-gray border-0"
+                     />
+                  </div>
+
                   <div className="space-y-2 md:col-span-2">
                      <Label className="font-semibold">Tipo de Usuário (Role)</Label>
                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

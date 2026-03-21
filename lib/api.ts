@@ -7,14 +7,25 @@
 export async function authenticatedFetch(url: string, options: RequestInit = {}) {
    const token = typeof window !== 'undefined' ? localStorage.getItem('phallis_auth_token') : null;
 
-   const headers = new Headers(options.headers || {});
-   if (token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`);
+   // Converter headers para objeto simples para garantir compatibilidade e controle
+   const headers: Record<string, string> = {};
+
+   if (options.headers) {
+      if (options.headers instanceof Headers) {
+         options.headers.forEach((v, k) => { headers[k] = v; });
+      } else if (Array.isArray(options.headers)) {
+         options.headers.forEach(([k, v]) => { headers[k] = v; });
+      } else {
+         Object.assign(headers, options.headers);
+      }
    }
 
-   // Garantir Content-Type padrão para JSON se não houver body ou se for objeto
-   if (!headers.has('Content-Type') && options.body) {
-      headers.set('Content-Type', 'application/json');
+   if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+   }
+
+   if (!headers['Content-Type'] && options.body) {
+      headers['Content-Type'] = 'application/json';
    }
 
    const response = await fetch(url, {
@@ -24,10 +35,9 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
 
    // Tratamento global de 401 (Opcional, mas útil)
    if (response.status === 401 && typeof window !== 'undefined') {
-      console.warn('[API] Não autorizado. Limpando sessão...');
+      console.warn('[API] Não autorizado. Redirecionando para login...');
       localStorage.removeItem('phallis_auth_token');
-      // Redirecionamento pode ser feito aqui ou deixado para o AuthContext
-      // window.location.href = '/login';
+      window.location.href = '/login';
    }
 
    return response;

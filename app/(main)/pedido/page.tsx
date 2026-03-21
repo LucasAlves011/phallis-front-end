@@ -262,22 +262,38 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, cliente,
       setIsLoading(true);
 
       const payload = {
-         user, cliente, produto, opcoes: selections, observacao,
-         dimensoesPersonalizadas: isPersonalizado ? { larguraCm, alturaCm } : null,
-         preco: {
-            quantidade: (Number(quantidade) || 0),
-            precoCusto: (Number(precoCusto) || 0),
-            precoVenda: (Number(precoVenda) || 0),
-            precoArte: (Number(precoArte) || 0),
-            desconto: (Number(desconto) || 0),
-            pagamento, total, custoTotal, vendaTotal
+         clientId: cliente.id,
+         itemNome: produto.nome,
+         itemImageUrl: produto.imageUrl,
+         productId: produto.id,
+         valor: total,
+         statusFinanceiro: pagamento,
+         detalhes: {
+            type: 'unidade',
+            opcoes: selections,
+            observacao,
+            dimensoesPersonalizadas: isPersonalizado ? { larguraCm, alturaCm } : null,
+            preco: {
+               quantidade: (Number(quantidade) || 0),
+               precoCusto: (Number(precoCusto) || 0),
+               precoVenda: (Number(precoVenda) || 0),
+               precoArte: (Number(precoArte) || 0),
+               desconto: (Number(desconto) || 0),
+               pagamento, total, custoTotal, vendaTotal
+            }
          }
       };
 
       try {
          const url = pedidoParaEditar ? `/api/pedidos/${pedidoParaEditar.id}` : '/api/pedidos';
          const method = pedidoParaEditar ? 'PUT' : 'POST';
-         const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+
+         // MUDANÇA: Usando authenticatedFetch para enviar o token
+         const response = await authenticatedFetch(url, {
+            method,
+            body: JSON.stringify(payload)
+         });
+
          if (!response.ok) throw new Error('Falha ao salvar');
          const salvo = await response.json();
          router.push(pedidoParaEditar ? '/historico-pedidos' : `/historico-pedidos?highlight=${salvo.id}`);
@@ -487,17 +503,30 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, cliente, onS
       if (!isBuilderCompleto || !isPrecoCompleto || !cliente) return;
       setIsLoading(true);
       const payload = {
-         user, cliente, produto, opcoes: selections, observacao: observacoes,
-         preco: {
-            largura: (Number(largura) || 0), altura: (Number(altura) || 0), valorArte: (Number(valorArte) || 0),
-            pagamento, m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),
-            desconto: (Number(desconto) || 0), total, valorTotalCusto, valorTotalVenda
+         clientId: cliente.id,
+         itemNome: produto.nome,
+         itemImageUrl: produto.imageUrl,
+         productId: produto.id,
+         valor: total,
+         statusFinanceiro: pagamento,
+         detalhes: {
+            type: 'metro',
+            opcoes: selections,
+            observacao: observacoes,
+            preco: {
+               largura: (Number(largura) || 0), altura: (Number(altura) || 0), valorArte: (Number(valorArte) || 0),
+               pagamento, m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),
+               desconto: (Number(desconto) || 0), total, valorTotalCusto, valorTotalVenda
+            }
          }
       };
       try {
          const url = pedidoParaEditar ? `/api/pedidos/${pedidoParaEditar.id}` : '/api/pedidos';
          const method = pedidoParaEditar ? 'PUT' : 'POST';
-         const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+         const response = await authenticatedFetch(url, {
+            method,
+            body: JSON.stringify(payload)
+         });
          if (!response.ok) throw new Error('Falha ao salvar');
          const salvo = await response.json();
          router.push(pedidoParaEditar ? '/historico-pedidos' : `/historico-pedidos?highlight=${salvo.id}`);
@@ -629,14 +658,22 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, cliente,
       if (!isFormCompleto || !cliente) return;
       setIsLoading(true);
       const payload = {
-         user, cliente, produto,
-         observacao: observacao,
-         preco: { descricao: observacao, valorVenda: Number(valorVenda), desconto: Number(desconto), pagamento }
+         clientId: cliente.id,
+         itemNome: produto.nome,
+         itemImageUrl: produto.imageUrl,
+         productId: produto.id,
+         valor: total,
+         statusFinanceiro: pagamento,
+         detalhes: {
+            type: 'servico',
+            observacao: observacao,
+            preco: { descricao: observacao, valorVenda: Number(valorVenda), desconto: Number(desconto), pagamento }
+         }
       };
       try {
          const url = pedidoParaEditar ? `/api/pedidos/${pedidoParaEditar.id}` : '/api/pedidos';
          const method = pedidoParaEditar ? 'PUT' : 'POST';
-         const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+         const response = await authenticatedFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
          if (!response.ok) throw new Error('Falha ao salvar');
          const salvo = await response.json();
          router.push(pedidoParaEditar ? '/historico-pedidos' : `/historico-pedidos?highlight=${salvo.id}`);
@@ -734,7 +771,8 @@ export default function PedidosPage() {
 
             // Se tiver editando pedido, busca os dados dele também
             if (editPedidoId) {
-               fetch(`/api/pedidos/${editPedidoId}`)
+               // MUDANÇA: Usando authenticatedFetch
+               authenticatedFetch(`/api/pedidos/${editPedidoId}`)
                   .then(res => res.json())
                   .then((pedidoData: Pedido) => {
                      setPedidoParaEditar(pedidoData);

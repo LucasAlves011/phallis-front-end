@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { type User } from '@/lib/clientData';
 import { usePermission } from '@/lib/auth/usePermission';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
 
 interface TabelaPedidosProps {
    pedidos: Pedido[];
@@ -86,7 +87,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
       setLoadingStatus(prev => ({ ...prev, [loadingKey]: true }));
       try {
          const url = `/api/pedidos/${pedidoId}/${tipo}`;
-         const response = await fetch(url, {
+         const response = await authenticatedFetch(url, { // MUDANÇA AQUI
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

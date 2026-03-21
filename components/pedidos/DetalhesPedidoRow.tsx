@@ -23,6 +23,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
+import { authenticatedFetch } from '@/lib/api'; // Adicionado
+
+// Helper Types
+type DetalhesUnidade = Extract<Pedido['detalhes'], { type: 'unidade' }>;
+type DetalhesMetro = Extract<Pedido['detalhes'], { type: 'metro' }>;
+
+
 
 type DetalhesProps = {
    pedido: Pedido;
@@ -124,30 +131,39 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
    const [showFinanceDetails, setShowFinanceDetails] = useState(false);
 
    if (detalhes.type !== 'unidade' && detalhes.type !== 'metro') return null;
-   const { opcoes, preco } = detalhes;
+   // Cast para auxiliar se a inferência falhar em propriedades específicas overlap
+   const detalhesItem = detalhes as Extract<typeof detalhes, { type: 'unidade' } | { type: 'metro' }>;
+   const { opcoes, preco } = detalhesItem;
+
+   // ... (código segue)
 
    const getOptionLabel = (groupId: string) => {
       const optionId = opcoes[groupId];
       if (!optionId) return '---';
-      if (groupId === 'tamanho' && detalhes.type === 'unidade' && detalhes.dimensoesPersonalizadas) {
-         const { larguraCm, alturaCm } = detalhes.dimensoesPersonalizadas;
+      if (groupId === 'tamanho' && detalhesItem.type === 'unidade' && detalhesItem.dimensoesPersonalizadas) {
+         const { larguraCm, alturaCm } = detalhesItem.dimensoesPersonalizadas;
          return `Personalizado (${larguraCm}x${alturaCm}cm)`;
       }
       return produto.options?.[groupId as keyof typeof produto.options]?.find((o: any) => o.id === optionId)?.name || optionId;
    };
 
    // Cálculos Auxiliares para Exibição
-   const custoTotalReal = detalhes.type === 'unidade' ? preco.custoTotal : preco.valorTotalCusto;
-   const lucroEstimado = preco.total - custoTotalReal;
+   const custoTotalReal = detalhesItem.type === 'unidade' ? detalhesItem.preco.custoTotal : detalhesItem.preco.valorTotalCusto;
+   const lucroEstimado = detalhesItem.preco.total - custoTotalReal;
 
    // Cálculo unitário / m2 para exibição
-   const custoUnitarioOuM2 = detalhes.type === 'unidade'
-      ? (preco.custoTotal / (preco.quantidade || 1))
-      : preco.m2Custo;
+   let custoUnitarioOuM2 = 0;
+   let vendaUnitarioOuM2 = 0;
 
-   const vendaUnitarioOuM2 = detalhes.type === 'unidade'
-      ? (preco.vendaTotal / (preco.quantidade || 1))
-      : preco.m2Venda;
+   if (detalhesItem.type === 'unidade') {
+      const d = detalhesItem as DetalhesUnidade;
+      custoUnitarioOuM2 = d.preco.custoTotal / (d.preco.quantidade || 1);
+      vendaUnitarioOuM2 = d.preco.vendaTotal / (d.preco.quantidade || 1);
+   } else {
+      const d = detalhesItem as DetalhesMetro;
+      custoUnitarioOuM2 = d.preco.m2Custo;
+      vendaUnitarioOuM2 = d.preco.m2Venda;
+   }
 
    const historicoCompleto = useMemo(() => {
       const statusInicialFinanceiro = pedido.historicoFinanceiro[0]?.status || 'nao_pago';
@@ -170,7 +186,7 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
       if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
       setCancelLoading(true); setCancelError('');
       try {
-         const response = await fetch(`/api/pedidos/${pedido.id}/cancelar`, {
+         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, { // MUDANÇA AQUI
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
          });
@@ -212,11 +228,11 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
                      <InfoBlock label="Cores" value={getOptionLabel('cores')} />
                      <InfoBlock label="Acabamento" value={getOptionLabel('acabamento')} />
 
-                     {detalhes.type === 'unidade' && (
-                        <InfoBlock label="Quantidade" value={`${preco.quantidade} unid.`} highlight />
+                     {detalhesItem.type === 'unidade' && (
+                        <InfoBlock label="Quantidade" value={`${(detalhesItem as DetalhesUnidade).preco.quantidade} unid.`} highlight />
                      )}
-                     {detalhes.type === 'metro' && (
-                        <InfoBlock label="Dimensões" value={`${preco.largura.toFixed(2)}m x ${preco.altura.toFixed(2)}m`} highlight />
+                     {detalhesItem.type === 'metro' && (
+                        <InfoBlock label="Dimensões" value={`${(detalhesItem as DetalhesMetro).preco.largura.toFixed(2)}m x ${(detalhesItem as DetalhesMetro).preco.altura.toFixed(2)}m`} highlight />
                      )}
                   </div>
 
@@ -250,20 +266,21 @@ const DetalhesUnidadeMetro: React.FC<{ pedido: Pedido; produto: Product; onPedid
                   <div className="bg-black/30 rounded p-3 transition-all duration-300">
 
                      {/* Resumo Padrão (Sempre Visível) */}
-                     {detalhes.type === 'unidade' ? (
+                     {/* Resumo Padrão (Sempre Visível) */}
+                     {detalhesItem.type === 'unidade' ? (
                         <>
-                           <MoneyRow label="Valor Venda (Total)" value={preco.vendaTotal} />
-                           {preco.precoArte > 0 && <MoneyRow label="Arte" value={preco.precoArte} />}
+                           <MoneyRow label="Valor Venda (Total)" value={(detalhesItem as DetalhesUnidade).preco.vendaTotal} />
+                           {(detalhesItem as DetalhesUnidade).preco.precoArte > 0 && <MoneyRow label="Arte" value={(detalhesItem as DetalhesUnidade).preco.precoArte} />}
                         </>
                      ) : (
                         <>
-                           <MoneyRow label="Valor Venda (Total)" value={preco.valorTotalVenda} />
-                           {preco.valorArte > 0 && <MoneyRow label="Arte" value={preco.valorArte} />}
+                           <MoneyRow label="Valor Venda (Total)" value={(detalhesItem as DetalhesMetro).preco.valorTotalVenda} />
+                           {(detalhesItem as DetalhesMetro).preco.valorArte > 0 && <MoneyRow label="Arte" value={(detalhesItem as DetalhesMetro).preco.valorArte} />}
                         </>
                      )}
 
-                     {preco.desconto > 0 && <MoneyRow label="Desconto" value={preco.desconto} isDiscount />}
-                     <MoneyRow label="TOTAL FINAL" value={preco.total} isTotal />
+                     {detalhesItem.preco.desconto > 0 && <MoneyRow label="Desconto" value={detalhesItem.preco.desconto} isDiscount />}
+                     <MoneyRow label="TOTAL FINAL" value={detalhesItem.preco.total} isTotal />
 
                      {/* Área Expandida (Caixa Preta) */}
                      {showFinanceDetails && (
@@ -394,7 +411,7 @@ const DetalhesServico: React.FC<{ pedido: Pedido; onPedidoUpdated: (pedido: Pedi
       if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
       setCancelLoading(true); setCancelError('');
       try {
-         const response = await fetch(`/api/pedidos/${pedido.id}/cancelar`, {
+         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, { // MUDANÇA AQUI
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
          });

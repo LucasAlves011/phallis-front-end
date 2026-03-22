@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Pencil, XOctagon, Loader2, DollarSign } from 'lucide-react';
+import { Pencil, XOctagon, Loader2, DollarSign, Eye } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useRouter } from 'next/navigation';
@@ -29,24 +29,33 @@ type DetalhesProps = {
 
 // STATUS MAPS
 const STATUS_NOME_MAP: Record<string, string> = {
-   PENDENTE: 'Pendente', PARCIAL: 'Pagamento Parcial', PAGO: 'Pago',
+   PENDENTE: 'Pendente',
+   PARCIAL: 'Pagamento Parcial',
+   PAGO: 'Pago',
    REEMBOLSADO: 'Reembolsado',
-   PRE_PROD: 'Pré-Produção', EM_PRODUCAO: 'Em Produção',
-   ACABAMENTO: 'Acabamento', PRONTO: 'Pronto p/ Retirada',
-   ENTREGUE: 'Entregue', CANCELADO: 'Cancelado', 
-   CRIADO: 'Pedido Criado', PAGAMENTO: 'Pagamento Realizado'
+   PRE_PROD: 'Pré-Produção',
+   EM_PRODUCAO: 'Em Produção',
+   ACABAMENTO: 'Acabamento',
+   PRONTO: 'Pronto p/ Retirada',
+   ENTREGUE: 'Entregue',
+   CANCELADO: 'Cancelado',
+   CRIADO: 'Pedido Criado',
+   PAGAMENTO: 'Pagamento Realizado'
 };
 const STATUS_COR_MAP: Record<string, string> = {
-   PENDENTE: 'bg-red-600', PARCIAL: 'bg-yellow-500', PAGO: 'bg-green-600',
+   PENDENTE: 'bg-red-600',
+   PARCIAL: 'bg-yellow-500',
+   PAGO: 'bg-green-600',
    REEMBOLSADO: 'bg-gray-500',
-   PRE_PROD: 'bg-gray-500', EM_PRODUCAO: 'bg-blue-600',
+   PRE_PROD: 'bg-gray-500',
+   EM_PRODUCAO: 'bg-blue-600',
    ACABAMENTO: 'bg-indigo-600', PRONTO: 'bg-purple-600',
    ENTREGUE: 'bg-green-600', CANCELADO: 'bg-gray-700',
    CRIADO: 'bg-gray-500', PAGAMENTO: 'bg-green-400'
 };
 
 // TIMELINE ITEM
-const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, user: string, subStatus?: string, motivo?: string }, isLast: boolean }) => {
+const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, user: string, subStatus?: string, motivo?: string, observacao?: string }, isLast: boolean }) => {
    const nomeStatus = STATUS_NOME_MAP[item.status] || item.status.replace(/_/g, ' ');
    const corStatus = STATUS_COR_MAP[item.status] || 'bg-cyan-500';
    return (
@@ -71,6 +80,12 @@ const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, 
                   {item.motivo}
                </div>
             )}
+            {item.observacao && (
+               <div className="mt-1 text-xs text-gray-400 bg-gray-800/40 p-1.5 rounded border border-gray-700/50">
+                  <span className="font-semibold block mb-0.5">Observação:</span>
+                  {item.observacao}
+               </div>
+            )}
          </div>
       </li>
    );
@@ -79,6 +94,7 @@ const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, 
 // MINI ITEM CARD
 const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
    const [produtoFetched, setProdutoFetched] = useState<Product | null>(null);
+   const [isExpanded, setIsExpanded] = useState(false);
 
    useEffect(() => {
       authenticatedFetch(`/api/produtos/${item.productId}`)
@@ -87,16 +103,34 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
          .catch(err => console.error("Erro ao buscar produto:", err));
    }, [item.productId]);
 
+   // Valores extraidos
+   const tipo = item.tipoPrecificacao || item.detalhes?.type;
+   const tipoStr = tipo ? String(tipo).toUpperCase() : '';
+   const opts = item.opcoes || item.detalhes?.opcoes || {};
+   const qtd = item.quantidade || (item.detalhes as any)?.preco?.quantidade;
+   const w = item.largura || (item.detalhes as any)?.preco?.largura || (item.detalhes as any)?.dimensoesPersonalizadas?.larguraCm;
+   const h = item.altura || (item.detalhes as any)?.preco?.altura || (item.detalhes as any)?.dimensoesPersonalizadas?.alturaCm;
+   const vCusto = item.valorCusto || (tipoStr === 'UNIDADE' ? (item.detalhes as any)?.preco?.precoCusto : (item.detalhes as any)?.preco?.m2Custo);
+   const vVenda = item.valorVenda || (tipoStr === 'UNIDADE' ? (item.detalhes as any)?.preco?.precoVenda : (item.detalhes as any)?.preco?.m2Venda);
+   const vArte = (item.detalhes as any)?.preco?.precoArte || (item.detalhes as any)?.preco?.valorArte;
+   const vDesconto = item.valorDesconto || (item.detalhes as any)?.preco?.desconto;
+
+   const getCustoTotalItem = () => {
+      const precoDet = (item.detalhes as any)?.preco;
+      if (precoDet?.custoTotal) return Number(precoDet.custoTotal);
+      if (precoDet?.valorTotalCusto) return Number(precoDet.valorTotalCusto);
+      const v = Number(vCusto) || 0;
+      if (tipoStr === 'UNIDADE') return v; // Custo do Lote fixo
+      if (tipoStr === 'METRO') return v * (Number(w) || 1) * (Number(h) || 1) * (Number(qtd) || 1);
+      return 0;
+   };
+
+   const custoTotalItem = getCustoTotalItem();
+   const lucroItem = (Number(item.valor) || 0) - custoTotalItem;
+
    const formatarEspecificacoes = () => {
-      // Suporte simultâneo ao payload novo flat e ao legado em `.detalhes`
-      const tipo = item.tipoPrecificacao || item.detalhes?.type;
-      const opts = item.opcoes || item.detalhes?.opcoes || {};
-      const qtd = item.quantidade || (item.detalhes as any)?.preco?.quantidade;
-      const w = item.largura || (item.detalhes as any)?.preco?.largura || (item.detalhes as any)?.dimensoesPersonalizadas?.larguraCm;
-      const h = item.altura || (item.detalhes as any)?.preco?.altura || (item.detalhes as any)?.dimensoesPersonalizadas?.alturaCm;
-      
       const specs = [];
-      if (tipo === 'UNIDADE' || tipo === 'METRO') {
+      if (tipoStr === 'UNIDADE' || tipoStr === 'METRO') {
          if (produtoFetched && produtoFetched.options) {
              const optsConfig = produtoFetched.options;
              Object.entries(opts).forEach(([key, val]) => {
@@ -106,17 +140,17 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
          } else {
              specs.push("Carregando opções...");
          }
-         
+
          if (w && h) {
-             specs.push(tipo === 'METRO' ? `Dimensões: ${w}m x ${h}m` : `Tamanho: ${w}x${h}cm`);
+             specs.push(tipoStr === 'METRO' ? `Dimensões: ${w}m x ${h}m` : `Tamanho: ${w}x${h}cm`);
          }
-         
-         if (tipo === 'UNIDADE' && qtd) {
+
+         if (tipoStr === 'UNIDADE' && qtd) {
              specs.push(`Qtd: ${qtd}`);
          }
-      } else if (tipo === 'SERVICO') {
+      } else if (tipoStr === 'SERVICO') {
           specs.push("Serviço/Arte");
-      } else if (!tipo) {
+      } else if (!tipoStr) {
           return "Detalhes em branco";
       }
       return specs.join(" • ");
@@ -125,22 +159,50 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
    const observacaoFinal = item.observacao || item.detalhes?.observacao;
 
    return (
-      <div className="flex gap-4 items-center p-3 mb-2 bg-phalis-gray/20 border border-gray-700 rounded-lg hover:bg-phalis-gray/40 transition">
-         <div className="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-phalis-dark border border-gray-700">
-            <Image src={item.itemImageUrl || '/images/catalogo/arte.png'} alt={item.itemNome} fill className="object-contain" />
+      <div className="flex flex-col mb-2 bg-phalis-gray/20 border border-gray-700 rounded-lg hover:bg-phalis-gray/40 transition">
+         {/* CABEÇALHO DO ITEM (CLICÁVEL PARA EXPANDIR) */}
+         <div
+             className="flex gap-4 items-center p-3 cursor-pointer"
+             onClick={() => setIsExpanded(!isExpanded)}
+         >
+            <div className="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-phalis-dark border border-gray-700">
+               <Image src={item.itemImageUrl || '/images/catalogo/arte.png'} alt={item.itemNome} fill className="object-contain" />
+            </div>
+            <div className="flex-1 min-w-0">
+               <h5 className="font-bold text-white text-md truncate flex items-center gap-2">
+                   {item.itemNome}
+                   <Eye className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
+               </h5>
+               <p className="text-xs text-gray-400 mt-1 line-clamp-2">{formatarEspecificacoes()}</p>
+               {observacaoFinal && (
+                   <p className="text-[11px] text-yellow-500 mt-1 truncate">Obs: {observacaoFinal}</p>
+               )}
+            </div>
+            <div className="text-right shrink-0">
+               <span className="text-sm font-bold text-phalis-action">
+                  R$ {(Number(item.valor) || 0).toFixed(2)}
+               </span>
+            </div>
          </div>
-         <div className="flex-1 min-w-0">
-            <h5 className="font-bold text-white text-md truncate">{item.itemNome}</h5>
-            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{formatarEspecificacoes()}</p>
-            {observacaoFinal && (
-                <p className="text-[11px] text-yellow-500 mt-1 truncate">Obs: {observacaoFinal}</p>
-            )}
-         </div>
-         <div className="text-right shrink-0">
-            <span className="text-sm font-bold text-phalis-action">
-               R$ {(Number(item.valor) || 0).toFixed(2)}
-            </span>
-         </div>
+
+         {/* DETALHES DE FATURAMENTO EXPANDIDOS */}
+         {isExpanded && (
+            <div className="p-3 border-t border-gray-700 bg-black/30 text-xs text-gray-400 grid grid-cols-2 gap-y-2 gap-x-4">
+               <div><strong>Tipo:</strong> <span className="capitalize">{tipo}</span></div>
+               {qtd && <div><strong>Quantidade:</strong> {qtd} un</div>}
+               {w && h && <div><strong>Dimensões:</strong> {w} x {h} {tipo?.toUpperCase() === 'METRO' ? 'm' : 'cm'}</div>}
+
+               {vCusto != null && <div><strong>Custo Base:</strong> R$ {Number(vCusto).toFixed(2)}</div>}
+               {vVenda != null && <div><strong>Venda Base:</strong> R$ {Number(vVenda).toFixed(2)}</div>}
+               {vArte != null && <div><strong>Add Arte:</strong> R$ {Number(vArte).toFixed(2)}</div>}
+               {vDesconto != null && <div><strong>Desconto:</strong> R$ {Number(vDesconto).toFixed(2)}</div>}
+
+               <div className="col-span-2 mt-2 pt-2 border-t border-gray-700/50 flex justify-between items-center text-sm">
+                   <div className="text-gray-300"><strong>Custo Pedido:</strong> R$ {custoTotalItem.toFixed(2)}</div>
+                   <div className="text-green-400 font-bold bg-green-900/30 px-2 py-1 rounded">Lucro Item: R$ {lucroItem.toFixed(2)}</div>
+               </div>
+            </div>
+         )}
       </div>
    );
 };
@@ -150,7 +212,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    const { hasPermission } = usePermission();
    const router = useRouter();
    const { user } = useAuth();
-   
+
    const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
    const [cancelMotivo, setCancelMotivo] = useState('');
    const [cancelLoading, setCancelLoading] = useState(false);
@@ -178,7 +240,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
 
    const historicoCompleto = useMemo(() => {
       // Começamos o evento inicial de criação:
-      const eventos: { status: string, data: string, user: string, subStatus?: string, motivo?: string }[] = [
+      const eventos: { status: string, data: string, user: string, subStatus?: string, motivo?: string, observacao?: string }[] = [
          {
             status: 'CRIADO',
             data: pedido.dataCriacao,
@@ -201,8 +263,8 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
             status: 'PAGAMENTO',
             subStatus: `(R$ ${pg.valorPago.toFixed(2)} - ${pg.formaPagamento})`,
             data: pg.dataPagamento,
-            user: 'Sistema',
-            motivo: pg.observacao
+            user: pg.nomeUsuario || 'Sistema',
+            observacao: pg.observacao
          });
       });
 
@@ -210,8 +272,8 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
       return eventos;
    }, [pedido.dataCriacao, pedido.criadoPor, historicoProd, pagamentos]);
 
-   const itensToRender = pedido.itens && pedido.itens.length > 0 
-       ? pedido.itens 
+   const itensToRender = pedido.itens && pedido.itens.length > 0
+       ? pedido.itens
        : [
            {
               id: pedido.id,
@@ -223,6 +285,41 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
               detalhes: pedido.detalhes
            } as ItemPedido
          ];
+
+   // SUMARIO FINANCEIRO DO PEDIDO
+   const resumoFinanceiro = useMemo(() => {
+       let custo = 0;
+       let arte = 0;
+       let desconto = 0;
+
+       itensToRender.forEach(it => {
+           const tipoStr = (it.tipoPrecificacao || it.detalhes?.type || '').toUpperCase();
+           const qtd = it.quantidade || (it.detalhes as any)?.preco?.quantidade || 1;
+           const w = it.largura || (it.detalhes as any)?.preco?.largura || (it.detalhes as any)?.dimensoesPersonalizadas?.larguraCm || 1;
+           const h = it.altura || (it.detalhes as any)?.preco?.altura || (it.detalhes as any)?.dimensoesPersonalizadas?.alturaCm || 1;
+
+           const vC = it.valorCusto || (tipoStr === 'UNIDADE' ? (it.detalhes as any)?.preco?.precoCusto : (it.detalhes as any)?.preco?.m2Custo) || 0;
+
+           const precoDet = (it.detalhes as any)?.preco;
+           let cTot = precoDet?.custoTotal || precoDet?.valorTotalCusto;
+           if (cTot == null) {
+               if (tipoStr === 'UNIDADE') cTot = Number(vC);
+               else if (tipoStr === 'METRO') cTot = Number(vC) * Number(w) * Number(h) * Number(qtd);
+               else cTot = 0;
+           }
+           custo += Number(cTot);
+
+           const aTot = (it.detalhes as any)?.preco?.precoArte || (it.detalhes as any)?.preco?.valorArte || 0;
+           arte += Number(aTot);
+
+           const dTot = it.valorDesconto || (it.detalhes as any)?.preco?.desconto || 0;
+           desconto += Number(dTot);
+       });
+
+       const lucro = (Number(pedido.valor) || 0) - custo;
+
+       return { custo, arte, desconto, lucro };
+   }, [itensToRender, pedido.valor]);
 
    const isCanceled = pedido.statusProducao === 'CANCELADO';
 
@@ -260,17 +357,43 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    return (
        <div className="bg-black/40 rounded-lg border border-phalis-gray/50 overflow-hidden" onClick={e => e.stopPropagation()}>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
-              
+
               {/* Lado Esquerdo: Lista de Itens */}
-              <div className="md:col-span-8 p-5 border-r border-gray-800">
-                  <h4 className="text-md font-semibold text-white mb-4 flex items-center justify-between">
-                     <span>Itens do Pedido ({itensToRender.length})</span>
-                     <span className="text-phalis-action font-bold">Total: {(Number(pedido.valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                  </h4>
-                  <div className="space-y-3">
-                     {itensToRender.map((item, idx) => (
-                        <MiniItemCard key={item.id || idx} item={item} />
-                     ))}
+              <div className="md:col-span-8 flex flex-col border-r border-gray-800">
+
+                  {/* Resumo Financeiro do Pedido */}
+                  <div className="py-2.5 px-5 border-b border-gray-800 bg-black/20">
+                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] sm:text-xs">
+                        <div className="flex items-center gap-1.5">
+                           <span className="text-gray-500 font-medium">Custo Pedido:</span>
+                           <span className="text-red-400/80 font-medium">R$ {resumoFinanceiro.custo.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                           <span className="text-gray-500 font-medium">Descontos:</span>
+                           <span className="text-yellow-500/80 font-medium">R$ {resumoFinanceiro.desconto.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                           <span className="text-gray-500 font-medium">Add Arte:</span>
+                           <span className="text-blue-400/80 font-medium">R$ {resumoFinanceiro.arte.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 ml-auto border-l border-gray-700/50 pl-4 py-0.5">
+                           <span className="text-gray-400 font-semibold">Lucro Líquido:</span>
+                           <span className="font-bold text-green-500/90">R$ {resumoFinanceiro.lucro.toFixed(2)}</span>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Lista de Itens */}
+                  <div className="p-5 flex-1">
+                      <h4 className="text-md font-semibold text-white mb-4 flex items-center justify-between">
+                         <span>Itens do Pedido ({itensToRender.length})</span>
+                         <span className="text-phalis-action font-bold text-lg">{(Number(pedido.valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </h4>
+                      <div className="space-y-3">
+                         {itensToRender.map((item, idx) => (
+                            <MiniItemCard key={item.id || idx} item={item} />
+                         ))}
+                      </div>
                   </div>
               </div>
 
@@ -279,7 +402,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                  <h4 className="text-md font-semibold text-white mb-4 flex items-center gap-2">
                     Linha do Tempo
                  </h4>
-                 
+
                  <div className="flex-1 overflow-y-auto max-h-[350px] pr-2 scrollbar-thin">
                     {isLoadingTimeline ? (
                        <div className="flex items-center justify-center p-6 text-gray-500">

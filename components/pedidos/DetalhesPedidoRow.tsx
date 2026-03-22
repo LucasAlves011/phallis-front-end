@@ -132,26 +132,26 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
       const specs = [];
       if (tipoStr === 'UNIDADE' || tipoStr === 'METRO') {
          if (produtoFetched && produtoFetched.options) {
-             const optsConfig = produtoFetched.options;
-             Object.entries(opts).forEach(([key, val]) => {
-                const optName = optsConfig[key as keyof typeof optsConfig]?.find((o: any) => o.id === val)?.name;
-                if (optName) specs.push(optName);
-             });
+            const optsConfig = produtoFetched.options;
+            Object.entries(opts).forEach(([key, val]) => {
+               const optName = optsConfig[key as keyof typeof optsConfig]?.find((o: any) => o.id === val)?.name;
+               if (optName) specs.push(optName);
+            });
          } else {
-             specs.push("Carregando opções...");
+            specs.push("Carregando opções...");
          }
 
          if (w && h) {
-             specs.push(tipoStr === 'METRO' ? `Dimensões: ${w}m x ${h}m` : `Tamanho: ${w}x${h}cm`);
+            specs.push(tipoStr === 'METRO' ? `Dimensões: ${w}m x ${h}m` : `Tamanho: ${w}x${h}cm`);
          }
 
          if (tipoStr === 'UNIDADE' && qtd) {
-             specs.push(`Qtd: ${qtd}`);
+            specs.push(`Qtd: ${qtd}`);
          }
       } else if (tipoStr === 'SERVICO') {
-          specs.push("Serviço/Arte");
+         specs.push("Serviço/Arte");
       } else if (!tipoStr) {
-          return "Detalhes em branco";
+         return "Detalhes em branco";
       }
       return specs.join(" • ");
    };
@@ -162,20 +162,20 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
       <div className="flex flex-col mb-2 bg-phalis-gray/20 border border-gray-700 rounded-lg hover:bg-phalis-gray/40 transition">
          {/* CABEÇALHO DO ITEM (CLICÁVEL PARA EXPANDIR) */}
          <div
-             className="flex gap-4 items-center p-3 cursor-pointer"
-             onClick={() => setIsExpanded(!isExpanded)}
+            className="flex gap-4 items-center p-3 cursor-pointer"
+            onClick={() => setIsExpanded(!isExpanded)}
          >
             <div className="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-phalis-dark border border-gray-700">
                <Image src={item.itemImageUrl || '/images/catalogo/arte.png'} alt={item.itemNome} fill className="object-contain" />
             </div>
             <div className="flex-1 min-w-0">
                <h5 className="font-bold text-white text-md truncate flex items-center gap-2">
-                   {item.itemNome}
-                   <Eye className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
+                  {item.itemNome}
+                  <Eye className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
                </h5>
                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{formatarEspecificacoes()}</p>
                {observacaoFinal && (
-                   <p className="text-[11px] text-yellow-500 mt-1 truncate">Obs: {observacaoFinal}</p>
+                  <p className="text-[11px] text-yellow-500 mt-1 truncate">Obs: {observacaoFinal}</p>
                )}
             </div>
             <div className="text-right shrink-0">
@@ -198,8 +198,8 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
                {vDesconto != null && <div><strong>Desconto:</strong> R$ {Number(vDesconto).toFixed(2)}</div>}
 
                <div className="col-span-2 mt-2 pt-2 border-t border-gray-700/50 flex justify-between items-center text-sm">
-                   <div className="text-gray-300"><strong>Custo Pedido:</strong> R$ {custoTotalItem.toFixed(2)}</div>
-                   <div className="text-green-400 font-bold bg-green-900/30 px-2 py-1 rounded">Lucro Item: R$ {lucroItem.toFixed(2)}</div>
+                  <div className="text-gray-300"><strong>Custo Pedido:</strong> R$ {custoTotalItem.toFixed(2)}</div>
+                  <div className="text-green-400 font-bold bg-green-900/30 px-2 py-1 rounded">Lucro Item: R$ {lucroItem.toFixed(2)}</div>
                </div>
             </div>
          )}
@@ -222,9 +222,18 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    const [historicoProd, setHistoricoProd] = useState<any[]>([]);
    const [pagamentos, setPagamentos] = useState<any[]>([]);
    const [isLoadingTimeline, setIsLoadingTimeline] = useState(true);
+   const lastFetchedIdRef = React.useRef<string | null>(null);
 
    useEffect(() => {
-      setIsLoadingTimeline(true);
+      const isInitialLoad = lastFetchedIdRef.current !== String(pedido.id);
+
+      if (isInitialLoad) {
+         setIsLoadingTimeline(true);
+         setHistoricoProd([]);
+         setPagamentos([]);
+         lastFetchedIdRef.current = String(pedido.id);
+      }
+
       Promise.all([
          authenticatedFetch(`/api/pedidos/${pedido.id}/historico-producao`).then(r => r.ok ? r.json() : []),
          authenticatedFetch(`/api/contas-receber/pedido/${pedido.id}`).then(r => r.ok ? r.json() : null)
@@ -236,7 +245,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
          console.error("Erro timeline:", err);
          setIsLoadingTimeline(false);
       });
-   }, [pedido.id]);
+   }, [pedido.id, pedido.statusProducao, pedido.statusFinanceiro]);
 
    const historicoCompleto = useMemo(() => {
       // Começamos o evento inicial de criação:
@@ -273,189 +282,189 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    }, [pedido.dataCriacao, pedido.criadoPor, historicoProd, pagamentos]);
 
    const itensToRender = pedido.itens && pedido.itens.length > 0
-       ? pedido.itens
-       : [
-           {
-              id: pedido.id,
-              productId: pedido.productId || 'unknown',
-              itemNome: pedido.itemNome || 'Item Desconhecido',
-              itemImageUrl: pedido.itemImageUrl || '',
-              valor: pedido.valor,
-              statusProducao: pedido.statusProducao,
-              detalhes: pedido.detalhes
-           } as ItemPedido
-         ];
+      ? pedido.itens
+      : [
+         {
+            id: pedido.id,
+            productId: pedido.productId || 'unknown',
+            itemNome: pedido.itemNome || 'Item Desconhecido',
+            itemImageUrl: pedido.itemImageUrl || '',
+            valor: pedido.valor,
+            statusProducao: pedido.statusProducao,
+            detalhes: pedido.detalhes
+         } as ItemPedido
+      ];
 
    // SUMARIO FINANCEIRO DO PEDIDO
    const resumoFinanceiro = useMemo(() => {
-       let custo = 0;
-       let arte = 0;
-       let desconto = 0;
+      let custo = 0;
+      let arte = 0;
+      let desconto = 0;
 
-       itensToRender.forEach(it => {
-           const tipoStr = (it.tipoPrecificacao || it.detalhes?.type || '').toUpperCase();
-           const qtd = it.quantidade || (it.detalhes as any)?.preco?.quantidade || 1;
-           const w = it.largura || (it.detalhes as any)?.preco?.largura || (it.detalhes as any)?.dimensoesPersonalizadas?.larguraCm || 1;
-           const h = it.altura || (it.detalhes as any)?.preco?.altura || (it.detalhes as any)?.dimensoesPersonalizadas?.alturaCm || 1;
+      itensToRender.forEach(it => {
+         const tipoStr = (it.tipoPrecificacao || it.detalhes?.type || '').toUpperCase();
+         const qtd = it.quantidade || (it.detalhes as any)?.preco?.quantidade || 1;
+         const w = it.largura || (it.detalhes as any)?.preco?.largura || (it.detalhes as any)?.dimensoesPersonalizadas?.larguraCm || 1;
+         const h = it.altura || (it.detalhes as any)?.preco?.altura || (it.detalhes as any)?.dimensoesPersonalizadas?.alturaCm || 1;
 
-           const vC = it.valorCusto || (tipoStr === 'UNIDADE' ? (it.detalhes as any)?.preco?.precoCusto : (it.detalhes as any)?.preco?.m2Custo) || 0;
+         const vC = it.valorCusto || (tipoStr === 'UNIDADE' ? (it.detalhes as any)?.preco?.precoCusto : (it.detalhes as any)?.preco?.m2Custo) || 0;
 
-           const precoDet = (it.detalhes as any)?.preco;
-           let cTot = precoDet?.custoTotal || precoDet?.valorTotalCusto;
-           if (cTot == null) {
-               if (tipoStr === 'UNIDADE') cTot = Number(vC);
-               else if (tipoStr === 'METRO') cTot = Number(vC) * Number(w) * Number(h) * Number(qtd);
-               else cTot = 0;
-           }
-           custo += Number(cTot);
+         const precoDet = (it.detalhes as any)?.preco;
+         let cTot = precoDet?.custoTotal || precoDet?.valorTotalCusto;
+         if (cTot == null) {
+            if (tipoStr === 'UNIDADE') cTot = Number(vC);
+            else if (tipoStr === 'METRO') cTot = Number(vC) * Number(w) * Number(h) * Number(qtd);
+            else cTot = 0;
+         }
+         custo += Number(cTot);
 
-           const aTot = (it.detalhes as any)?.preco?.precoArte || (it.detalhes as any)?.preco?.valorArte || 0;
-           arte += Number(aTot);
+         const aTot = (it.detalhes as any)?.preco?.precoArte || (it.detalhes as any)?.preco?.valorArte || 0;
+         arte += Number(aTot);
 
-           const dTot = it.valorDesconto || (it.detalhes as any)?.preco?.desconto || 0;
-           desconto += Number(dTot);
-       });
+         const dTot = it.valorDesconto || (it.detalhes as any)?.preco?.desconto || 0;
+         desconto += Number(dTot);
+      });
 
-       const lucro = (Number(pedido.valor) || 0) - custo;
+      const lucro = (Number(pedido.valor) || 0) - custo;
 
-       return { custo, arte, desconto, lucro };
+      return { custo, arte, desconto, lucro };
    }, [itensToRender, pedido.valor]);
 
    const isCanceled = pedido.statusProducao === 'CANCELADO';
 
    const handleEdit = (e: React.MouseEvent) => {
-       e.stopPropagation();
-       // Edição legado suportava só um item
-       router.push(`/pedido?id=${itensToRender[0].productId}&edit=${pedido.id}`);
+      e.stopPropagation();
+      // Edição legado suportava só um item
+      router.push(`/pedido?id=${itensToRender[0].productId}&edit=${pedido.id}`);
    };
 
    const openCancelDialog = (e: React.MouseEvent) => {
-       e.stopPropagation();
-       setCancelMotivo(''); setCancelError(''); setCancelLoading(false); setIsCancelDialogOpen(true);
+      e.stopPropagation();
+      setCancelMotivo(''); setCancelError(''); setCancelLoading(false); setIsCancelDialogOpen(true);
    };
 
    const handleCancelConfirm = async (e: React.MouseEvent) => {
-       e.stopPropagation();
-       if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
-       setCancelLoading(true); setCancelError('');
-       try {
-          const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, {
-             method: 'PUT', headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
-          });
-          if (!response.ok) throw new Error('Falha ao cancelar');
-          const updatedPedido = await response.json();
-          onPedidoUpdated(updatedPedido);
-          setIsCancelDialogOpen(false);
-       } catch (error: any) {
-          setCancelError(error.message);
-       } finally {
-          setCancelLoading(false);
-       }
+      e.stopPropagation();
+      if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
+      setCancelLoading(true); setCancelError('');
+      try {
+         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
+         });
+         if (!response.ok) throw new Error('Falha ao cancelar');
+         const updatedPedido = await response.json();
+         onPedidoUpdated(updatedPedido);
+         setIsCancelDialogOpen(false);
+      } catch (error: any) {
+         setCancelError(error.message);
+      } finally {
+         setCancelLoading(false);
+      }
    };
 
    return (
-       <div className="bg-black/40 rounded-lg border border-phalis-gray/50 overflow-hidden" onClick={e => e.stopPropagation()}>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
+      <div className="bg-black/40 rounded-lg border border-phalis-gray/50 overflow-hidden" onClick={e => e.stopPropagation()}>
+         <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
 
-              {/* Lado Esquerdo: Lista de Itens */}
-              <div className="md:col-span-8 flex flex-col border-r border-gray-800">
+            {/* Lado Esquerdo: Lista de Itens */}
+            <div className="md:col-span-8 flex flex-col border-r border-gray-800">
 
-                  {/* Resumo Financeiro do Pedido */}
-                  <div className="py-2.5 px-5 border-b border-gray-800 bg-black/20">
-                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] sm:text-xs">
-                        <div className="flex items-center gap-1.5">
-                           <span className="text-gray-500 font-medium">Custo Pedido:</span>
-                           <span className="text-red-400/80 font-medium">R$ {resumoFinanceiro.custo.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                           <span className="text-gray-500 font-medium">Descontos:</span>
-                           <span className="text-yellow-500/80 font-medium">R$ {resumoFinanceiro.desconto.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                           <span className="text-gray-500 font-medium">Add Arte:</span>
-                           <span className="text-blue-400/80 font-medium">R$ {resumoFinanceiro.arte.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 ml-auto border-l border-gray-700/50 pl-4 py-0.5">
-                           <span className="text-gray-400 font-semibold">Lucro Líquido:</span>
-                           <span className="font-bold text-green-500/90">R$ {resumoFinanceiro.lucro.toFixed(2)}</span>
-                        </div>
+               {/* Resumo Financeiro do Pedido */}
+               <div className="py-2.5 px-5 border-b border-gray-800 bg-black/20">
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] sm:text-xs">
+                     <div className="flex items-center gap-1.5">
+                        <span className="text-gray-500 font-medium">Custo Pedido:</span>
+                        <span className="text-red-400/80 font-medium">R$ {resumoFinanceiro.custo.toFixed(2)}</span>
+                     </div>
+                     <div className="flex items-center gap-1.5">
+                        <span className="text-gray-500 font-medium">Descontos:</span>
+                        <span className="text-yellow-500/80 font-medium">R$ {resumoFinanceiro.desconto.toFixed(2)}</span>
+                     </div>
+                     <div className="flex items-center gap-1.5">
+                        <span className="text-gray-500 font-medium">Adicional Arte:</span>
+                        <span className="text-blue-400/80 font-medium">R$ {resumoFinanceiro.arte.toFixed(2)}</span>
+                     </div>
+                     <div className="flex items-center gap-1.5 ml-auto border-l border-gray-700/50 pl-4 py-0.5">
+                        <span className="text-gray-400 font-semibold">Lucro Líquido:</span>
+                        <span className="font-bold text-green-500/90">R$ {resumoFinanceiro.lucro.toFixed(2)}</span>
                      </div>
                   </div>
+               </div>
 
-                  {/* Lista de Itens */}
-                  <div className="p-5 flex-1">
-                      <h4 className="text-md font-semibold text-white mb-4 flex items-center justify-between">
-                         <span>Itens do Pedido ({itensToRender.length})</span>
-                         <span className="text-phalis-action font-bold text-lg">{(Number(pedido.valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                      </h4>
-                      <div className="space-y-3">
-                         {itensToRender.map((item, idx) => (
-                            <MiniItemCard key={item.id || idx} item={item} />
-                         ))}
-                      </div>
+               {/* Lista de Itens */}
+               <div className="p-5 flex-1">
+                  <h4 className="text-md font-semibold text-white mb-4 flex items-center justify-between">
+                     <span>Itens do Pedido ({itensToRender.length})</span>
+                     <span className="text-phalis-action font-bold text-lg">{(Number(pedido.valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                  </h4>
+                  <div className="space-y-3">
+                     {itensToRender.map((item, idx) => (
+                        <MiniItemCard key={item.id || idx} item={item} />
+                     ))}
                   </div>
-              </div>
+               </div>
+            </div>
 
-              {/* Lado Direito: Histórico */}
-              <div className="md:col-span-4 p-5 bg-phalis-gray/10 flex flex-col h-full">
-                 <h4 className="text-md font-semibold text-white mb-4 flex items-center gap-2">
-                    Linha do Tempo
-                 </h4>
+            {/* Lado Direito: Histórico */}
+            <div className="md:col-span-4 p-5 bg-phalis-gray/10 flex flex-col h-full">
+               <h4 className="text-md font-semibold text-white mb-4 flex items-center gap-2">
+                  Linha do Tempo
+               </h4>
 
-                 <div className="flex-1 overflow-y-auto max-h-[350px] pr-2 scrollbar-thin">
-                    {isLoadingTimeline ? (
-                       <div className="flex items-center justify-center p-6 text-gray-500">
-                          <Loader2 className="h-6 w-6 animate-spin mr-2" /> Carregando Histórico...
-                       </div>
-                    ) : (
-                       <ol className="list-none m-0 p-0">
-                          {historicoCompleto.length === 0 && <span className="text-sm text-gray-400">Nenhum evento registrado.</span>}
-                          {historicoCompleto.map((item, index) => (
-                             <TimelineItem key={index} item={item} isLast={index === historicoCompleto.length - 1} />
-                          ))}
-                       </ol>
-                    )}
-                 </div>
+               <div className="flex-1 overflow-y-auto max-h-[350px] pr-2 scrollbar-thin">
+                  {isLoadingTimeline ? (
+                     <div className="flex items-center justify-center p-6 text-gray-500">
+                        <Loader2 className="h-6 w-6 animate-spin mr-2" /> Carregando Histórico...
+                     </div>
+                  ) : (
+                     <ol className="list-none m-0 p-0">
+                        {historicoCompleto.length === 0 && <span className="text-sm text-gray-400">Nenhum evento registrado.</span>}
+                        {historicoCompleto.map((item, index) => (
+                           <TimelineItem key={index} item={item} isLast={index === historicoCompleto.length - 1} />
+                        ))}
+                     </ol>
+                  )}
+               </div>
 
-                 <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-800">
-                    {hasPermission('pedidos.editar') && (
-                       <Button variant="outline" size="sm" className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white" onClick={handleEdit} disabled={isCanceled}>
-                          <Pencil className="h-4 w-4 mr-2" /> Editar Pedido
-                       </Button>
-                    )}
-                    {hasPermission('pedidos.cancelar') && (
-                       <Button variant="outline" size="sm" className="w-full bg-phalis-danger/20 text-phalis-danger border-phalis-danger/30 hover:bg-phalis-danger/30 hover:text-red-400" onClick={openCancelDialog} disabled={isCanceled}>
-                          <XOctagon className="h-4 w-4 mr-2" /> Cancelar Pedido
-                       </Button>
-                    )}
-                 </div>
-              </div>
+               <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-800">
+                  {hasPermission('pedidos.editar') && (
+                     <Button variant="outline" size="sm" className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white" onClick={handleEdit} disabled={isCanceled}>
+                        <Pencil className="h-4 w-4 mr-2" /> Editar Pedido
+                     </Button>
+                  )}
+                  {hasPermission('pedidos.cancelar') && (
+                     <Button variant="outline" size="sm" className="w-full bg-phalis-danger/20 text-phalis-danger border-phalis-danger/30 hover:bg-phalis-danger/30 hover:text-red-400" onClick={openCancelDialog} disabled={isCanceled}>
+                        <XOctagon className="h-4 w-4 mr-2" /> Cancelar Pedido
+                     </Button>
+                  )}
+               </div>
+            </div>
 
-          </div>
+         </div>
 
-          <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-             <AlertDialogContent className="bg-phalis-black border-gray-800 text-white">
-                <AlertDialogHeader>
-                   <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
-                   <AlertDialogDescription asChild>
-                      <div className="text-gray-400 space-y-3 mt-2">
-                         <p className="text-yellow-400">Esta ação não pode ser desfeita. Todos os itens associados serão cancelados.</p>
-                         <div className="space-y-2 pt-2">
-                            <Label htmlFor="motivo" className="text-white">Motivo (Obrigatório)</Label>
-                            <Textarea id="motivo" className="bg-phalis-gray border-0" value={cancelMotivo} onChange={(e) => setCancelMotivo(e.target.value)} onClick={(e) => e.stopPropagation()} />
-                            {cancelError && <p className="text-sm text-phalis-danger">{cancelError}</p>}
-                         </div>
-                      </div>
-                   </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                   <AlertDialogCancel className="bg-gray-700 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Voltar</AlertDialogCancel>
-                   <Button className="bg-phalis-danger text-white hover:bg-red-700" disabled={cancelLoading} onClick={handleCancelConfirm}>{cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Cancelamento"}</Button>
-                </AlertDialogFooter>
-             </AlertDialogContent>
-          </AlertDialog>
-       </div>
+         <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+            <AlertDialogContent className="bg-phalis-black border-gray-800 text-white">
+               <AlertDialogHeader>
+                  <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                     <div className="text-gray-400 space-y-3 mt-2">
+                        <p className="text-yellow-400">Esta ação não pode ser desfeita. Todos os itens associados serão cancelados.</p>
+                        <div className="space-y-2 pt-2">
+                           <Label htmlFor="motivo" className="text-white">Motivo (Obrigatório)</Label>
+                           <Textarea id="motivo" className="bg-phalis-gray border-0" value={cancelMotivo} onChange={(e) => setCancelMotivo(e.target.value)} onClick={(e) => e.stopPropagation()} />
+                           {cancelError && <p className="text-sm text-phalis-danger">{cancelError}</p>}
+                        </div>
+                     </div>
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-gray-700 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Voltar</AlertDialogCancel>
+                  <Button className="bg-phalis-danger text-white hover:bg-red-700" disabled={cancelLoading} onClick={handleCancelConfirm}>{cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Cancelamento"}</Button>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+      </div>
    );
 };
 

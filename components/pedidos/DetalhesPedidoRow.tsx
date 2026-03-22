@@ -1,7 +1,7 @@
 // Arquivo: components/pedidos/DetalhesPedidoRow.tsx
 import React, { useMemo, useState, useEffect } from 'react';
 import { Pedido, ItemPedido } from '@/lib/orderData';
-import { optionGroupsConfig, type Product } from '@/lib/productData';
+import { type Product } from '@/lib/productData';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
 import { authenticatedFetch } from '@/lib/api';
@@ -17,42 +17,32 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-   Pencil, XOctagon, Loader2, FileText, DollarSign, AlertCircle,
-   ChevronDown, ChevronUp, TrendingUp
-} from 'lucide-react';
+import { Pencil, XOctagon, Loader2, DollarSign } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useRouter } from 'next/navigation';
-// Helper Types
-type DetalhesUnidade = Extract<Pedido['detalhes'], { type: 'unidade' }>;
-type DetalhesMetro = Extract<Pedido['detalhes'], { type: 'metro' }>;
-
-
 
 type DetalhesProps = {
    pedido: Pedido;
    onPedidoUpdated: (pedido: Pedido) => void;
 };
 
-const formatarData = (isoString: string) => {
-   return new Date(isoString).toLocaleString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-   });
-};
-
 // STATUS MAPS
 const STATUS_NOME_MAP: Record<string, string> = {
-   nao_pago: 'Não Pago', pago_50: 'Pago 50%', pago: 'Pago',
-   pre_prod: 'Pré-Produção', em_producao: 'Em Produção',
-   pronto_retirada: 'Pronto p/ Retirada', concluido: 'Concluído',
-   CRIADO: 'Pedido Criado', cancelado: 'Cancelado',
+   PENDENTE: 'Pendente', PARCIAL: 'Pagamento Parcial', PAGO: 'Pago',
+   REEMBOLSADO: 'Reembolsado',
+   PRE_PROD: 'Pré-Produção', EM_PRODUCAO: 'Em Produção',
+   ACABAMENTO: 'Acabamento', PRONTO: 'Pronto p/ Retirada',
+   ENTREGUE: 'Entregue', CANCELADO: 'Cancelado', 
+   CRIADO: 'Pedido Criado', PAGAMENTO: 'Pagamento Realizado'
 };
 const STATUS_COR_MAP: Record<string, string> = {
-   nao_pago: 'bg-red-600', pago_50: 'bg-yellow-500', pago: 'bg-green-600',
-   pre_prod: 'bg-gray-500', em_producao: 'bg-blue-600',
-   pronto_retirada: 'bg-purple-600', concluido: 'bg-green-600',
-   CRIADO: 'bg-gray-500', cancelado: 'bg-gray-700',
+   PENDENTE: 'bg-red-600', PARCIAL: 'bg-yellow-500', PAGO: 'bg-green-600',
+   REEMBOLSADO: 'bg-gray-500',
+   PRE_PROD: 'bg-gray-500', EM_PRODUCAO: 'bg-blue-600',
+   ACABAMENTO: 'bg-indigo-600', PRONTO: 'bg-purple-600',
+   ENTREGUE: 'bg-green-600', CANCELADO: 'bg-gray-700',
+   CRIADO: 'bg-gray-500', PAGAMENTO: 'bg-green-400'
 };
 
 // TIMELINE ITEM
@@ -62,60 +52,32 @@ const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, 
    return (
       <li className="flex gap-3">
          <div className="flex flex-col items-center">
-            <div className={cn("h-3 w-3 rounded-full", corStatus)} />
+            <div className={cn("h-3 w-3 rounded-full mt-1.5", corStatus)} />
             {!isLast && (<div className="w-px flex-1 bg-gray-600 my-1" />)}
          </div>
-         <div className="pb-4 -mt-1 flex-1">
+         <div className="pb-4 flex-1">
             <div className="flex justify-between text-xs">
-               <span className="text-sm text-white font-medium">{nomeStatus}</span>
-               <span className="text-gray-400">{item.user}</span>
+               <span className="text-sm text-white font-medium flex items-center gap-1">
+                  {nomeStatus}
+                  {item.subStatus && <span className="text-gray-400 text-xs font-normal">{item.subStatus}</span>}
+               </span>
             </div>
-            {item.subStatus && (<div className="text-xs text-gray-400">{item.subStatus}</div>)}
-            {item.motivo && (<div className="text-xs text-red-400 italic mt-1">Motivo: {item.motivo}</div>)}
-            <div className="text-xs text-gray-500">{formatarData(item.data)}</div>
+            <div className="text-[11px] text-gray-500 mt-0.5">
+               {new Date(item.data).toLocaleString('pt-BR')} por {item.user}
+            </div>
+            {item.motivo && (
+               <div className="mt-1 text-xs text-red-400 bg-red-950/30 p-1.5 rounded border border-red-900/50">
+                  <span className="font-semibold block mb-0.5">Motivo:</span>
+                  {item.motivo}
+               </div>
+            )}
          </div>
       </li>
    );
 };
 
-// --- NOVOS COMPONENTES VISUAIS ---
-
-const InfoBlock = ({ label, value, highlight = false }: { label: string, value: React.ReactNode, highlight?: boolean }) => (
-   <div className="flex flex-col">
-      <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">{label}</span>
-      <span className={cn("text-sm font-medium", highlight ? "text-phalis-action" : "text-gray-200")}>{value}</span>
-   </div>
-);
-
-const MoneyRow = ({
-   label,
-   value,
-   isTotal = false,
-   isDiscount = false,
-   isCost = false
-}: {
-   label: string,
-   value: number,
-   isTotal?: boolean,
-   isDiscount?: boolean,
-   isCost?: boolean
-}) => (
-   <div className={cn("flex justify-between items-center py-1", isTotal && "pt-2 mt-1 border-t border-white/10")}>
-      <span className={cn("text-sm", isTotal ? "text-white font-bold" : "text-gray-400")}>{label}</span>
-      <span className={cn(
-         "text-sm font-mono",
-         isTotal ? "text-phalis-action font-bold text-lg" : "text-gray-300",
-         isDiscount && "text-red-400",
-         isCost && "text-gray-500" // Cor mais apagada para custos
-      )}>
-         {isDiscount ? "-" : ""}R$ {value.toFixed(2)}
-      </span>
-   </div>
-);
-
-// --- RENDERIZADORES ---
-
-const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ item, pedido, onPedidoUpdated }) => {
+// MINI ITEM CARD
+const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
    const [produtoFetched, setProdutoFetched] = useState<Product | null>(null);
 
    useEffect(() => {
@@ -124,436 +86,132 @@ const DetalhesUnidadeMetro: React.FC<{ item: ItemPedido; pedido: Pedido; onPedid
          .then(data => setProdutoFetched(data))
          .catch(err => console.error("Erro ao buscar produto:", err));
    }, [item.productId]);
-   const { hasPermission } = usePermission();
-   const { detalhes, itemImageUrl, itemNome } = item;
-   if (!detalhes) return null;
-   const router = useRouter();
-   const { user } = useAuth();
 
-   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-   const [cancelMotivo, setCancelMotivo] = useState('');
-   const [cancelLoading, setCancelLoading] = useState(false);
-   const [cancelError, setCancelError] = useState('');
-
-   // Estado para expandir os detalhes financeiros
-   const [showFinanceDetails, setShowFinanceDetails] = useState(false);
-
-   if (detalhes.type !== 'UNIDADE' && detalhes.type !== 'METRO') return null;
-   // Cast para auxiliar se a inferência falhar em propriedades específicas overlap
-   const detalhesItem = detalhes as Extract<typeof detalhes, { type: 'UNIDADE' } | { type: 'METRO' }>;
-   const { opcoes, preco } = detalhesItem;
-
-   // ... (código segue)
-
-   const getOptionLabel = (groupId: string) => {
-      const optionId = opcoes[groupId];
-      if (!optionId) return '---';
-      if (groupId === 'tamanho' && detalhesItem.type === 'UNIDADE' && detalhesItem.dimensoesPersonalizadas) {
-         const { larguraCm, alturaCm } = detalhesItem.dimensoesPersonalizadas;
-         return `Personalizado (${larguraCm}x${alturaCm}cm)`;
+   const formatarEspecificacoes = () => {
+      // Suporte simultâneo ao payload novo flat e ao legado em `.detalhes`
+      const tipo = item.tipoPrecificacao || item.detalhes?.type;
+      const opts = item.opcoes || item.detalhes?.opcoes || {};
+      const qtd = item.quantidade || (item.detalhes as any)?.preco?.quantidade;
+      const w = item.largura || (item.detalhes as any)?.preco?.largura || (item.detalhes as any)?.dimensoesPersonalizadas?.larguraCm;
+      const h = item.altura || (item.detalhes as any)?.preco?.altura || (item.detalhes as any)?.dimensoesPersonalizadas?.alturaCm;
+      
+      const specs = [];
+      if (tipo === 'UNIDADE' || tipo === 'METRO') {
+         if (produtoFetched && produtoFetched.options) {
+             const optsConfig = produtoFetched.options;
+             Object.entries(opts).forEach(([key, val]) => {
+                const optName = optsConfig[key as keyof typeof optsConfig]?.find((o: any) => o.id === val)?.name;
+                if (optName) specs.push(optName);
+             });
+         } else {
+             specs.push("Carregando opções...");
+         }
+         
+         if (w && h) {
+             specs.push(tipo === 'METRO' ? `Dimensões: ${w}m x ${h}m` : `Tamanho: ${w}x${h}cm`);
+         }
+         
+         if (tipo === 'UNIDADE' && qtd) {
+             specs.push(`Qtd: ${qtd}`);
+         }
+      } else if (tipo === 'SERVICO') {
+          specs.push("Serviço/Arte");
+      } else if (!tipo) {
+          return "Detalhes em branco";
       }
-      return produtoFetched?.options?.[groupId as keyof typeof produtoFetched.options]?.find((o: any) => o.id === optionId)?.name || optionId;
+      return specs.join(" • ");
    };
 
-   // Cálculos Auxiliares para Exibição
-   const custoTotalReal = detalhesItem.type === 'UNIDADE' ? detalhesItem.preco.custoTotal : detalhesItem.preco.valorTotalCusto;
-   const lucroEstimado = detalhesItem.preco.total - custoTotalReal;
-
-   // Cálculo unitário / m2 para exibição
-   let custoUnitarioOuM2 = 0;
-   let vendaUnitarioOuM2 = 0;
-
-   if (detalhesItem.type === 'UNIDADE') {
-      const d = detalhesItem as DetalhesUnidade;
-      custoUnitarioOuM2 = d.preco.custoTotal / (d.preco.quantidade || 1);
-      vendaUnitarioOuM2 = d.preco.vendaTotal / (d.preco.quantidade || 1);
-   } else {
-      const d = detalhesItem as DetalhesMetro;
-      custoUnitarioOuM2 = d.preco.m2Custo;
-      vendaUnitarioOuM2 = d.preco.m2Venda;
-   }
-
-   const historicoCompleto = useMemo(() => {
-      const histFin = pedido.historicoFinanceiro || [];
-      const histProd = item.historicoProducao || pedido.historicoProducao || [];
-      const statusInicialFinanceiro = histFin[0]?.status || 'nao_pago';
-      const criacaoEvent = {
-         status: 'CRIADO', subStatus: `(${STATUS_NOME_MAP[statusInicialFinanceiro]})`,
-         data: pedido.dataCriacao, user: pedido.criadoPor?.nome || pedido.criadoPor || 'Sistema',
-      };
-      const eventosFinanceiros = histFin.length > 0 ? histFin.slice(1) : [];
-      const eventosProducao = histProd;
-      const todosEventos = [criacaoEvent, ...eventosFinanceiros, ...eventosProducao];
-      todosEventos.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-      return todosEventos;
-   }, [pedido, item]);
-
-   const handleEdit = (e: React.MouseEvent) => { e.stopPropagation(); router.push(`/pedido?id=${pedido.productId}&edit=${pedido.id}`); };
-   const openCancelDialog = (e: React.MouseEvent) => { e.stopPropagation(); setCancelMotivo(''); setCancelError(''); setCancelLoading(false); setIsCancelDialogOpen(true); };
-
-   const handleCancelConfirm = async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
-      setCancelLoading(true); setCancelError('');
-      try {
-         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, {
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
-         });
-         if (!response.ok) throw new Error('Falha ao cancelar');
-         const updatedPedido = await response.json();
-         onPedidoUpdated(updatedPedido);
-         setIsCancelDialogOpen(false);
-      } catch (error: any) { setCancelError(error.message); } finally { setCancelLoading(false); }
-   };
-
-   const isCanceled = (item.statusProducao || pedido.statusProducao) === 'cancelado';
+   const observacaoFinal = item.observacao || item.detalhes?.observacao;
 
    return (
-      <>
-         <div className="bg-phalis-gray/30 rounded-lg border border-phalis-gray p-0 overflow-hidden grid grid-cols-1 md:grid-cols-12">
-
-            {/* COLUNA 1: Imagem e Info Básica */}
-            <div className="md:col-span-3 p-4 bg-black/20 border-r border-phalis-gray/50 flex flex-col items-center text-center">
-               <div className="relative w-28 h-28 shrink-0 rounded-md overflow-hidden bg-phalis-dark mb-3 border border-phalis-gray/50 mx-auto">
-                  <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
-               </div>
-               <h4 className="font-bold text-white text-lg leading-tight mb-1">{itemNome}</h4>
-               <span className="text-xs text-gray-500 uppercase font-semibold bg-phalis-gray px-2 py-0.5 rounded">
-                  {detalhes.type === 'UNIDADE' ? 'Produto Unitário' : 'Produto por Metro'}
-               </span>
-            </div>
-
-            {/* COLUNA 2: Especificações e Financeiro */}
-            <div className="md:col-span-6 p-5 flex flex-col gap-6">
-
-               {/* Bloco Técnico */}
-               <div>
-                  <h5 className="flex items-center gap-2 text-sm font-semibold text-phalis-action mb-3 border-b border-phalis-action/20 pb-1">
-                     <FileText className="h-4 w-4" /> Especificações Técnicas
-                  </h5>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                     <InfoBlock label="Papel / Material" value={getOptionLabel('papel')} />
-                     <InfoBlock label="Tamanho" value={getOptionLabel('tamanho')} />
-                     <InfoBlock label="Cores" value={getOptionLabel('cores')} />
-                     <InfoBlock label="Acabamento" value={getOptionLabel('acabamento')} />
-
-                     {detalhesItem.type === 'UNIDADE' && (
-                        <InfoBlock label="Quantidade" value={`${(detalhesItem as DetalhesUnidade).preco.quantidade} unid.`} highlight />
-                     )}
-                     {detalhesItem.type === 'METRO' && (
-                        <InfoBlock label="Dimensões" value={`${(detalhesItem as DetalhesMetro).preco.largura.toFixed(2)}m x ${(detalhesItem as DetalhesMetro).preco.altura.toFixed(2)}m`} highlight />
-                     )}
-                  </div>
-
-                  {detalhes.observacao && (
-                     <div className="mt-4 bg-yellow-500/5 border border-yellow-500/20 rounded p-2">
-                        <p className="text-[10px] uppercase font-bold text-yellow-600/80 mb-0.5 flex items-center gap-1">
-                           <AlertCircle className="h-3 w-3" /> Observações
-                        </p>
-                        <p className="text-sm text-gray-300">{detalhes.observacao}</p>
-                     </div>
-                  )}
-               </div>
-
-               {/* Bloco Financeiro Expandível */}
-               <div>
-                  <div className="flex items-center justify-between mb-3 border-b border-green-500/20 pb-1">
-                     <h5 className="flex items-center gap-2 text-sm font-semibold text-green-400">
-                        <DollarSign className="h-4 w-4" /> Resumo Financeiro
-                     </h5>
-                     <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs text-gray-500 hover:text-white hover:bg-transparent p-0"
-                        onClick={(e) => { e.stopPropagation(); setShowFinanceDetails(!showFinanceDetails); }}
-                     >
-                        {showFinanceDetails ? "Ocultar Detalhes" : "Ver Detalhes de Custos"}
-                        {showFinanceDetails ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
-                     </Button>
-                  </div>
-
-                  <div className="bg-black/30 rounded p-3 transition-all duration-300">
-
-                     {/* Resumo Padrão (Sempre Visível) */}
-                     {detalhesItem.type === 'UNIDADE' ? (
-                        <>
-                           <MoneyRow label="Valor Venda (Total)" value={(detalhesItem as DetalhesUnidade).preco.vendaTotal} />
-                           {(detalhesItem as DetalhesUnidade).preco.precoArte > 0 && <MoneyRow label="Arte" value={(detalhesItem as DetalhesUnidade).preco.precoArte} />}
-                        </>
-                     ) : (
-                        <>
-                           <MoneyRow label="Valor Venda (Total)" value={(detalhesItem as DetalhesMetro).preco.valorTotalVenda} />
-                           {(detalhesItem as DetalhesMetro).preco.valorArte > 0 && <MoneyRow label="Arte" value={(detalhesItem as DetalhesMetro).preco.valorArte} />}
-                        </>
-                     )}
-
-                     {detalhesItem.preco.desconto > 0 && <MoneyRow label="Desconto" value={detalhesItem.preco.desconto} isDiscount />}
-                     <MoneyRow label="TOTAL FINAL" value={detalhesItem.preco.total} isTotal />
-
-                     {/* Área Expandida (Caixa Preta) */}
-                     {showFinanceDetails && (
-                        <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-1 animate-in slide-in-from-top-2">
-                           <p className="text-[10px] uppercase font-bold text-gray-500 mb-2">Detalhamento de Custos & Lucro</p>
-
-                           {/* Dados Unitários / m2 */}
-                           <div className="grid grid-cols-2 gap-4 mb-2 pb-2 border-b border-gray-800">
-                              <div>
-                                 <span className="text-xs text-gray-500 block">Custo {detalhes.type === 'UNIDADE' ? 'Unit.' : 'm²'}</span>
-                                 <span className="text-sm text-gray-400 font-mono">R$ {custoUnitarioOuM2.toFixed(2)}</span>
-                              </div>
-                              <div className="text-right">
-                                 <span className="text-xs text-gray-500 block">Venda {detalhes.type === 'UNIDADE' ? 'Unit.' : 'm²'}</span>
-                                 <span className="text-sm text-phalis-action font-mono">R$ {vendaUnitarioOuM2.toFixed(2)}</span>
-                              </div>
-                           </div>
-
-                           {/* Totais de Custo */}
-                           <MoneyRow label="Custo Total de Produção" value={custoTotalReal} isCost />
-
-                           {/* Lucro */}
-                           <div className="flex justify-between items-center py-1 mt-1 pt-1 border-t border-gray-800">
-                              <span className="text-sm text-white flex items-center gap-1">
-                                 <TrendingUp className="h-3 w-3" /> Lucro Estimado
-                              </span>
-                              <span className={cn("text-sm font-mono font-bold", lucroEstimado >= 0 ? "text-green-500" : "text-red-500")}>
-                                 R$ {lucroEstimado.toFixed(2)}
-                              </span>
-                           </div>
-                        </div>
-                     )}
-                  </div>
-               </div>
-            </div>
-
-            {/* COLUNA 3: Gestão do Tempo (INTACTA) */}
-            <div className="md:col-span-3 p-4 bg-phalis-gray/10 border-l border-phalis-gray/50 flex flex-col h-full">
-               <h4 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  Gestão do Tempo
-               </h4>
-               <div className="flex-1 overflow-y-auto max-h-[300px] pr-2 scrollbar-thin">
-                  <ol className="list-none m-0 p-0">
-                     {historicoCompleto.map((item, index) => (
-                        <TimelineItem
-                           key={index}
-                           item={item}
-                           isLast={index === historicoCompleto.length - 1}
-                        />
-                     ))}
-                  </ol>
-               </div>
-
-               <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-800">
-                  {hasPermission('pedidos.editar') && (
-                     <Button variant="outline" size="sm" className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white" onClick={handleEdit} disabled={isCanceled}>
-                        <Pencil className="h-4 w-4 mr-2" /> Editar
-                     </Button>
-                  )}
-                  {hasPermission('pedidos.cancelar') && (
-                     <Button variant="outline" size="sm" className="w-full bg-phalis-danger/20 text-phalis-danger border-phalis-danger/30 hover:bg-phalis-danger/30 hover:text-red-400" onClick={openCancelDialog} disabled={isCanceled}>
-                        <XOctagon className="h-4 w-4 mr-2" /> Cancelar
-                     </Button>
-                  )}
-               </div>
-            </div>
+      <div className="flex gap-4 items-center p-3 mb-2 bg-phalis-gray/20 border border-gray-700 rounded-lg hover:bg-phalis-gray/40 transition">
+         <div className="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-phalis-dark border border-gray-700">
+            <Image src={item.itemImageUrl || '/images/catalogo/arte.png'} alt={item.itemNome} fill className="object-contain" />
          </div>
-
-         {/* Modal de Cancelamento (Mantido) */}
-         <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-            <AlertDialogContent className="bg-phalis-black border-gray-800 text-white">
-               <AlertDialogHeader>
-                  <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                     <div className="text-gray-400 space-y-3">
-                        <p>Cliente: <span className="font-medium text-white">{pedido.cliente?.nome}</span><br />Produto: <span className="font-medium text-white">{itemNome}</span></p>
-                        <p className="text-yellow-400">Esta ação não pode ser desfeita.</p>
-                        <div className="space-y-2 pt-2">
-                           <Label htmlFor="motivo" className="text-white">Motivo (Obrigatório)</Label>
-                           <Textarea id="motivo" className="bg-phalis-gray border-0" value={cancelMotivo} onChange={(e) => setCancelMotivo(e.target.value)} onClick={(e) => e.stopPropagation()} />
-                           {cancelError && <p className="text-sm text-phalis-danger">{cancelError}</p>}
-                        </div>
-                     </div>
-                  </AlertDialogDescription>
-               </AlertDialogHeader>
-               <AlertDialogFooter>
-                  <AlertDialogCancel className="bg-gray-700 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Voltar</AlertDialogCancel>
-                  <Button className="bg-phalis-danger text-white hover:bg-red-700" disabled={cancelLoading} onClick={handleCancelConfirm}>{cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}</Button>
-               </AlertDialogFooter>
-            </AlertDialogContent>
-         </AlertDialog>
-      </>
+         <div className="flex-1 min-w-0">
+            <h5 className="font-bold text-white text-md truncate">{item.itemNome}</h5>
+            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{formatarEspecificacoes()}</p>
+            {observacaoFinal && (
+                <p className="text-[11px] text-yellow-500 mt-1 truncate">Obs: {observacaoFinal}</p>
+            )}
+         </div>
+         <div className="text-right shrink-0">
+            <span className="text-sm font-bold text-phalis-action">
+               R$ {(Number(item.valor) || 0).toFixed(2)}
+            </span>
+         </div>
+      </div>
    );
 };
 
-const DetalhesServico: React.FC<{ item: ItemPedido; pedido: Pedido; onPedidoUpdated: (pedido: Pedido) => void; }> = ({ item, pedido, onPedidoUpdated }) => {
+// MAIN COMPONENT
+const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated }) => {
    const { hasPermission } = usePermission();
-   const { detalhes, itemImageUrl, itemNome } = item;
-   if (!detalhes) return null;
    const router = useRouter();
    const { user } = useAuth();
-
+   
    const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
    const [cancelMotivo, setCancelMotivo] = useState('');
    const [cancelLoading, setCancelLoading] = useState(false);
    const [cancelError, setCancelError] = useState('');
 
-   if (detalhes.type !== 'SERVICO') return null;
-   const { preco } = detalhes;
+   // Estados de Fetch da Timeline
+   const [historicoProd, setHistoricoProd] = useState<any[]>([]);
+   const [pagamentos, setPagamentos] = useState<any[]>([]);
+   const [isLoadingTimeline, setIsLoadingTimeline] = useState(true);
+
+   useEffect(() => {
+      setIsLoadingTimeline(true);
+      Promise.all([
+         authenticatedFetch(`/api/pedidos/${pedido.id}/historico-producao`).then(r => r.ok ? r.json() : []),
+         authenticatedFetch(`/api/contas-receber/pedido/${pedido.id}`).then(r => r.ok ? r.json() : null)
+      ]).then(([prodData, contasData]) => {
+         setHistoricoProd(Array.isArray(prodData) ? prodData : []);
+         setPagamentos(contasData && contasData.pagamentos ? contasData.pagamentos : []);
+         setIsLoadingTimeline(false);
+      }).catch(err => {
+         console.error("Erro timeline:", err);
+         setIsLoadingTimeline(false);
+      });
+   }, [pedido.id]);
 
    const historicoCompleto = useMemo(() => {
-      const histFin = pedido.historicoFinanceiro || [];
-      const histProd = item.historicoProducao || pedido.historicoProducao || [];
-      const statusInicialFinanceiro = histFin[0]?.status || 'nao_pago';
-      const criacaoEvent = {
-         status: 'CRIADO', subStatus: `(${STATUS_NOME_MAP[statusInicialFinanceiro]})`,
-         data: pedido.dataCriacao, user: pedido.criadoPor?.nome || pedido.criadoPor || 'Sistema',
-      };
-      const eventosFinanceiros = histFin.length > 0 ? histFin.slice(1) : [];
-      const eventosProducao = histProd;
-      const todosEventos = [criacaoEvent, ...eventosFinanceiros, ...eventosProducao];
-      todosEventos.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-      return todosEventos;
-   }, [pedido, item]);
+      // Começamos o evento inicial de criação:
+      const eventos: { status: string, data: string, user: string, subStatus?: string, motivo?: string }[] = [
+         {
+            status: 'CRIADO',
+            data: pedido.dataCriacao,
+            user: pedido.criadoPor?.nome || pedido.criadoPor || 'Sistema'
+         }
+      ];
 
-   const handleEdit = (e: React.MouseEvent) => { e.stopPropagation(); router.push(`/pedido?id=${pedido.productId}&edit=${pedido.id}`); };
-   const openCancelDialog = (e: React.MouseEvent) => { e.stopPropagation(); setCancelMotivo(''); setCancelError(''); setCancelLoading(false); setIsCancelDialogOpen(true); };
-
-   const handleCancelConfirm = async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
-      setCancelLoading(true); setCancelError('');
-      try {
-         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, { // MUDANÇA AQUI
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
+      // Mapeamos a Producao
+      historicoProd.forEach((hp: any) => {
+         eventos.push({
+            status: hp.status,
+            data: hp.dataAlteracao,
+            user: hp.nomeUsuario || 'Sistema'
          });
-         if (!response.ok) throw new Error('Falha ao cancelar');
-         const updatedPedido = await response.json();
-         onPedidoUpdated(updatedPedido);
-         setIsCancelDialogOpen(false);
-      } catch (error: any) { setCancelError(error.message); } finally { setCancelLoading(false); }
-   };
+      });
 
-   const isCanceled = (item.statusProducao || pedido.statusProducao) === 'cancelado';
+      // Mapeamos o Financeiro (Pagamentos)
+      pagamentos.forEach((pg: any) => {
+         eventos.push({
+            status: 'PAGAMENTO',
+            subStatus: `(R$ ${pg.valorPago.toFixed(2)} - ${pg.formaPagamento})`,
+            data: pg.dataPagamento,
+            user: 'Sistema',
+            motivo: pg.observacao
+         });
+      });
 
-   return (
-      <>
-         <div className="bg-phalis-gray/30 rounded-lg border border-phalis-gray p-0 overflow-hidden grid grid-cols-1 md:grid-cols-12">
+      eventos.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+      return eventos;
+   }, [pedido.dataCriacao, pedido.criadoPor, historicoProd, pagamentos]);
 
-            {/* COLUNA 1: Imagem e Info (3 colunas) */}
-            <div className="md:col-span-3 p-4 bg-black/20 border-r border-phalis-gray/50 flex flex-col items-center text-center">
-               <div className="relative w-28 h-28 shrink-0 rounded-md overflow-hidden bg-phalis-dark mb-3 border border-phalis-gray/50 mx-auto">
-                  <Image src={itemImageUrl} alt={itemNome} fill className="object-contain" />
-               </div>
-               <h4 className="font-bold text-white text-lg leading-tight mb-1">{itemNome}</h4>
-               <span className="text-xs text-gray-500 uppercase font-semibold bg-phalis-gray px-2 py-0.5 rounded">Serviço / Arte</span>
-            </div>
-
-            {/* COLUNA 2: Detalhes do Serviço (6 colunas) */}
-            <div className="md:col-span-6 p-5 flex flex-col gap-6 justify-center">
-               {detalhes.observacao && (
-                  <div>
-                     <h5 className="text-sm font-semibold text-phalis-action mb-2 flex items-center gap-2">
-                        <FileText className="h-4 w-4" /> Descrição do Serviço
-                     </h5>
-                     <p className="text-sm text-white whitespace-pre-wrap bg-black/20 p-3 rounded border border-white/5">
-                        {detalhes.observacao}
-                     </p>
-                  </div>
-               )}
-
-               <div className="bg-black/30 rounded p-4 mt-auto">
-                  <MoneyRow label="Valor Venda" value={preco.valorVenda} />
-                  {preco.desconto > 0 && <MoneyRow label="Desconto" value={preco.desconto} isDiscount />}
-                  <MoneyRow label="TOTAL FINAL" value={Math.max(0, preco.valorVenda - (preco.desconto || 0))} isTotal />
-               </div>
-            </div>
-
-            {/* COLUNA 3: Gestão do Tempo (3 colunas - INTACTA) */}
-            <div className="md:col-span-3 p-4 bg-phalis-gray/10 border-l border-phalis-gray/50 flex flex-col h-full">
-               <h4 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  Gestão do Tempo
-               </h4>
-               <div className="flex-1 overflow-y-auto max-h-[300px] pr-2 scrollbar-thin">
-                  <ol className="list-none m-0 p-0">
-                     {historicoCompleto.map((item, index) => (
-                        <TimelineItem
-                           key={index}
-                           item={item}
-                           isLast={index === historicoCompleto.length - 1}
-                        />
-                     ))}
-                  </ol>
-               </div>
-
-               <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-800">
-                  {hasPermission('pedidos.editar') && (
-                     <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white"
-                        onClick={handleEdit}
-                        disabled={isCanceled}
-                     >
-                        <Pencil className="h-4 w-4 mr-2" /> Editar
-                     </Button>
-                  )}
-                  {hasPermission('pedidos.cancelar') && (
-                     <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full bg-phalis-danger/20 text-phalis-danger border-phalis-danger/30 hover:bg-phalis-danger/30 hover:text-red-400"
-                        onClick={openCancelDialog}
-                        disabled={isCanceled}
-                     >
-                        <XOctagon className="h-4 w-4 mr-2" /> Cancelar
-                     </Button>
-                  )}
-               </div>
-            </div>
-         </div>
-
-         {/* Modal Cancelamento (Mantido) */}
-         <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-            <AlertDialogContent className="bg-phalis-black border-gray-800 text-white">
-               <AlertDialogHeader>
-                  <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                     <div className="text-gray-400 space-y-3">
-                        <p>
-                           Cliente: <span className="font-medium text-white">{pedido.cliente?.nome}</span><br />
-                           Produto: <span className="font-medium text-white">{itemNome}</span>
-                        </p>
-                        <p className="text-yellow-400">Esta ação não pode ser desfeita.</p>
-                        <div className="space-y-2 pt-2">
-                           <Label htmlFor="motivo-servico" className="text-white">Motivo (Obrigatório)</Label>
-                           <Textarea
-                              id="motivo-servico"
-                              className="bg-phalis-gray border-0"
-                              value={cancelMotivo}
-                              onChange={(e) => setCancelMotivo(e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                           />
-                           {cancelError && <p className="text-sm text-phalis-danger">{cancelError}</p>}
-                        </div>
-                     </div>
-                  </AlertDialogDescription>
-               </AlertDialogHeader>
-               <AlertDialogFooter>
-                  <AlertDialogCancel className="bg-gray-700 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Voltar</AlertDialogCancel>
-                  <Button className="bg-phalis-danger text-white hover:bg-red-700" disabled={cancelLoading} onClick={handleCancelConfirm}>
-                     {cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
-                  </Button>
-               </AlertDialogFooter>
-            </AlertDialogContent>
-         </AlertDialog>
-      </>
-   );
-};
-
-const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated }) => {
-   const itensToRender = pedido.itens && pedido.itens.length > 0
-       ? pedido.itens
+   const itensToRender = pedido.itens && pedido.itens.length > 0 
+       ? pedido.itens 
        : [
            {
               id: pedido.id,
@@ -562,28 +220,118 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
               itemImageUrl: pedido.itemImageUrl || '',
               valor: pedido.valor,
               statusProducao: pedido.statusProducao,
-              historicoProducao: pedido.historicoProducao,
               detalhes: pedido.detalhes
            } as ItemPedido
          ];
 
+   const isCanceled = pedido.statusProducao === 'CANCELADO';
+
+   const handleEdit = (e: React.MouseEvent) => {
+       e.stopPropagation();
+       // Edição legado suportava só um item
+       router.push(`/pedido?id=${itensToRender[0].productId}&edit=${pedido.id}`);
+   };
+
+   const openCancelDialog = (e: React.MouseEvent) => {
+       e.stopPropagation();
+       setCancelMotivo(''); setCancelError(''); setCancelLoading(false); setIsCancelDialogOpen(true);
+   };
+
+   const handleCancelConfirm = async (e: React.MouseEvent) => {
+       e.stopPropagation();
+       if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
+       setCancelLoading(true); setCancelError('');
+       try {
+          const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, {
+             method: 'PUT', headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
+          });
+          if (!response.ok) throw new Error('Falha ao cancelar');
+          const updatedPedido = await response.json();
+          onPedidoUpdated(updatedPedido);
+          setIsCancelDialogOpen(false);
+       } catch (error: any) {
+          setCancelError(error.message);
+       } finally {
+          setCancelLoading(false);
+       }
+   };
+
    return (
-       <div className="space-y-4">
-          {itensToRender.map((item, idx) => {
-             const productIdStr = String(item.productId);
+       <div className="bg-black/40 rounded-lg border border-phalis-gray/50 overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
+              
+              {/* Lado Esquerdo: Lista de Itens */}
+              <div className="md:col-span-8 p-5 border-r border-gray-800">
+                  <h4 className="text-md font-semibold text-white mb-4 flex items-center justify-between">
+                     <span>Itens do Pedido ({itensToRender.length})</span>
+                     <span className="text-phalis-action font-bold">Total: {(Number(pedido.valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                  </h4>
+                  <div className="space-y-3">
+                     {itensToRender.map((item, idx) => (
+                        <MiniItemCard key={item.id || idx} item={item} />
+                     ))}
+                  </div>
+              </div>
 
-             if (!item.detalhes) return <div key={idx} className="p-4 shrink-0">Detalhes indisponíveis para este item.</div>;
+              {/* Lado Direito: Histórico */}
+              <div className="md:col-span-4 p-5 bg-phalis-gray/10 flex flex-col h-full">
+                 <h4 className="text-md font-semibold text-white mb-4 flex items-center gap-2">
+                    Linha do Tempo
+                 </h4>
+                 
+                 <div className="flex-1 overflow-y-auto max-h-[350px] pr-2 scrollbar-thin">
+                    {isLoadingTimeline ? (
+                       <div className="flex items-center justify-center p-6 text-gray-500">
+                          <Loader2 className="h-6 w-6 animate-spin mr-2" /> Carregando Histórico...
+                       </div>
+                    ) : (
+                       <ol className="list-none m-0 p-0">
+                          {historicoCompleto.length === 0 && <span className="text-sm text-gray-400">Nenhum evento registrado.</span>}
+                          {historicoCompleto.map((item, index) => (
+                             <TimelineItem key={index} item={item} isLast={index === historicoCompleto.length - 1} />
+                          ))}
+                       </ol>
+                    )}
+                 </div>
 
-             switch (item.detalhes.type) {
-                case 'UNIDADE':
-                case 'METRO':
-                   return <DetalhesUnidadeMetro key={item.id || idx} item={item} pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
-                case 'SERVICO':
-                   return <DetalhesServico key={item.id || idx} item={item} pedido={pedido} onPedidoUpdated={onPedidoUpdated} />;
-                default:
-                   return <div key={idx} className="p-4 shrink-0">Tipo de detalhe não reconhecido.</div>;
-             }
-          })}
+                 <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-800">
+                    {hasPermission('pedidos.editar') && (
+                       <Button variant="outline" size="sm" className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white" onClick={handleEdit} disabled={isCanceled}>
+                          <Pencil className="h-4 w-4 mr-2" /> Editar Pedido
+                       </Button>
+                    )}
+                    {hasPermission('pedidos.cancelar') && (
+                       <Button variant="outline" size="sm" className="w-full bg-phalis-danger/20 text-phalis-danger border-phalis-danger/30 hover:bg-phalis-danger/30 hover:text-red-400" onClick={openCancelDialog} disabled={isCanceled}>
+                          <XOctagon className="h-4 w-4 mr-2" /> Cancelar Pedido
+                       </Button>
+                    )}
+                 </div>
+              </div>
+
+          </div>
+
+          <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+             <AlertDialogContent className="bg-phalis-black border-gray-800 text-white">
+                <AlertDialogHeader>
+                   <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
+                   <AlertDialogDescription asChild>
+                      <div className="text-gray-400 space-y-3 mt-2">
+                         <p className="text-yellow-400">Esta ação não pode ser desfeita. Todos os itens associados serão cancelados.</p>
+                         <div className="space-y-2 pt-2">
+                            <Label htmlFor="motivo" className="text-white">Motivo (Obrigatório)</Label>
+                            <Textarea id="motivo" className="bg-phalis-gray border-0" value={cancelMotivo} onChange={(e) => setCancelMotivo(e.target.value)} onClick={(e) => e.stopPropagation()} />
+                            {cancelError && <p className="text-sm text-phalis-danger">{cancelError}</p>}
+                         </div>
+                      </div>
+                   </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                   <AlertDialogCancel className="bg-gray-700 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Voltar</AlertDialogCancel>
+                   <Button className="bg-phalis-danger text-white hover:bg-red-700" disabled={cancelLoading} onClick={handleCancelConfirm}>{cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Cancelamento"}</Button>
+                </AlertDialogFooter>
+             </AlertDialogContent>
+          </AlertDialog>
        </div>
    );
 };

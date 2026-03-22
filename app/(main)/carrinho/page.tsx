@@ -89,9 +89,7 @@ export default function CarrinhoPage() {
          clientId: cliente.id,
          statusFinanceiro: pagamento,
          formaPagamento: pagamento === 'PENDENTE' ? null : formaPagamento,
-         statusProducao: 'PRE_PROD',
          total: valorTotal,
-         criadoPor: user.email || user.nome || 'Sistema',
          itens: itens.map(item => {
             const det = item.detalhes as any;
             const preco = det.preco || {};

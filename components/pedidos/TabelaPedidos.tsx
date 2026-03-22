@@ -38,22 +38,25 @@ interface TabelaPedidosProps {
 }
 
 const financeiroBadgeColors: Record<StatusFinanceiro, string> = {
-   nao_pago: 'bg-red-600 text-white',
-   pago_50: 'bg-yellow-500 text-black',
-   pago: 'bg-green-600 text-white',
+   PENDENTE: 'bg-red-600 text-white',
+   PARCIAL: 'bg-yellow-500 text-black',
+   PAGO: 'bg-green-600 text-white',
+   REEMBOLSADO: 'bg-gray-500 text-white',
 };
 const financeiroHoverColors: Record<StatusFinanceiro, string> = {
-   nao_pago: 'hover:bg-red-700',
-   pago_50: 'hover:bg-yellow-600',
-   pago: 'hover:bg-green-700',
+   PENDENTE: 'hover:bg-red-700',
+   PARCIAL: 'hover:bg-yellow-600',
+   PAGO: 'hover:bg-green-700',
+   REEMBOLSADO: 'hover:bg-gray-600',
 };
 
 const producaoBadgeColors: Record<StatusProducao, string> = {
-   pre_prod: 'bg-gray-500 text-white hover:bg-gray-600',
-   em_producao: 'bg-blue-600 text-white hover:bg-blue-700',
-   pronto_retirada: 'bg-purple-600 text-white hover:bg-purple-700',
-   concluido: 'bg-green-600 text-white hover:bg-green-700',
-   cancelado: 'bg-gray-700 text-gray-400 border-gray-600'
+   PRE_PROD: 'bg-gray-500 text-white hover:bg-gray-600',
+   EM_PRODUCAO: 'bg-blue-600 text-white hover:bg-blue-700',
+   ACABAMENTO: 'bg-indigo-600 text-white hover:bg-indigo-700',
+   PRONTO: 'bg-purple-600 text-white hover:bg-purple-700',
+   ENTREGUE: 'bg-green-600 text-white hover:bg-green-700',
+   CANCELADO: 'bg-gray-700 text-gray-400 border-gray-600'
 };
 
 // ... (Funções formatarWhatsApp e formatarData - sem mudança)
@@ -86,18 +89,41 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
       const loadingKey = `${tipo}-${pedidoId}`;
       setLoadingStatus(prev => ({ ...prev, [loadingKey]: true }));
       try {
-         const url = `/api/pedidos/${pedidoId}/${tipo}`;
-         const response = await authenticatedFetch(url, { // MUDANÇA AQUI
-            method: 'PUT',
+         let url = '';
+         let body: any = {};
+
+         if (tipo === 'producao') {
+            url = `/api/pedidos/${pedidoId}/producao`;
+            body = { status: value };
+         } else if (tipo === 'financeiro') {
+            url = `/api/pedidos/${pedidoId}/pagamento`;
+            const pedidoInfo = pedidos.find(p => String(p.id) === pedidoId);
+            const valor = pedidoInfo?.valor || Number(pedidoInfo?.valor) || 0;
+            body = {
+               valorPago: value === 'PARCIAL' ? valor / 2 : valor,
+               formaPagamento: 'DINHEIRO',
+               observacao: 'Atualização rápida via Tabela'
+            };
+         }
+
+         const response = await authenticatedFetch(url, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-               status: value,
-               userName: currentUser.nome
-            }),
+            body: JSON.stringify(body),
          });
          if (!response.ok) throw new Error('Falha ao atualizar status');
-         const pedidoAtualizado: Pedido = await response.json();
-         onPedidoUpdated(pedidoAtualizado);
+         const data = await response.json();
+         if (tipo === 'financeiro') {
+            const pedidoAtual = pedidos.find(p => String(p.id) === pedidoId);
+            if (pedidoAtual) {
+               onPedidoUpdated({
+                  ...pedidoAtual,
+                  statusFinanceiro: data.status as StatusFinanceiro
+               });
+            }
+         } else {
+            onPedidoUpdated(data as Pedido);
+         }
       } catch (error) {
          console.error(`Erro ao atualizar ${tipo} do pedido ${pedidoId}:`, error);
       } finally {
@@ -126,7 +152,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
 
          <TableBody>
             {pedidos.map((pedido) => {
-               const isCanceled = pedido.statusProducao === 'cancelado';
+               const isCanceled = pedido.statusProducao === 'CANCELADO';
 
                return (
                   <React.Fragment key={pedido.id}>
@@ -208,21 +234,30 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                         <TableCell>R$ {(Number(pedido.valor) || 0).toFixed(2)}</TableCell>
 
                         <TableCell>
-                           {/* Na visualização agregada, apenas exibimos um badge ou o select desabilitado */}
                            <Select
                               value={pedido.statusProducao || ""}
-                              onValueChange={() => {}}
-                              disabled={true} // A produção agora é por item (detalhes)
+                              onValueChange={(value) => handleStatusChange(String(pedido.id), 'producao', value)}
+                              disabled={loadingStatus[`producao-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.producao')}
                            >
                               <SelectTrigger
                                  className={cn(
                                     "font-semibold border-0 rounded-full px-3 py-1 text-xs",
-                                    pedido.statusProducao ? producaoBadgeColors[pedido.statusProducao] : "bg-gray-700 text-gray-400"
+                                    pedido.statusProducao ? producaoBadgeColors[pedido.statusProducao] : "bg-gray-700 text-gray-400",
+                                    isCanceled && "bg-gray-700 text-gray-400 hover:bg-gray-700"
                                  )}
                                  onClick={(e) => e.stopPropagation()}
                               >
-                                 <SelectValue placeholder="Múltiplos Itens (Ver Detalhes)" className="flex-1 text-center truncate" />
+                                 {loadingStatus[`producao-${pedido.id}`] ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                 ) : (
+                                    <SelectValue placeholder="Indefinido" className="flex-1 text-center truncate" />
+                                 )}
                               </SelectTrigger>
+                              <SelectContent className="bg-phalis-gray border-0">
+                                 {statusProducaoOptions.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                 ))}
+                              </SelectContent>
                            </Select>
                         </TableCell>
                      </TableRow>

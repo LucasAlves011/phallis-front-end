@@ -304,15 +304,27 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
     const commitToCart = (shouldFinalize = false) => {
        if (!isBuilderCompleto || !isPrecoCompleto) return;
 
-       const itemData = {
-          productId: produto.id,
-          itemNome: produto.nome,
-          itemImageUrl: produto.imageUrl,
-          valor: total,
-          detalhes: {
-             type: 'unidade',
-             opcoes: selections,
-             observacao,
+        const opcaoNomes: Record<string, string> = {};
+        Object.entries(selections).forEach(([key, val]) => {
+           if (!val) return;
+           if (key === 'tamanho' && val === 'personalizado') {
+              opcaoNomes[key] = `${larguraCm}x${alturaCm}cm`;
+           } else {
+              const opt = (produto.options as any)[key]?.find((o: any) => o.id === val);
+              if (opt) opcaoNomes[key] = opt.name;
+           }
+        });
+
+        const itemData = {
+           productId: produto.id,
+           itemNome: produto.nome,
+           itemImageUrl: produto.imageUrl,
+           valor: total,
+           detalhes: {
+              type: 'unidade',
+              opcoes: selections,
+              opcaoNomes,
+              observacao,
              dimensoesPersonalizadas: isPersonalizado ? { larguraCm, alturaCm } : null,
              preco: {
                 quantidade: (Number(quantidade) || 0),
@@ -541,15 +553,27 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
     const commitToCart = (shouldFinalize = false) => {
        if (!isBuilderCompleto || !isPrecoCompleto) return;
 
-       const itemData = {
-          productId: produto.id,
-          itemNome: produto.nome,
-          itemImageUrl: produto.imageUrl,
-          valor: total,
-          detalhes: {
-             type: 'metro',
-             opcoes: selections,
-             observacao: observacoes,
+        const opcaoNomes: Record<string, string> = {};
+        Object.entries(selections).forEach(([key, val]) => {
+           if (!val) return;
+           if (key === 'tamanho' && val === 'personalizado') {
+              opcaoNomes[key] = `${largura}x${altura}m`;
+           } else {
+              const opt = (produto.options as any)[key]?.find((o: any) => o.id === val);
+              if (opt) opcaoNomes[key] = opt.name;
+           }
+        });
+
+        const itemData = {
+           productId: produto.id,
+           itemNome: produto.nome,
+           itemImageUrl: produto.imageUrl,
+           valor: total,
+           detalhes: {
+              type: 'metro',
+              opcoes: selections,
+              opcaoNomes,
+              observacao: observacoes,
              preco: {
                 largura: (Number(largura) || 0), altura: (Number(altura) || 0), valorArte: (Number(valorArte) || 0),
                 m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),

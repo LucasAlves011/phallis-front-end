@@ -49,9 +49,12 @@ const STATUS_COR_MAP: Record<string, string> = {
    REEMBOLSADO: 'bg-gray-500',
    PRE_PROD: 'bg-gray-500',
    EM_PRODUCAO: 'bg-blue-600',
-   ACABAMENTO: 'bg-indigo-600', PRONTO: 'bg-purple-600',
-   ENTREGUE: 'bg-green-600', CANCELADO: 'bg-gray-700',
-   CRIADO: 'bg-gray-500', PAGAMENTO: 'bg-green-400'
+   ACABAMENTO: 'bg-indigo-600',
+   PRONTO: 'bg-purple-600',
+   ENTREGUE: 'bg-green-600',
+   CANCELADO: 'bg-gray-700',
+   CRIADO: 'bg-gray-500',
+   PAGAMENTO: 'bg-green-400'
 };
 
 // TIMELINE ITEM

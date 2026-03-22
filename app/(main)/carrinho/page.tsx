@@ -30,11 +30,22 @@ const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (i
    const opcoes = detalhes.opcoes as Record<string, string>;
 
    const renderOpcoes = () => {
+      const opcaoNomes = detalhes.opcaoNomes as Record<string, string>;
+      if (opcaoNomes) {
+         const texts = Object.values(opcaoNomes).filter(Boolean);
+         if (texts.length === 0) return null;
+         return (
+            <p className="text-[13px] text-gray-300 font-semibold mt-1">
+               {texts.join(' • ')}
+            </p>
+         );
+      }
+
       if (!opcoes) return null;
       const selectTexts = Object.entries(opcoes)
          .filter(([_, val]) => val && val !== 'personalizado')
          .map(([_, val]) => val);
-
+      
       if (selectTexts.length === 0) return null;
       return (
          <p className="text-[13px] text-gray-300 font-semibold mt-1">
@@ -67,7 +78,7 @@ const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (i
                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 text-[11px]">
                   <div className="flex gap-1">
                      <span className="text-gray-500">Custo:</span>
-                     <span className="text-red-400 font-medium">R$ {(Number(preco.precoCusto || preco.m2Custo || preco.valorCusto || 0)).toFixed(2)}</span>
+                     <span className="text-red-400 font-medium">R$ {(Number(preco.valorTotalCusto || preco.custoTotal || preco.precoCusto || preco.valorCusto || preco.m2Custo || 0)).toFixed(2)}</span>
                   </div>
                   <div className="flex gap-1">
                      <span className="text-gray-500">Arte:</span>

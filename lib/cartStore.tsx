@@ -17,6 +17,7 @@ type CartContextType = {
    addItem: (item: Omit<CartItem, 'id'>) => void;
    removeItem: (id: string) => void;
    clearCart: () => void;
+   updateItem: (id: string, updatedItem: Partial<CartItem>) => void;
    totalItens: number;
    valorTotal: number;
 };
@@ -42,11 +43,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItens([]);
    }, []);
 
+   const updateItem = useCallback((id: string, updatedItem: Partial<CartItem>) => {
+      setItens(prev => prev.map(item => item.id === id ? { ...item, ...updatedItem } : item));
+   }, []);
+
    const totalItens = itens.length;
    const valorTotal = itens.reduce((sum, item) => sum + item.valor, 0);
 
    return (
-      <CartContext.Provider value={{ itens, addItem, removeItem, clearCart, totalItens, valorTotal }}>
+      <CartContext.Provider value={{ itens, addItem, removeItem, clearCart, updateItem, totalItens, valorTotal }}>
          {children}
       </CartContext.Provider>
    );

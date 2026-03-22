@@ -18,51 +18,102 @@ import {
 } from "@/components/ui/select";
 import { authenticatedFetch } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { Loader2, Trash2, ShoppingCart, Plus } from 'lucide-react';
+import { Loader2, Trash2, ShoppingCart, Plus, Pencil } from 'lucide-react';
 
 // ==============================
 // Componente de cada item do carrinho
 // ==============================
-const CartItemCard = ({ item, onRemove }: { item: CartItem; onRemove: (id: string) => void }) => {
-   const detalhes = item.detalhes as Record<string, unknown>;
-   const type = detalhes.type as string;
+const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (id: string) => void; onEdit: (item: CartItem) => void }) => {
+   const detalhes = item.detalhes as any;
+   const type = (detalhes.type as string).toUpperCase();
+   const preco = detalhes.preco as any;
+   const opcoes = detalhes.opcoes as Record<string, string>;
 
-   const getResumo = () => {
-      if (type === 'unidade') {
-         const preco = detalhes.preco as Record<string, unknown>;
-         return `${preco.quantidade || '-'} un. | Custo: R$ ${Number(preco.precoCusto || 0).toFixed(2)} | Venda: R$ ${Number(preco.precoVenda || 0).toFixed(2)}`;
-      }
-      if (type === 'metro') {
-         const preco = detalhes.preco as Record<string, unknown>;
-         return `${preco.largura || '-'}m × ${preco.altura || '-'}m | m²Venda: R$ ${Number(preco.m2Venda || 0).toFixed(2)}`;
-      }
-      if (type === 'servico') {
-         return (detalhes.observacao as string) || 'Serviço';
-      }
-      return '';
+   const renderOpcoes = () => {
+      if (!opcoes) return null;
+      const selectTexts = Object.entries(opcoes)
+         .filter(([_, val]) => val && val !== 'personalizado')
+         .map(([_, val]) => val);
+
+      if (selectTexts.length === 0) return null;
+      return (
+         <p className="text-[13px] text-gray-300 font-semibold mt-1">
+            {selectTexts.join(' • ')}
+         </p>
+      );
    };
 
    return (
-      <div className="bg-phalis-black rounded-lg p-4 flex items-center gap-4 group">
-         <div className="h-16 w-16 rounded-md overflow-hidden bg-phalis-gray flex-shrink-0 relative">
-            <Image src={item.itemImageUrl} alt={item.itemNome} fill className="object-cover" />
+      <div className="bg-phalis-gray rounded-lg p-5 group border border-transparent hover:border-phalis-action/20 transition-all shadow-md">
+         <div className="flex gap-5">
+            {/* 1. Foto */}
+            <div className="h-16 w-16 rounded overflow-hidden bg-black flex-shrink-0 relative border border-white/5 self-center">
+               <Image
+                  src={item.itemImageUrl || "https://placehold.co/100x100?text=Sem+Foto"}
+                  alt={item.itemNome}
+                  fill
+                  className="object-cover"
+               />
+            </div>
+
+            {/* 2. Conteúdo Central */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+               <div>
+                  <h3 className="text-white font-bold text-base leading-tight truncate">{item.itemNome}</h3>
+                  {renderOpcoes()}
+               </div>
+
+               {/* Grid de Faturamento à Esquerda */}
+               <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 text-[11px]">
+                  <div className="flex gap-1">
+                     <span className="text-gray-500">Custo:</span>
+                     <span className="text-red-400 font-medium">R$ {(Number(preco.precoCusto || preco.m2Custo || preco.valorCusto || 0)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex gap-1">
+                     <span className="text-gray-500">Arte:</span>
+                     <span className="text-blue-400 font-medium">R$ {(Number(preco.precoArte || preco.valorArte || 0)).toFixed(2)}</span>
+                  </div>
+                   <div className="flex gap-1">
+                     <span className="text-gray-500">Desconto:</span>
+                     <span className="text-yellow-500 font-medium">R$ {(Number(preco.desconto || 0)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex gap-1 text-gray-400 font-medium pl-4 border-l border-white/10">
+                     {type === 'UNIDADE' && `Qtd: ${preco.quantidade}`}
+                     {type === 'METRO' && `Dim: ${preco.largura}x${preco.altura}m`}
+                     {type === 'SERVICO' && `Serviço`}
+                  </div>
+               </div>
+            </div>
+
+            {/* 3. Coluna de Ações e Preço (Economiza Vertical) */}
+            <div className="flex flex-col items-end justify-between min-w-[140px] pl-5 border-l border-white/5">
+               <div className="text-right">
+                  <p className="text-white font-bold text-xl leading-none">R$ {item.valor.toFixed(2)}</p>
+                  <p className="text-[9px] text-phalis-action font-black uppercase tracking-widest mt-1.5">{type}</p>
+               </div>
+
+               <div className="flex gap-2 mt-auto">
+                  <Button
+                     variant="ghost"
+                     size="sm"
+                     className="h-8 px-2.5 text-gray-400 hover:text-white hover:bg-white/5 text-xs gap-1.5 font-semibold"
+                     onClick={() => onEdit(item)}
+                  >
+                     <Pencil className="h-3.5 w-3.5" />
+                     Editar
+                  </Button>
+                  <Button
+                     variant="ghost"
+                     size="sm"
+                     className="h-8 px-2.5 text-gray-500 hover:text-red-400 hover:bg-red-400/5 text-xs gap-1.5 font-semibold"
+                     onClick={() => onRemove(item.id)}
+                  >
+                     <Trash2 className="h-3.5 w-3.5" />
+                     Excluir
+                  </Button>
+               </div>
+            </div>
          </div>
-         <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold text-base truncate">{item.itemNome}</h3>
-            <p className="text-gray-400 text-sm truncate">{getResumo()}</p>
-         </div>
-         <div className="text-right flex-shrink-0">
-            <p className="text-white font-bold text-lg">R$ {item.valor.toFixed(2)}</p>
-            <span className="text-xs text-gray-500 capitalize">{type}</span>
-         </div>
-         <Button
-            variant="ghost"
-            size="icon"
-            className="text-gray-500 hover:text-phalis-danger hover:bg-phalis-danger/10 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-            onClick={() => onRemove(item.id)}
-         >
-            <Trash2 className="h-4 w-4" />
-         </Button>
       </div>
    );
 };
@@ -98,10 +149,11 @@ export default function CarrinhoPage() {
             return {
                productId: item.productId,
                valor: item.valor,
-               tipoPrecificacao: type,
+               tipoPrecificacao: type.toUpperCase(),
                valorCusto: type === 'unidade' ? preco.precoCusto : (type === 'metro' ? preco.m2Custo : null),
+               valorArte: preco.valorArte || preco.precoArte || 0,
                valorVenda: type === 'unidade' ? preco.precoVenda : (type === 'metro' ? preco.m2Venda : preco.valorVenda),
-               valorDesconto: preco.desconto || null,
+               valorDesconto: preco.desconto || 0,
                quantidade: type === 'unidade' ? preco.quantidade : null,
                largura: type === 'metro' ? preco.largura : null,
                altura: type === 'metro' ? preco.altura : null,
@@ -166,7 +218,12 @@ export default function CarrinhoPage() {
             {/* Coluna Esquerda: Lista de Itens */}
             <div className="lg:col-span-2 space-y-3">
                {itens.map(item => (
-                  <CartItemCard key={item.id} item={item} onRemove={removeItem} />
+                  <CartItemCard
+                     key={item.id}
+                     item={item}
+                     onRemove={removeItem}
+                     onEdit={(it) => router.push(`/pedido?id=${it.productId}&editCart=${it.id}`)}
+                  />
                ))}
 
                <Button asChild variant="outline" className="w-full border-dashed border-gray-600 text-gray-400 hover:border-phalis-action hover:text-phalis-action bg-transparent hover:bg-transparent">

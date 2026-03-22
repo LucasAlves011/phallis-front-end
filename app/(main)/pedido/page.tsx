@@ -33,7 +33,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { ClientCombobox } from '@/components/clientes/ClientCombobox';
 import { MoneyInput } from '@/components/ui/money-input';
-import { Loader2, Search, ShoppingCart } from 'lucide-react';
+import { Loader2, Search, ShoppingCart, Zap, Check } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { SuffixInput } from '@/components/ui/suffix-input';
 import { cn } from "@/lib/utils";
@@ -88,6 +88,8 @@ const OrderFooter = ({
    isValid,
    isLoading,
    onConfirm,
+   onFinalize,
+   labelConfirm = "ADICIONAR AO CARRINHO",
    labelTotal = "TOTAL",
    missingItems = []
 }: {
@@ -95,37 +97,58 @@ const OrderFooter = ({
    isValid: boolean,
    isLoading: boolean,
    onConfirm: () => void,
+   onFinalize?: () => void,
+   labelConfirm?: string,
    labelTotal?: string,
    missingItems?: string[]
 }) => (
-   <div className="bg-phalis-black p-4 rounded-lg flex justify-between items-center">
+   <div className="bg-phalis-black p-4 rounded-lg flex justify-between items-center gap-4">
       <div className="text-right text-white">
          <span className="text-sm text-gray-400 block">{labelTotal}</span>
          <span className="text-3xl font-bold">R$ {total.toFixed(2)}</span>
       </div>
-      <div className="relative group">
-         <Button
-            disabled={!isValid || isLoading}
-            onClick={onConfirm}
-            className="w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50"
-         >
-            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <><ShoppingCart className="h-5 w-5 mr-2" />ADICIONAR AO CARRINHO</>}
-         </Button>
-         {!isValid && missingItems.length > 0 && (
-            <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50 animate-in fade-in duration-200">
-               <div className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg p-3 shadow-xl max-w-xs">
-                  <p className="font-semibold text-yellow-400 mb-1.5">Campos pendentes:</p>
-                  <ul className="space-y-0.5">
-                     {missingItems.map((item, i) => (
-                        <li key={i} className="flex items-center gap-1.5 text-gray-300">
-                           <span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                           {item}
-                        </li>
-                     ))}
-                  </ul>
-                  <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-gray-900 border-r border-b border-gray-700 transform rotate-45" />
+      <div className="flex gap-4 items-stretch">
+         <div className="relative group">
+            <Button
+               disabled={!isValid || isLoading}
+               onClick={onConfirm}
+               className="h-full w-auto bg-phalis-gray text-white font-bold text-lg py-6 px-8 hover:bg-gray-700 disabled:opacity-50 flex items-center gap-2 transition-all active:scale-95"
+            >
+               {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+               ) : (
+                  <>
+                     {labelConfirm.includes("ATUALIZAR") ? <Check className="h-5 w-5" /> : <ShoppingCart className="h-5 w-5" />}
+                     <span className="whitespace-nowrap">{labelConfirm}</span>
+                  </>
+               )}
+            </Button>
+            {!isValid && missingItems.length > 0 && (
+               <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50 animate-in fade-in duration-200">
+                  <div className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg p-3 shadow-xl max-w-xs">
+                     <p className="font-semibold text-yellow-400 mb-1.5">Campos pendentes:</p>
+                     <ul className="space-y-0.5">
+                        {missingItems.map((item, i) => (
+                           <li key={i} className="flex items-center gap-1.5 text-gray-300">
+                              <span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                              {item}
+                           </li>
+                        ))}
+                     </ul>
+                     <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-gray-900 border-r border-b border-gray-700 transform rotate-45" />
+                  </div>
                </div>
-            </div>
+            )}
+         </div>
+         {onFinalize && (
+            <Button
+               disabled={!isValid || isLoading}
+               onClick={onFinalize}
+               className="h-full w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50 flex items-center gap-2 transition-all active:scale-95 shadow-[0_0_15px_rgba(33,197,152,0.2)]"
+            >
+               <Zap className="h-5 w-5 fill-phalis-black" />
+               <span className="whitespace-nowrap">FINALIZAR AGORA</span>
+            </Button>
          )}
       </div>
    </div>
@@ -143,7 +166,9 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
    const router = useRouter();
    const [isLoading, setIsLoading] = useState(false);
    const { user } = useAuth();
-   const { addItem } = useCart();
+   const { addItem, updateItem } = useCart();
+
+   const isEditMode = !!pedidoParaEditar && String(pedidoParaEditar.id).startsWith('cart_');
 
    const [selections, setSelections] = useState<Selections>({ papel: null, tamanho: null, cores: null, acabamento: null });
    const [isPersonalizado, setIsPersonalizado] = useState(false);
@@ -164,7 +189,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
 
    useEffect(() => {
       const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
-      if (pedidoParaEditar && d?.type === 'UNIDADE') {
+      if (pedidoParaEditar && d?.type?.toUpperCase() === 'UNIDADE') {
          const detalhes = d as any;
          setSelections(detalhes.opcoes as Selections);
          setObservacao(detalhes.observacao || '');
@@ -276,32 +301,38 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
       }
    };
 
-   const handleAdicionarAoCarrinho = () => {
-      if (!isBuilderCompleto || !isPrecoCompleto) return;
+    const commitToCart = (shouldFinalize = false) => {
+       if (!isBuilderCompleto || !isPrecoCompleto) return;
 
-      addItem({
-         productId: produto.id,
-         itemNome: produto.nome,
-         itemImageUrl: produto.imageUrl,
-         valor: total,
-         detalhes: {
-            type: 'unidade',
-            opcoes: selections,
-            observacao,
-            dimensoesPersonalizadas: isPersonalizado ? { larguraCm, alturaCm } : null,
-            preco: {
-               quantidade: (Number(quantidade) || 0),
-               precoCusto: (Number(precoCusto) || 0),
-               precoVenda: (Number(precoVenda) || 0),
-               precoArte: (Number(precoArte) || 0),
-               desconto: (Number(desconto) || 0),
-               total, custoTotal, vendaTotal
-            }
-         }
-      });
+       const itemData = {
+          productId: produto.id,
+          itemNome: produto.nome,
+          itemImageUrl: produto.imageUrl,
+          valor: total,
+          detalhes: {
+             type: 'unidade',
+             opcoes: selections,
+             observacao,
+             dimensoesPersonalizadas: isPersonalizado ? { larguraCm, alturaCm } : null,
+             preco: {
+                quantidade: (Number(quantidade) || 0),
+                precoCusto: (Number(precoCusto) || 0),
+                precoVenda: (Number(precoVenda) || 0),
+                precoArte: (Number(precoArte) || 0),
+                desconto: (Number(desconto) || 0),
+                total, custoTotal, vendaTotal
+             }
+          }
+       };
 
-      router.push('/catalogo');
-   };
+       if (isEditMode) {
+          updateItem(pedidoParaEditar!.id as string, itemData);
+       } else {
+          addItem(itemData);
+       }
+
+       router.push(shouldFinalize ? '/carrinho' : '/catalogo');
+    };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
@@ -405,7 +436,15 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
                </div>
             </div>
 
-            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto} isLoading={isLoading} onConfirm={handleAdicionarAoCarrinho} labelTotal="TOTAL (Venda + Arte - Desc)" missingItems={missingItems} />
+            <OrderFooter
+               total={total}
+               isValid={isBuilderCompleto && !!isPrecoCompleto}
+               isLoading={isLoading}
+               onConfirm={() => commitToCart(false)}
+               onFinalize={isEditMode ? undefined : () => commitToCart(true)}
+               labelConfirm={isEditMode ? "ATUALIZAR ITEM" : "ADICIONAR AO CARRINHO"}
+               missingItems={missingItems}
+            />
          </div>
       </div>
    );
@@ -423,7 +462,8 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
    const router = useRouter();
    const [isLoading, setIsLoading] = useState(false);
    const { user } = useAuth();
-   const { addItem } = useCart();
+   const { addItem, updateItem } = useCart();
+   const isEditMode = !!pedidoParaEditar && String(pedidoParaEditar.id).startsWith('cart_');
 
    const [selections, setSelections] = useState<Selections>({ papel: null, tamanho: null, cores: null, acabamento: null });
    const [observacoes, setObservacoes] = useState('');
@@ -438,7 +478,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
 
    useEffect(() => {
       const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
-      if (pedidoParaEditar && d?.type === 'METRO') {
+      if (pedidoParaEditar && d?.type?.toUpperCase() === 'METRO') {
          const detalhes = d as any;
          setSelections(detalhes.opcoes as Selections);
          setObservacoes(detalhes.observacao || '');
@@ -481,7 +521,7 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
       return false;
    }, [selections, largura, altura]);
 
-   const isPrecoCompleto = useMemo(() => m2Custo && m2Venda, [m2Custo, m2Venda]);
+   const isPrecoCompleto = useMemo(() => !!(m2Custo && m2Venda), [m2Custo, m2Venda]);
 
    const fichaDoPedido = useMemo(() => {
       return optionGroupsConfig.map((groupConfig, index) => {
@@ -498,28 +538,34 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
       });
    }, [produto, selections, largura, altura, metrosQuadrados]);
 
-   const handleAdicionarAoCarrinho = () => {
-      if (!isBuilderCompleto || !isPrecoCompleto) return;
+    const commitToCart = (shouldFinalize = false) => {
+       if (!isBuilderCompleto || !isPrecoCompleto) return;
 
-      addItem({
-         productId: produto.id,
-         itemNome: produto.nome,
-         itemImageUrl: produto.imageUrl,
-         valor: total,
-         detalhes: {
-            type: 'metro',
-            opcoes: selections,
-            observacao: observacoes,
-            preco: {
-               largura: (Number(largura) || 0), altura: (Number(altura) || 0), valorArte: (Number(valorArte) || 0),
-               m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),
-               desconto: (Number(desconto) || 0), total, valorTotalCusto, valorTotalVenda
-            }
-         }
-      });
+       const itemData = {
+          productId: produto.id,
+          itemNome: produto.nome,
+          itemImageUrl: produto.imageUrl,
+          valor: total,
+          detalhes: {
+             type: 'metro',
+             opcoes: selections,
+             observacao: observacoes,
+             preco: {
+                largura: (Number(largura) || 0), altura: (Number(altura) || 0), valorArte: (Number(valorArte) || 0),
+                m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),
+                desconto: (Number(desconto) || 0), total, valorTotalCusto, valorTotalVenda
+             }
+          }
+       };
 
-      router.push('/catalogo');
-   };
+       if (isEditMode) {
+          updateItem(pedidoParaEditar!.id as string, itemData);
+       } else {
+          addItem(itemData);
+       }
+
+       router.push(shouldFinalize ? '/carrinho' : '/catalogo');
+    };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
@@ -601,7 +647,15 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
                   </div>
                </div>
             </div>
-            <OrderFooter total={total} isValid={isBuilderCompleto && !!isPrecoCompleto} isLoading={isLoading} onConfirm={handleAdicionarAoCarrinho} labelTotal="TOTAL (Venda + Arte)" missingItems={missingItems} />
+            <OrderFooter
+               total={total}
+               isValid={isBuilderCompleto && isPrecoCompleto}
+               isLoading={isLoading}
+               onConfirm={() => commitToCart(false)}
+               onFinalize={isEditMode ? undefined : () => commitToCart(true)}
+               labelConfirm={isEditMode ? "ATUALIZAR ITEM" : "ADICIONAR AO CARRINHO"}
+               missingItems={missingItems}
+            />
          </div>
       </div>
    );
@@ -618,7 +672,8 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
    const router = useRouter();
    const [isLoading, setIsLoading] = useState(false);
    const { user } = useAuth();
-   const { addItem } = useCart();
+   const { addItem, updateItem } = useCart(); // Added updateItem
+   const isEditMode = !!pedidoParaEditar && String(pedidoParaEditar.id).startsWith('cart_'); // Added isEditMode
 
    const [observacao, setObservacao] = useState('');
    const [valorVenda, setValorVenda] = useState('');
@@ -626,7 +681,7 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
 
    useEffect(() => {
       const d = pedidoParaEditar?.detalhes || pedidoParaEditar?.itens?.[0]?.detalhes;
-      if (pedidoParaEditar && d?.type === 'SERVICO') {
+      if (pedidoParaEditar && d?.type?.toUpperCase() === 'SERVICO') {
          const detalhes = d as any;
          setObservacao(detalhes.observacao || '');
          setValorVenda(detalhes.preco.valorVenda.toString());
@@ -634,26 +689,36 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
       }
    }, [pedidoParaEditar]);
 
-   const isFormCompleto = useMemo(() => observacao && valorVenda, [observacao, valorVenda]);
+   const isFormCompleto = useMemo(() => !!(observacao && valorVenda), [observacao, valorVenda]);
    const total = useMemo(() => Math.max(0, (Number(valorVenda) || 0) - (Number(desconto) || 0)), [valorVenda, desconto]);
 
-   const handleAdicionarAoCarrinho = () => {
-      if (!isFormCompleto) return;
+    const commitToCart = (shouldFinalize = false) => {
+       if (!isFormCompleto) return;
 
-      addItem({
-         productId: produto.id,
-         itemNome: produto.nome,
-         itemImageUrl: produto.imageUrl,
-         valor: total,
-         detalhes: {
-            type: 'servico',
-            observacao: observacao,
-            preco: { descricao: observacao, valorVenda: Number(valorVenda), desconto: Number(desconto) }
-         }
-      });
+       const itemData = {
+          productId: produto.id,
+          itemNome: produto.nome,
+          itemImageUrl: produto.imageUrl,
+          valor: total,
+          detalhes: {
+             type: 'servico',
+             observacao,
+             preco: {
+                valorVenda: (Number(valorVenda) || 0),
+                desconto: (Number(desconto) || 0),
+                total
+             }
+          }
+       };
 
-      router.push('/catalogo');
-   };
+       if (isEditMode) {
+          updateItem(pedidoParaEditar!.id as string, itemData);
+       } else {
+          addItem(itemData);
+       }
+
+       router.push(shouldFinalize ? '/carrinho' : '/catalogo');
+    };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
@@ -668,21 +733,24 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
             <ProductInfoCard produto={produto} />
             <div className="bg-phalis-black p-4 rounded-lg space-y-2 min-h-[100px]">
                <h3 className="text-lg font-medium text-white">Ficha do Pedido:</h3>
-               <p className="text-sm text-gray-500">Este produto não possui opções.</p>
+               <p className="text-sm text-gray-400 italic">Este produto não possui opções de configuração.</p>
             </div>
          </div>
+
          <div className="lg:col-span-2 space-y-6 flex flex-col">
-            <div className="h-0 md:h-[76px]"></div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
                <div className="lg:col-span-2">
-                  {/* MUDANÇA AQUI: Descrição com LABEL */}
                   <div className="space-y-1 h-full">
-                     <Label className="text-gray-300 text-sm ml-1">Descrição / Observações da Arte *</Label>
-                     <Textarea className="min-h-[200px] h-[calc(100%-24px)] bg-phalis-gray border-0 text-base" value={observacao} onChange={(e) => setObservacao(e.target.value)} />
+                     <Label className="text-gray-300 text-sm ml-1">Descrição / Observações do Serviço *</Label>
+                     <Textarea 
+                        placeholder="Descreva o serviço realizado..." 
+                        className="min-h-[250px] h-[calc(100%-24px)] bg-phalis-gray border-0 text-base" 
+                        value={observacao} 
+                        onChange={(e) => setObservacao(e.target.value)} 
+                     />
                   </div>
                </div>
 
-               {/* MUDANÇA AQUI: Finalização com LABEL */}
                <div className="lg:col-span-1 space-y-4">
                   <h3 className="text-base font-medium text-white">Finalização</h3>
 
@@ -696,33 +764,22 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
                      <MoneyInput value={desconto} onChange={e => setDesconto(e.target.value)} placeholder="0,00" />
                   </div>
 
-
-                  <div className="bg-phalis-black rounded-lg p-4 text-center"><span className="text-sm text-gray-400 block">TOTAL</span><span className="text-3xl font-bold text-white">R$ {total.toFixed(2)}</span></div>
+                  <div className="bg-phalis-black rounded-lg p-4 text-center mt-auto">
+                     <span className="text-sm text-gray-400 block">TOTAL</span>
+                     <span className="text-3xl font-bold text-white">R$ {total.toFixed(2)}</span>
+                  </div>
                </div>
             </div>
-            <div className="flex justify-end">
-               <div className="relative group">
-                  <Button disabled={!isFormCompleto || isLoading} onClick={handleAdicionarAoCarrinho} className="w-full md:w-auto bg-phalis-action text-phalis-black font-bold text-lg py-6 px-8 hover:bg-phalis-action-hover disabled:opacity-50">
-                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <><ShoppingCart className="h-5 w-5 mr-2" />ADICIONAR AO CARRINHO</>}
-                  </Button>
-                  {!isFormCompleto && missingItems.length > 0 && (
-                     <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50 animate-in fade-in duration-200">
-                        <div className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg p-3 shadow-xl max-w-xs">
-                           <p className="font-semibold text-yellow-400 mb-1.5">Campos pendentes:</p>
-                           <ul className="space-y-0.5">
-                              {missingItems.map((item, i) => (
-                                 <li key={i} className="flex items-center gap-1.5 text-gray-300">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                                    {item}
-                                 </li>
-                              ))}
-                           </ul>
-                           <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-gray-900 border-r border-b border-gray-700 transform rotate-45" />
-                        </div>
-                     </div>
-                  )}
-               </div>
-            </div>
+            
+            <OrderFooter
+               total={total}
+               isValid={isFormCompleto}
+               isLoading={isLoading}
+               onConfirm={() => commitToCart(false)}
+               onFinalize={isEditMode ? undefined : () => commitToCart(true)}
+               labelConfirm={isEditMode ? "ATUALIZAR ITEM" : "ADICIONAR AO CARRINHO"}
+               missingItems={missingItems}
+            />
          </div>
       </div>
    );
@@ -736,10 +793,12 @@ export default function PedidosPage() {
    const [loading, setLoading] = useState(true);
    const searchParams = useSearchParams();
    const { user } = useAuth();
+   const { itens: itensNoCarrinho } = useCart();
    const [pedidoParaEditar, setPedidoParaEditar] = useState<Pedido | null>(null);
 
    const produtoId = searchParams.get('id');
    const editPedidoId = searchParams.get('edit');
+   const editCartId = searchParams.get('editCart');
 
    useEffect(() => {
       setLoading(true); setProduto(null); setPedidoParaEditar(null);
@@ -753,7 +812,18 @@ export default function PedidosPage() {
          .then((produtoBackend: Product) => {
             setProduto(produtoBackend);
 
-            if (editPedidoId) {
+            if (editCartId) {
+               // Edição de item do carrinho
+               const itemCarrinho = itensNoCarrinho.find(i => i.id === editCartId);
+               if (itemCarrinho) {
+                  setPedidoParaEditar({
+                     id: itemCarrinho.id, // Usamos o ID do carrinho temporariamente
+                     detalhes: itemCarrinho.detalhes
+                  } as any);
+               }
+               setLoading(false);
+            } else if (editPedidoId) {
+               // Edição de pedido existente no banco
                authenticatedFetch(`/api/pedidos/${editPedidoId}`)
                   .then(res => res.json())
                   .then((pedidoData: Pedido) => {
@@ -770,7 +840,7 @@ export default function PedidosPage() {
             setLoading(false);
          });
 
-   }, [produtoId, editPedidoId]);
+   }, [produtoId, editPedidoId, editCartId, itensNoCarrinho]);
 
    if (loading || !user) return <div className="flex justify-center items-center p-12"><Loader2 className="h-12 w-12 animate-spin text-phalis-action" /></div>;
 

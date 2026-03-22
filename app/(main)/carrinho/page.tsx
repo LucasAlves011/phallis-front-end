@@ -45,7 +45,7 @@ const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (i
       const selectTexts = Object.entries(opcoes)
          .filter(([_, val]) => val && val !== 'personalizado')
          .map(([_, val]) => val);
-      
+
       if (selectTexts.length === 0) return null;
       return (
          <p className="text-[13px] text-gray-300 font-semibold mt-1">
@@ -84,7 +84,7 @@ const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (i
                      <span className="text-gray-500">Arte:</span>
                      <span className="text-blue-400 font-medium">R$ {(Number(preco.precoArte || preco.valorArte || 0)).toFixed(2)}</span>
                   </div>
-                   <div className="flex gap-1">
+                  <div className="flex gap-1">
                      <span className="text-gray-500">Desconto:</span>
                      <span className="text-yellow-500 font-medium">R$ {(Number(preco.desconto || 0)).toFixed(2)}</span>
                   </div>

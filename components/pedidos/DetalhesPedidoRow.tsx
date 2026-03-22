@@ -115,7 +115,7 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
    const h = item.altura || (item.detalhes as any)?.preco?.altura || (item.detalhes as any)?.dimensoesPersonalizadas?.alturaCm;
    const vCusto = item.valorCusto || (tipoStr === 'UNIDADE' ? (item.detalhes as any)?.preco?.precoCusto : (item.detalhes as any)?.preco?.m2Custo);
    const vVenda = item.valorVenda || (tipoStr === 'UNIDADE' ? (item.detalhes as any)?.preco?.precoVenda : (item.detalhes as any)?.preco?.m2Venda);
-   const vArte = (item.detalhes as any)?.preco?.precoArte || (item.detalhes as any)?.preco?.valorArte;
+   const vArte = (item.detalhes as any)?.preco?.precoArte || (item as any)?.valorArte;
    const vDesconto = item.valorDesconto || (item.detalhes as any)?.preco?.desconto;
 
    const getCustoTotalItem = () => {
@@ -197,7 +197,7 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
 
                {vCusto != null && <div><strong>Custo Base:</strong> R$ {Number(vCusto).toFixed(2)}</div>}
                {vVenda != null && <div><strong>Venda Base:</strong> R$ {Number(vVenda).toFixed(2)}</div>}
-               {vArte != null && <div><strong>Add Arte:</strong> R$ {Number(vArte).toFixed(2)}</div>}
+               {vArte != null && <div><strong>Adicional Arte:</strong> R$ {Number(vArte).toFixed(2)}</div>}
                {vDesconto != null && <div><strong>Desconto:</strong> R$ {Number(vDesconto).toFixed(2)}</div>}
 
                <div className="col-span-2 mt-2 pt-2 border-t border-gray-700/50 flex justify-between items-center text-sm">

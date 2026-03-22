@@ -301,50 +301,50 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
       }
    };
 
-    const commitToCart = (shouldFinalize = false) => {
-       if (!isBuilderCompleto || !isPrecoCompleto) return;
+   const commitToCart = (shouldFinalize = false) => {
+      if (!isBuilderCompleto || !isPrecoCompleto) return;
 
-        const opcaoNomes: Record<string, string> = {};
-        Object.entries(selections).forEach(([key, val]) => {
-           if (!val) return;
-           if (key === 'tamanho' && val === 'personalizado') {
-              opcaoNomes[key] = `${larguraCm}x${alturaCm}cm`;
-           } else {
-              const opt = (produto.options as any)[key]?.find((o: any) => o.id === val);
-              if (opt) opcaoNomes[key] = opt.name;
-           }
-        });
+      const opcaoNomes: Record<string, string> = {};
+      Object.entries(selections).forEach(([key, val]) => {
+         if (!val) return;
+         if (key === 'tamanho' && val === 'personalizado') {
+            opcaoNomes[key] = `${larguraCm}x${alturaCm}cm`;
+         } else {
+            const opt = (produto.options as any)[key]?.find((o: any) => o.id === val);
+            if (opt) opcaoNomes[key] = opt.name;
+         }
+      });
 
-        const itemData = {
-           productId: produto.id,
-           itemNome: produto.nome,
-           itemImageUrl: produto.imageUrl,
-           valor: total,
-           detalhes: {
-              type: 'unidade',
-              opcoes: selections,
-              opcaoNomes,
-              observacao,
-             dimensoesPersonalizadas: isPersonalizado ? { larguraCm, alturaCm } : null,
-             preco: {
-                quantidade: (Number(quantidade) || 0),
-                precoCusto: (Number(precoCusto) || 0),
-                precoVenda: (Number(precoVenda) || 0),
-                precoArte: (Number(precoArte) || 0),
-                desconto: (Number(desconto) || 0),
-                total, custoTotal, vendaTotal
-             }
-          }
-       };
+      const itemData = {
+         productId: produto.id,
+         itemNome: produto.nome,
+         itemImageUrl: produto.imageUrl,
+         valor: total,
+         detalhes: {
+            type: 'unidade',
+            opcoes: selections,
+            opcaoNomes,
+            observacao,
+            dimensoesPersonalizadas: isPersonalizado ? { larguraCm, alturaCm } : null,
+            preco: {
+               quantidade: (Number(quantidade) || 0),
+               precoCusto: (Number(precoCusto) || 0),
+               precoVenda: (Number(precoVenda) || 0),
+               precoArte: (Number(precoArte) || 0),
+               desconto: (Number(desconto) || 0),
+               total, custoTotal, vendaTotal
+            }
+         }
+      };
 
-       if (isEditMode) {
-          updateItem(pedidoParaEditar!.id as string, itemData);
-       } else {
-          addItem(itemData);
-       }
+      if (isEditMode) {
+         updateItem(pedidoParaEditar!.id as string, itemData);
+      } else {
+         addItem(itemData);
+      }
 
-       router.push(shouldFinalize ? '/carrinho' : '/catalogo');
-    };
+      router.push(shouldFinalize ? '/carrinho' : '/catalogo');
+   };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
@@ -550,46 +550,46 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
       });
    }, [produto, selections, largura, altura, metrosQuadrados]);
 
-    const commitToCart = (shouldFinalize = false) => {
-       if (!isBuilderCompleto || !isPrecoCompleto) return;
+   const commitToCart = (shouldFinalize = false) => {
+      if (!isBuilderCompleto || !isPrecoCompleto) return;
 
-        const opcaoNomes: Record<string, string> = {};
-        Object.entries(selections).forEach(([key, val]) => {
-           if (!val) return;
-           if (key === 'tamanho' && val === 'personalizado') {
-              opcaoNomes[key] = `${largura}x${altura}m`;
-           } else {
-              const opt = (produto.options as any)[key]?.find((o: any) => o.id === val);
-              if (opt) opcaoNomes[key] = opt.name;
-           }
-        });
+      const opcaoNomes: Record<string, string> = {};
+      Object.entries(selections).forEach(([key, val]) => {
+         if (!val) return;
+         if (key === 'tamanho' && val === 'personalizado') {
+            opcaoNomes[key] = `${largura}x${altura}m`;
+         } else {
+            const opt = (produto.options as any)[key]?.find((o: any) => o.id === val);
+            if (opt) opcaoNomes[key] = opt.name;
+         }
+      });
 
-        const itemData = {
-           productId: produto.id,
-           itemNome: produto.nome,
-           itemImageUrl: produto.imageUrl,
-           valor: total,
-           detalhes: {
-              type: 'metro',
-              opcoes: selections,
-              opcaoNomes,
-              observacao: observacoes,
-             preco: {
-                largura: (Number(largura) || 0), altura: (Number(altura) || 0), valorArte: (Number(valorArte) || 0),
-                m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),
-                desconto: (Number(desconto) || 0), total, valorTotalCusto, valorTotalVenda
-             }
-          }
-       };
+      const itemData = {
+         productId: produto.id,
+         itemNome: produto.nome,
+         itemImageUrl: produto.imageUrl,
+         valor: total,
+         detalhes: {
+            type: 'metro',
+            opcoes: selections,
+            opcaoNomes,
+            observacao: observacoes,
+            preco: {
+               largura: (Number(largura) || 0), altura: (Number(altura) || 0), valorArte: (Number(valorArte) || 0),
+               m2Custo: (Number(m2Custo) || 0), m2Venda: (Number(m2Venda) || 0),
+               desconto: (Number(desconto) || 0), total, valorTotalCusto, valorTotalVenda
+            }
+         }
+      };
 
-       if (isEditMode) {
-          updateItem(pedidoParaEditar!.id as string, itemData);
-       } else {
-          addItem(itemData);
-       }
+      if (isEditMode) {
+         updateItem(pedidoParaEditar!.id as string, itemData);
+      } else {
+         addItem(itemData);
+      }
 
-       router.push(shouldFinalize ? '/carrinho' : '/catalogo');
-    };
+      router.push(shouldFinalize ? '/carrinho' : '/catalogo');
+   };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
@@ -716,33 +716,33 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
    const isFormCompleto = useMemo(() => !!(observacao && valorVenda), [observacao, valorVenda]);
    const total = useMemo(() => Math.max(0, (Number(valorVenda) || 0) - (Number(desconto) || 0)), [valorVenda, desconto]);
 
-    const commitToCart = (shouldFinalize = false) => {
-       if (!isFormCompleto) return;
+   const commitToCart = (shouldFinalize = false) => {
+      if (!isFormCompleto) return;
 
-       const itemData = {
-          productId: produto.id,
-          itemNome: produto.nome,
-          itemImageUrl: produto.imageUrl,
-          valor: total,
-          detalhes: {
-             type: 'servico',
-             observacao,
-             preco: {
-                valorVenda: (Number(valorVenda) || 0),
-                desconto: (Number(desconto) || 0),
-                total
-             }
-          }
-       };
+      const itemData = {
+         productId: produto.id,
+         itemNome: produto.nome,
+         itemImageUrl: produto.imageUrl,
+         valor: total,
+         detalhes: {
+            type: 'servico',
+            observacao,
+            preco: {
+               valorVenda: (Number(valorVenda) || 0),
+               desconto: (Number(desconto) || 0),
+               total
+            }
+         }
+      };
 
-       if (isEditMode) {
-          updateItem(pedidoParaEditar!.id as string, itemData);
-       } else {
-          addItem(itemData);
-       }
+      if (isEditMode) {
+         updateItem(pedidoParaEditar!.id as string, itemData);
+      } else {
+         addItem(itemData);
+      }
 
-       router.push(shouldFinalize ? '/carrinho' : '/catalogo');
-    };
+      router.push(shouldFinalize ? '/carrinho' : '/catalogo');
+   };
 
    const missingItems = useMemo(() => {
       const items: string[] = [];
@@ -766,11 +766,11 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
                <div className="lg:col-span-2">
                   <div className="space-y-1 h-full">
                      <Label className="text-gray-300 text-sm ml-1">Descrição / Observações do Serviço *</Label>
-                     <Textarea 
-                        placeholder="Descreva o serviço realizado..." 
-                        className="min-h-[250px] h-[calc(100%-24px)] bg-phalis-gray border-0 text-base" 
-                        value={observacao} 
-                        onChange={(e) => setObservacao(e.target.value)} 
+                     <Textarea
+                        placeholder="Descreva o serviço realizado..."
+                        className="min-h-[250px] h-[calc(100%-24px)] bg-phalis-gray border-0 text-base"
+                        value={observacao}
+                        onChange={(e) => setObservacao(e.target.value)}
                      />
                   </div>
                </div>
@@ -794,7 +794,7 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
                   </div>
                </div>
             </div>
-            
+
             <OrderFooter
                total={total}
                isValid={isFormCompleto}

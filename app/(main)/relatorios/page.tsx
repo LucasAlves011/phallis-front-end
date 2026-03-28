@@ -32,6 +32,7 @@ import {
    Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ============================================================
 // TIPOS — Agora refletem os DTOs do backend
@@ -372,11 +373,42 @@ export default function RelatoriosPage() {
             </div>
          </div>
 
-         {/* ─── LOADING OVERLAY ─── */}
+         {/* ─── LOADING OVERLAY COM SKELETONS ─── */}
          {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-4">
-               <Loader2 size={40} className="animate-spin text-phalis-action" />
-               <p className="text-gray-500 text-sm">Carregando dados...</p>
+            <div className="space-y-4">
+               {/* Skeletons dos GPUs (4 cards) */}
+               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map(i => (
+                     <div key={i} className="bg-[#111111] border border-gray-800 rounded-xl p-5 flex items-start gap-4">
+                        <Skeleton className="h-11 w-11 rounded-lg" />
+                        <div className="space-y-2 flex-1">
+                           <Skeleton className="h-4 w-24" />
+                           <Skeleton className="h-8 w-32" />
+                           <Skeleton className="h-3 w-40" />
+                        </div>
+                     </div>
+                  ))}
+               </div>
+               {/* Skeleton Gráfico Faturamento */}
+               <div className="bg-[#111111] border border-gray-800 rounded-xl p-5 space-y-4">
+                  <div className="flex items-center gap-2">
+                     <Skeleton className="h-4 w-4 rounded-full" />
+                     <Skeleton className="h-4 w-40" />
+                  </div>
+                  <Skeleton className="h-56 w-full rounded-lg" />
+               </div>
+               {/* Skeletons 2 Gráficos de barra/pizza */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {[1, 2].map(i => (
+                     <div key={i} className="bg-[#111111] border border-gray-800 rounded-xl p-5 space-y-4">
+                        <div className="flex items-center gap-2">
+                           <Skeleton className="h-4 w-4 rounded-full" />
+                           <Skeleton className="h-4 w-40" />
+                        </div>
+                        <Skeleton className="h-56 w-full rounded-lg" />
+                     </div>
+                  ))}
+               </div>
             </div>
          ) : (
             <>

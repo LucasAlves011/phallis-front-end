@@ -165,6 +165,7 @@ export default function HistoricoPedidosPage() {
             onPedidoUpdated={handlePedidoUpdated}
             highlightId={highlightId}
             currentUser={user}
+            isLoading={isLoading}
          />
 
          {/* Loader e Fim dos resultados */}

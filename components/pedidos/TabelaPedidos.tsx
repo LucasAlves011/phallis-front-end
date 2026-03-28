@@ -28,13 +28,15 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { type User } from '@/types/client';
 import { usePermission } from '@/lib/auth/usePermission';
-import { authenticatedFetch } from '@/lib/api'; // Adicionado
+import { authenticatedFetch } from '@/lib/api';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface TabelaPedidosProps {
    pedidos: Pedido[];
    onPedidoUpdated: (pedido: Pedido) => void;
    highlightId: string | null;
    currentUser: User;
+   isLoading?: boolean;
 }
 
 const financeiroBadgeColors: Record<StatusFinanceiro, string> = {
@@ -76,7 +78,7 @@ const formatarData = (isoString: string) => {
    });
 };
 
-const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated, highlightId, currentUser }) => {
+const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated, highlightId, currentUser, isLoading = false }) => {
    const [openRowId, setOpenRowId] = useState<string | null>(null);
    const [loadingStatus, setLoadingStatus] = useState<Record<string, boolean>>({});
    const { hasPermission } = usePermission();
@@ -151,6 +153,21 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
          </TableHeader>
 
          <TableBody>
+            {isLoading && pedidos.length === 0 ? (
+               Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                     <TableCell><Skeleton className="h-8 w-24 rounded-full" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                     <TableCell><Skeleton className="h-8 w-24 rounded-full" /></TableCell>
+                  </TableRow>
+               ))
+            ) : null}
+
             {pedidos.map((pedido) => {
                const isCanceled = pedido.statusProducao === 'CANCELADO';
 

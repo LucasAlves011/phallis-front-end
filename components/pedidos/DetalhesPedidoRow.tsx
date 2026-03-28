@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Pencil, XOctagon, Loader2, DollarSign, Eye } from 'lucide-react';
+import { Pencil, XOctagon, Loader2, DollarSign, Eye, Link as LinkIcon, Check } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useRouter } from 'next/navigation';
@@ -220,6 +220,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    const [cancelMotivo, setCancelMotivo] = useState('');
    const [cancelLoading, setCancelLoading] = useState(false);
    const [cancelError, setCancelError] = useState('');
+   const [copiado, setCopiado] = useState(false);
 
    // Estados de Fetch da Timeline
    const [historicoProd, setHistoricoProd] = useState<any[]>([]);
@@ -431,6 +432,26 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                </div>
 
                <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-800">
+                  {pedido.hashRastreio && (
+                     <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={cn(
+                           "w-full border-gray-700",
+                           copiado ? "bg-green-600/20 text-green-400 hover:bg-green-600/30 hover:text-green-300" : "bg-phalis-dark hover:bg-gray-700 hover:text-white"
+                        )}
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           const url = `${window.location.origin}/rastreio/${pedido.hashRastreio}`;
+                           navigator.clipboard.writeText(url);
+                           setCopiado(true);
+                           setTimeout(() => setCopiado(false), 2000);
+                        }}
+                     >
+                        {copiado ? <Check className="h-4 w-4 mr-2" /> : <LinkIcon className="h-4 w-4 mr-2" />}
+                        {copiado ? 'Link Copiado!' : 'Copiar Link de Rastreio'}
+                     </Button>
+                  )}
                   {hasPermission('pedidos.editar') && (
                      <Button variant="outline" size="sm" className="w-full bg-phalis-dark border-gray-700 hover:bg-gray-700 hover:text-white" onClick={handleEdit} disabled={isCanceled}>
                         <Pencil className="h-4 w-4 mr-2" /> Editar Pedido

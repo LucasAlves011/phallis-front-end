@@ -17,6 +17,7 @@ import { AddClientModal } from '@/components/clientes/AddClientModal';
 import { Loader2, Plus, Edit, RefreshCw, AlertCircle } from 'lucide-react';
 import { usePermission } from '@/lib/auth/usePermission';
 import { authenticatedFetch } from '@/lib/api';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Função de formatar CPF/CNPJ
 const formatCpfCnpj = (value: string): string => {
@@ -166,14 +167,16 @@ export default function ClientesPage() {
                </TableHeader>
                <TableBody>
                   {isLoading ? (
-                     <TableRow className="hover:bg-transparent border-gray-800">
-                        <TableCell colSpan={6} className="h-32 text-center">
-                           <div className="flex justify-center items-center">
-                              <Loader2 className="h-8 w-8 animate-spin text-phalis-action" />
-                              <span className="ml-2 text-gray-400">Carregando clientes...</span>
-                           </div>
-                        </TableCell>
-                     </TableRow>
+                     Array.from({ length: 8 }).map((_, i) => (
+                        <TableRow key={`skeleton-cli-${i}`} className="hover:bg-transparent border-gray-800">
+                           <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                           <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                           <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                           <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                        </TableRow>
+                     ))
                   ) : clientesFiltrados.length === 0 ? (
                      <TableRow className="hover:bg-transparent border-gray-800">
                         <TableCell colSpan={6} className="h-32 text-center text-gray-500">

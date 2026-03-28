@@ -87,6 +87,7 @@ export type Pedido = {
    criadoPor: any;
    cliente: Cliente;
    valor: number;
+   hashRastreio?: string;
    statusFinanceiro: StatusFinanceiro;
    statusProducao: StatusProducao | null;
    // O histórico financeiro e produção foram retirados do payload principal,

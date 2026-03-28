@@ -37,7 +37,7 @@
 }
 
 @layer base {
-  * {
+  *:not(svg):not(svg *) {
     @apply border-border;
   }
 

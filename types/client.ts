@@ -14,6 +14,9 @@ export const PERMISSIONS_CONFIG = [
    { id: 'pedidos.status.producao', label: 'Evoluir Status de Produção', category: 'Pedidos' },
    { id: 'pedidos.status.financeiro', label: 'Evoluir Status Financeiro', category: 'Pedidos' },
 
+   // RELATÓRIOS
+   { id: 'relatorios.ver', label: 'Ver Relatórios e Dashboards', category: 'Relatórios' },
+
    // CLIENTES
    { id: 'clientes.visualizar', label: 'Verificar Lista de Clientes', category: 'Clientes' },
    { id: 'clientes.alterar', label: 'Alterar Clientes (Criar/Editar)', category: 'Clientes' },
@@ -70,6 +73,7 @@ export const ROLE_TEMPLATES: Record<string, Permission[]> = {
       'pedidos.editar',
       'pedidos.status.producao',
       'pedidos.status.financeiro',
+      'relatorios.ver',
       'clientes.visualizar',
       'clientes.alterar'
    ],

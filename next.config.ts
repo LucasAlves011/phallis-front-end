@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   images: {
@@ -23,6 +24,11 @@ const nextConfig: NextConfig = {
         destination: 'http://localhost:8085/uploads/:path*',
       },
     ];
+  },
+  // Corrige o Turbopack detectando o diretório errado como workspace root
+  // devido a um package-lock.json em C:\Users\lucas\
+  turbopack: {
+    root: path.resolve(__dirname),
   },
 };
 

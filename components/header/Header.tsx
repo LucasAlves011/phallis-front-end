@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart } from 'lucide-react';
+import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart, BarChart2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useCart } from '@/lib/cartStore';
@@ -112,6 +112,13 @@ const Header: React.FC = () => {
                   {hasAnyPermission(['produtos.cadastrar', 'produtos.editar', 'produtos.deletar']) && (
                      <Button asChild className="bg-phalis-ciano text-black hover:bg-phalis-ciano-hover font-medium">
                         <Link href="/adm/produtos">PRODUTOS</Link>
+                     </Button>
+                  )}
+
+                  {/* Relatórios: Apenas quem tem permissão específica */}
+                  {hasPermission('relatorios.ver') && (
+                     <Button asChild className="bg-purple-600 text-white hover:bg-purple-700 font-medium flex items-center gap-1.5">
+                        <Link href="/relatorios"><BarChart2 className="h-4 w-4" />RELATÓRIOS</Link>
                      </Button>
                   )}
 

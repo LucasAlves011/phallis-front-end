@@ -130,7 +130,7 @@ export default function HistoricoPedidosPage() {
          {/* Barra de Filtros */}
          <div className="bg-phalis-black p-4 rounded-lg flex flex-col md:flex-row gap-4">
             <Input
-               placeholder="Filtrar por nome do cliente..."
+               placeholder="Filtrar por código (PED-XXX) ou cliente..."
                className="bg-phalis-gray border-0"
                value={filtroCliente}
                onChange={(e) => setFiltroCliente(e.target.value)}
@@ -160,13 +160,15 @@ export default function HistoricoPedidosPage() {
          </div>
 
          {/* Tabela com pedidos FILTRADOS */}
-         <TabelaPedidos
-            pedidos={pedidos}
-            onPedidoUpdated={handlePedidoUpdated}
-            highlightId={highlightId}
-            currentUser={user}
-            isLoading={isLoading}
-         />
+         <div className="bg-phalis-black rounded-lg border border-gray-800 overflow-hidden">
+            <TabelaPedidos
+               pedidos={pedidos}
+               onPedidoUpdated={handlePedidoUpdated}
+               highlightId={highlightId}
+               currentUser={user}
+               isLoading={isLoading}
+            />
+         </div>
 
          {/* Loader e Fim dos resultados */}
          {hasMore && (

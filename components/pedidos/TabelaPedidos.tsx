@@ -140,15 +140,15 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
    return (
       <Table>
          <TableHeader>
-            <TableRow>
-               <TableHead className="w-[100px]">Nº Pedido</TableHead>
-               <TableHead className="w-[150px]">Data/Hora</TableHead>
-               <TableHead>Cliente</TableHead>
-               <TableHead>Contato</TableHead>
-               <TableHead>Item</TableHead>
-               <TableHead className="w-[180px]">Financeiro</TableHead>
-               <TableHead>Valor</TableHead>
-               <TableHead className="w-[200px]">Status</TableHead>
+            <TableRow className="hover:bg-transparent border-gray-800">
+               <TableHead className="w-[120px] text-gray-400">Pedido</TableHead>
+               <TableHead className="w-[150px] text-gray-400">Data/Hora</TableHead>
+               <TableHead className="text-gray-400">Cliente</TableHead>
+               <TableHead className="text-gray-400">Contato</TableHead>
+               <TableHead className="text-gray-400">Item</TableHead>
+               <TableHead className="w-[180px] text-gray-400">Financeiro</TableHead>
+               <TableHead className="text-gray-400">Valor</TableHead>
+               <TableHead className="w-[200px] text-gray-400">Status</TableHead>
             </TableRow>
          </TableHeader>
 
@@ -156,7 +156,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
             {isLoading && pedidos.length === 0 ? (
                Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={`skeleton-${i}`}>
-                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                     <TableCell><Skeleton className="h-8 w-16" /></TableCell>
                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -183,7 +183,10 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                         )}
                         onClick={() => toggleRow(String(pedido.id))}
                      >
-                        <TableCell>{pedido.id}</TableCell>
+                        <TableCell>
+                           <div className="font-medium text-white">{pedido.codigoVisual || '-'}</div>
+                           <div className="text-xs text-gray-500">#{pedido.id}</div>
+                        </TableCell>
                         <TableCell className="text-xs" suppressHydrationWarning={true}>
                            {formatarData(pedido.dataCriacao)}
                         </TableCell>

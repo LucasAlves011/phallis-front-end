@@ -17,10 +17,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Pencil, XOctagon, Loader2, DollarSign, Eye, Link as LinkIcon, Check } from 'lucide-react';
+import { Pencil, XOctagon, Loader2, DollarSign, Eye, Link as LinkIcon, Check, PlusCircle, CreditCard, Banknote, Landmark } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useRouter } from 'next/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type DetalhesProps = {
    pedido: Pedido;
@@ -222,9 +223,18 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    const [cancelError, setCancelError] = useState('');
    const [copiado, setCopiado] = useState(false);
 
-   // Estados de Fetch da Timeline
+   // Modal de Pagamento
+   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+   const [paymentValor, setPaymentValor] = useState('');
+   const [paymentForma, setPaymentForma] = useState('PIX');
+   const [paymentObs, setPaymentObs] = useState('');
+   const [paymentLoading, setPaymentLoading] = useState(false);
+   const [paymentError, setPaymentError] = useState('');
+
+   // Estados de Fetch da Timeline e Financeiro
    const [historicoProd, setHistoricoProd] = useState<any[]>([]);
    const [pagamentos, setPagamentos] = useState<any[]>([]);
+   const [contaReceber, setContaReceber] = useState<any>(null);
    const [isLoadingTimeline, setIsLoadingTimeline] = useState(true);
    const lastFetchedIdRef = React.useRef<string | null>(null);
 
@@ -235,6 +245,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
          setIsLoadingTimeline(true);
          setHistoricoProd([]);
          setPagamentos([]);
+         setContaReceber(null);
          lastFetchedIdRef.current = String(pedido.id);
       }
 
@@ -244,6 +255,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
       ]).then(([prodData, contasData]) => {
          setHistoricoProd(Array.isArray(prodData) ? prodData : []);
          setPagamentos(contasData && contasData.pagamentos ? contasData.pagamentos : []);
+         setContaReceber(contasData);
          setIsLoadingTimeline(false);
       }).catch(err => {
          console.error("Erro timeline:", err);
@@ -367,6 +379,76 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
       }
    };
 
+   // ==================== LÓGICA DE PAGAMENTO PARCIAL ====================
+
+   const valorTotalPedido = Number(contaReceber?.valorTotal || pedido.valor || 0);
+   const valorPagoAtual = Number(contaReceber?.valorPago || 0);
+   const valorFaltante = Math.max(0, valorTotalPedido - valorPagoAtual);
+   const progressoPorcentagem = valorTotalPedido > 0 ? Math.min(100, (valorPagoAtual / valorTotalPedido) * 100) : 0;
+
+   const openPaymentModal = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setPaymentValor(valorFaltante.toFixed(2));
+      setPaymentForma('PIX');
+      setPaymentObs('');
+      setPaymentError('');
+      setIsPaymentModalOpen(true);
+   };
+
+   const handlePaymentSubmit = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const numValor = parseFloat(paymentValor.replace(',', '.'));
+      if (isNaN(numValor) || numValor <= 0) {
+         setPaymentError("Insira um valor válido.");
+         return;
+      }
+      if (numValor > valorFaltante + 0.05) { // margem de centavos
+         setPaymentError(`Você não pode cobrar mais do que o valor restante (R$ ${valorFaltante.toFixed(2)}).`);
+         return;
+      }
+
+      setPaymentLoading(true);
+      setPaymentError('');
+
+      try {
+         const payload = {
+            valorPago: numValor,
+            formaPagamento: paymentForma,
+            observacao: paymentObs
+         };
+         
+         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/pagamento`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+         });
+
+         if (!response.ok) {
+            const errBody = await response.text();
+            throw new Error(errBody || 'Erro ao registrar pagamento');
+         }
+
+         const updatedConta = await response.json();
+         
+         // Atualiza state local para refletir na barra imediatamente
+         setContaReceber(updatedConta);
+         setPagamentos(updatedConta.pagamentos || []);
+         
+         // Injeta evento artificial na timeline para não ter que fazer novo fetch do pedido
+         onPedidoUpdated({
+            ...pedido,
+            statusFinanceiro: updatedConta.status
+         });
+
+         setIsPaymentModalOpen(false);
+
+      } catch (error: any) {
+         setPaymentError(error.message);
+      } finally {
+         setPaymentLoading(false);
+      }
+   };
+
    return (
       <div className="bg-black/40 rounded-lg border border-phalis-gray/50 overflow-hidden" onClick={e => e.stopPropagation()}>
          <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
@@ -395,6 +477,54 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                      </div>
                   </div>
                </div>
+
+               {/* Barra de Progresso Financeiro (Pagamentos Parciais) */}
+               {contaReceber && (
+                  <div className="py-4 px-5 border-b border-gray-800 bg-[#151515]">
+                     <div className="flex justify-between items-end mb-2">
+                        <div>
+                           <h4 className="text-gray-300 text-sm font-bold flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-phalis-action" />
+                              Andamento Financeiro
+                           </h4>
+                           <p className="text-xs text-gray-500 mt-0.5">
+                              Pago: <strong className="text-white">R$ {valorPagoAtual.toFixed(2)}</strong> / 
+                              Total: R$ {valorTotalPedido.toFixed(2)}
+                           </p>
+                        </div>
+                        {valorFaltante > 0 && !isCanceled && hasPermission('pedidos.status.financeiro') && (
+                           <Button 
+                              size="sm" 
+                              className="bg-phalis-action hover:bg-cyan-600 text-black font-bold h-8 text-xs"
+                              onClick={openPaymentModal}
+                           >
+                              <PlusCircle className="w-3.5 h-3.5 mr-1" /> Registrar Pagamento
+                           </Button>
+                        )}
+                        {valorFaltante <= 0 && !isCanceled && (
+                           <span className="bg-green-600/20 text-green-400 font-bold text-xs px-2 py-1 rounded border border-green-600/30">
+                              <Check className="w-3 h-3 inline mr-1" /> Quitada
+                           </span>
+                        )}
+                     </div>
+
+                     {/* Progress Bar Container */}
+                     <div className="w-full bg-gray-800 rounded-full h-2.5 mt-2 overflow-hidden flex">
+                        <div 
+                           className={cn(
+                              "h-2.5 transition-all duration-700 ease-out", 
+                              progressoPorcentagem < 100 ? "bg-phalis-action shadow-[0_0_8px_#00bcd4]" : "bg-green-500 shadow-[0_0_8px_#4ade80]"
+                           )}
+                           style={{ width: `${progressoPorcentagem}%` }}
+                        />
+                     </div>
+                     {valorFaltante > 0 && (
+                        <p className="text-[10px] text-yellow-500/80 text-right mt-1 font-medium">
+                           Falta receber: R$ {valorFaltante.toFixed(2)}
+                        </p>
+                     )}
+                  </div>
+               )}
 
                {/* Lista de Itens */}
                <div className="p-5 flex-1">
@@ -485,6 +615,83 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                <AlertDialogFooter>
                   <AlertDialogCancel className="bg-gray-700 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Voltar</AlertDialogCancel>
                   <Button className="bg-phalis-danger text-white hover:bg-red-700" disabled={cancelLoading} onClick={handleCancelConfirm}>{cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Cancelamento"}</Button>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+
+         {/* Modal de Pagamento Parcial */}
+         <AlertDialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+            <AlertDialogContent className="bg-phalis-black border-gray-800 text-white max-w-sm">
+               <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                     <DollarSign className="w-5 h-5 text-phalis-action" /> Add Pagamento
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                     <div className="text-gray-400 space-y-4 mt-4">
+                        <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-800 text-center">
+                           <p className="text-sm font-semibold text-gray-300">Valor Restante</p>
+                           <p className="text-2xl font-bold text-phalis-action">R$ {valorFaltante.toFixed(2)}</p>
+                        </div>
+
+                        <div className="space-y-1.5">
+                           <Label htmlFor="valor" className="text-white text-xs">Valor Cobrado (R$)</Label>
+                           <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                              <input 
+                                 id="valor"
+                                 type="number"
+                                 step="0.01"
+                                 min="0.01"
+                                 max={valorFaltante}
+                                 className="flex h-10 w-full rounded-md border border-gray-700 bg-phalis-gray px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-phalis-action pl-8"
+                                 value={paymentValor}
+                                 onChange={(e) => setPaymentValor(e.target.value)}
+                                 onClick={e => e.stopPropagation()}
+                              />
+                           </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                           <Label className="text-white text-xs">Forma de Pagamento</Label>
+                           <Select value={paymentForma} onValueChange={setPaymentForma}>
+                              <SelectTrigger className="w-full bg-phalis-gray border-gray-700 text-white" onClick={e => e.stopPropagation()}>
+                                 <SelectValue placeholder="Selecione..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-phalis-dark border-gray-700 text-white">
+                                 <SelectItem value="PIX"><div className="flex items-center"><Banknote className="w-4 h-4 mr-2" /> PIX</div></SelectItem>
+                                 <SelectItem value="CREDITO"><div className="flex items-center"><CreditCard className="w-4 h-4 mr-2" /> Cartão de Crédito</div></SelectItem>
+                                 <SelectItem value="DEBITO"><div className="flex items-center"><CreditCard className="w-4 h-4 mr-2" /> Cartão de Débito</div></SelectItem>
+                                 <SelectItem value="DINHEIRO"><div className="flex items-center"><Landmark className="w-4 h-4 mr-2" /> Dinheiro</div></SelectItem>
+                                 <SelectItem value="TRANSFERENCIA"><div className="flex items-center"><Landmark className="w-4 h-4 mr-2" /> Transferência</div></SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                           <Label htmlFor="obs" className="text-white text-xs">Observação (Opcional)</Label>
+                           <Textarea 
+                              id="obs" 
+                              className="bg-phalis-gray border-gray-700 min-h-[60px]" 
+                              placeholder="Ex: Sinal para iniciar a arte"
+                              value={paymentObs} 
+                              onChange={(e) => setPaymentObs(e.target.value)} 
+                              onClick={(e) => e.stopPropagation()} 
+                           />
+                        </div>
+
+                        {paymentError && <p className="text-sm text-phalis-danger">{paymentError}</p>}
+                     </div>
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter className="mt-2">
+                  <AlertDialogCancel className="bg-gray-800/50 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                  <Button 
+                     className="bg-phalis-action text-black font-bold hover:bg-cyan-600" 
+                     disabled={paymentLoading} 
+                     onClick={handlePaymentSubmit}
+                  >
+                     {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar Pagamento"}
+                  </Button>
                </AlertDialogFooter>
             </AlertDialogContent>
          </AlertDialog>

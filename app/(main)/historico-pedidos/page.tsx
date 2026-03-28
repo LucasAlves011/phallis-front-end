@@ -1,9 +1,8 @@
 // Arquivo: app/(main)/historico-pedidos/page.tsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-// 1. MUDANÇA: Importar os novos componentes e hooks
 import {
    type Pedido,
    statusFinanceiroOptions,
@@ -13,7 +12,7 @@ import TabelaPedidos from '@/components/pedidos/TabelaPedidos';
 import { useInView } from 'react-intersection-observer';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { authenticatedFetch } from '@/lib/api'; // Adicionado
+import { authenticatedFetch } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import {
    Select,
@@ -22,7 +21,6 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@/components/ui/select";
-import { useDebounce } from 'use-debounce';
 
 export default function HistoricoPedidosPage() {
    const [pedidos, setPedidos] = useState<Pedido[]>([]);
@@ -30,43 +28,36 @@ export default function HistoricoPedidosPage() {
    const [hasMore, setHasMore] = useState(true);
    const [isLoading, setIsLoading] = useState(false);
 
-   const { ref, inView } = useInView({
-      threshold: 0,
-   });
+   const { ref, inView } = useInView({ threshold: 0 });
 
    const searchParams = useSearchParams();
    const highlightId = searchParams.get('highlight');
    const { user } = useAuth();
 
    // ==========================================================
-   // MUDANÇA 2: Estados para os filtros
+   // Estados dos filtros (server-side)
    // ==========================================================
    const [filtroCliente, setFiltroCliente] = useState('');
    const [filtroFinanceiro, setFiltroFinanceiro] = useState('todos');
    const [filtroStatus, setFiltroStatus] = useState('todos');
 
-   // Debounce para o input de texto (espera 500ms após o usuário parar de digitar)
-   const [debouncedCliente] = useDebounce(filtroCliente, 500);
+   // Timeout para debounce
+   const debounceTimeout = React.useRef<NodeJS.Timeout | null>(null);
 
-   // Ref para impedir o 'loadMore' de rodar no 'useEffect' de filtros
-   const isFilterReset = useRef(false);
-
-   // ==========================================================
-   // MUDANÇA 3: 'loadMorePedidos' agora lê os filtros
-   // ==========================================================
-   const loadMorePedidos = async (isReset: boolean = false) => {
-      if (isLoading) return;
+   const loadMorePedidos = async (reset: boolean = false) => {
+      // Se estiver resertando os dados, usamos a página 0. Caso contrário a próxima.
+      const pageToLoad = reset ? 0 : page;
+      if (!reset && isLoading) return;
+      if (!reset && !hasMore) return;
+      
       setIsLoading(true);
 
-      // Spring Data usa índice 0. Na primeira carga (isReset) sempre busca página 0.
-      const pageToFetch = isReset ? 0 : page;
-
-      // 1. Monta a URL com os parâmetros de filtro
       const params = new URLSearchParams();
-      params.append('page', pageToFetch.toString());
+      params.append('page', pageToLoad.toString());
       params.append('size', '20');
       params.append('sort', 'dataCriacao,desc');
-      if (debouncedCliente) params.append('cliente', debouncedCliente);
+      
+      if (filtroCliente.trim()) params.append('cliente', filtroCliente.trim());
       if (filtroFinanceiro !== 'todos') params.append('financeiro', filtroFinanceiro);
       if (filtroStatus !== 'todos') params.append('status', filtroStatus);
 
@@ -74,53 +65,47 @@ export default function HistoricoPedidosPage() {
          const response = await authenticatedFetch(`/api/pedidos?${params.toString()}`);
          if (!response.ok) throw new Error('Falha ao buscar pedidos da API');
 
-         // Spring retorna um objeto Page com `content`, `last`, `totalElements`, etc.
          const paginaRetornada = await response.json();
          const novosPedidos: Pedido[] = paginaRetornada.content ?? paginaRetornada;
          const isLast: boolean = paginaRetornada.last ?? (novosPedidos.length < 20);
 
          if (novosPedidos.length > 0) {
-            setPedidos(prev => (isReset ? novosPedidos : [...prev, ...novosPedidos]));
-            setPage(pageToFetch + 1);
+            setPedidos(prev => reset ? novosPedidos : [...prev, ...novosPedidos]);
+            setPage(pageToLoad + 1);
             setHasMore(!isLast);
          } else {
-            if (isReset) setPedidos([]);
+            if (reset) setPedidos([]);
             setHasMore(false);
          }
       } catch (error) {
          console.error("[HistoricoPedidosPage] Erro ao buscar pedidos:", error);
+         if (reset) setPedidos([]);
          setHasMore(false);
       }
 
       setIsLoading(false);
    };
 
-   // ==========================================================
-   // MUDANÇA 4: useEffect para o SCROLL (carrega mais)
-   // ==========================================================
+   // Scroll infinito
    useEffect(() => {
-      // Não roda se um reset de filtro acabou de acontecer
-      if (inView && hasMore && !isLoading && !isFilterReset.current) {
-         loadMorePedidos(false); // Chama no modo "anexar"
-      }
-      // Reseta o 'lock' do filtro
-      if (isFilterReset.current) {
-         isFilterReset.current = false;
+      if (inView) {
+         loadMorePedidos(false);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [inView, hasMore, isLoading]);
+   }, [inView]);
 
-   // ==========================================================
-   // MUDANÇA 5: useEffect para os FILTROS (reseta e carrega)
-   // ==========================================================
+   // Efeito quando os filtros mudam: reinicia a lista
    useEffect(() => {
-      // Seta o 'lock' para impedir o 'inView' de rodar ao mesmo tempo
-      isFilterReset.current = true;
-      // Reseta a lista e busca a página 1
-      loadMorePedidos(true);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [debouncedCliente, filtroFinanceiro, filtroStatus]); // Dependências
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+      debounceTimeout.current = setTimeout(() => {
+         loadMorePedidos(true);
+      }, 500);
 
+      return () => {
+         if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [filtroCliente, filtroFinanceiro, filtroStatus]);
 
    const handlePedidoUpdated = (pedidoAtualizado: Pedido) => {
       setPedidos(prevPedidos =>
@@ -133,7 +118,7 @@ export default function HistoricoPedidosPage() {
    if (!user) {
       return (
          <div className="flex justify-center items-center p-4 h-16">
-            <Loader2 className="h-8 w-8 animate-spin text-phalis-action" />
+            <Loader2 size={32} className="animate-spin text-phalis-action" />
          </div>
       );
    }
@@ -142,9 +127,7 @@ export default function HistoricoPedidosPage() {
       <div className="space-y-6">
          <h1 className="text-3xl font-bold text-white">Histórico de Pedidos</h1>
 
-         {/* ========================================================== */}
-         {/* MUDANÇA 6: A nova Barra de Filtros */}
-         {/* ========================================================== */}
+         {/* Barra de Filtros */}
          <div className="bg-phalis-black p-4 rounded-lg flex flex-col md:flex-row gap-4">
             <Input
                placeholder="Filtrar por nome do cliente..."
@@ -176,6 +159,7 @@ export default function HistoricoPedidosPage() {
             </Select>
          </div>
 
+         {/* Tabela com pedidos FILTRADOS */}
          <TabelaPedidos
             pedidos={pedidos}
             onPedidoUpdated={handlePedidoUpdated}
@@ -188,7 +172,7 @@ export default function HistoricoPedidosPage() {
             <div ref={ref} className="flex justify-center items-center p-4 h-16">
                {isLoading && (
                   <>
-                     <Loader2 className="h-8 w-8 animate-spin text-phalis-action" />
+                     <Loader2 size={32} className="animate-spin text-phalis-action" />
                      <span className="ml-2 text-gray-400">Carregando mais pedidos...</span>
                   </>
                )}

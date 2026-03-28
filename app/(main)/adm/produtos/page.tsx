@@ -59,7 +59,12 @@ export default function GerenciarProdutosPage() {
       authenticatedFetch('/api/produtos')
          .then(res => res.json())
          .then((data: Product[]) => {
-            setProdutos(data);
+            // Prepara a lista convertendo index "0-based" do DB para "1-based" visualmente
+            const mapOrder = data.map((p, index) => ({
+               ...p,
+               orderIndex: (p.orderIndex !== undefined && p.orderIndex !== null) ? p.orderIndex + 1 : index + 1
+            }));
+            setProdutos(mapOrder);
             setIsLoading(false);
          })
          .catch(err => {
@@ -132,7 +137,10 @@ export default function GerenciarProdutosPage() {
             const oldIndex = items.findIndex(item => item.id === active.id);
             const newIndex = items.findIndex(item => item.id === over.id);
 
-            const newOrderList = arrayMove(items, oldIndex, newIndex);
+            const newOrderList = arrayMove(items, oldIndex, newIndex).map((item, index) => ({
+               ...item,
+               orderIndex: index + 1
+            }));
             const newOrderIds = newOrderList.map(item => item.id);
 
             // Envia a nova ordem para a API (sem esperar)
@@ -143,6 +151,21 @@ export default function GerenciarProdutosPage() {
 
             return newOrderList;
          });
+      }
+   };
+
+   // Função de ativar/desativar
+   const handleToggleAtivo = async (id: string) => {
+      try {
+         const response = await authenticatedFetch(`/api/produtos/${id}/status`, {
+            method: 'PATCH'
+         });
+         if (!response.ok) throw new Error('Falha ao alterar status');
+         const updatedProduct = await response.json();
+         setProdutos(prev => prev.map(p => p.id === id ? { ...p, ativo: updatedProduct.ativo } : p));
+      } catch (error) {
+         console.error("Erro ao alterar o status do produto:", error);
+         alert("Não foi possível alterar o status do produto.");
       }
    };
 
@@ -180,6 +203,7 @@ export default function GerenciarProdutosPage() {
                      {/* O "Cabeçalho" da nossa nova lista */}
                      <div className="flex items-center p-4 border-b border-gray-800 text-sm font-medium text-gray-400">
                         <div className="w-10"></div> {/* Espaço do Handle */}
+                        <div className="w-[60px] text-center">Ordem</div>
                         <div className="w-[80px] px-4">Imagem</div>
                         <div className="flex-1">Nome</div>
                         <div className="w-[100px]">Tipo</div>
@@ -200,6 +224,7 @@ export default function GerenciarProdutosPage() {
                               canReorder={canReorder} // Passa prop nova
                               onEdit={handleEdit}
                               onDelete={openDeleteDialog}
+                              onToggleAtivo={handleToggleAtivo}
                            />
                         ))}
                      </SortableContext>

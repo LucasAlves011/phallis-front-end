@@ -71,7 +71,8 @@ export default function CatalogoPage() {
          })
          .then((data: Product[]) => {
             if (Array.isArray(data)) {
-               setProdutos(data);
+               // Apenas produtos que não estejam explicitamente desativados
+               setProdutos(data.filter(p => p.ativo !== false));
             } else {
                console.error("Dados recebidos não são um array:", data);
                throw new Error('Formato inválido de resposta.');

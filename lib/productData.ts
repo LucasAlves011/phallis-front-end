@@ -25,6 +25,8 @@ export type Product = {
   options?: ProductOptions;
   defaultM2Custo?: number;
   defaultM2Venda?: number;
+  orderIndex?: number;
+  ativo?: boolean;
 };
 
 // --- CONFIGURAÇÃO DAS COLUNAS (PARA ORDEM E RESET) ---

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart, BarChart2 } from 'lucide-react';
+import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart, BarChart2, Users, ClipboardList, Package, UserCog } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useCart } from '@/lib/cartStore';
@@ -96,22 +96,22 @@ const Header: React.FC = () => {
 
                   {/* Só mostra Clientes se tiver permissão de visualizar */}
                   {hasPermission('clientes.visualizar') && (
-                     <Button asChild className="bg-phalis-nav hover:bg-phalis-nav-hover font-medium text-white">
-                        <Link href="/clientes">CLIENTES</Link>
+                     <Button asChild className="bg-phalis-nav hover:bg-phalis-nav-hover font-medium text-white flex items-center gap-1.5">
+                        <Link href="/clientes"><Users className="h-4 w-4" />CLIENTES</Link>
                      </Button>
                   )}
 
                   {/* Só mostra Pedidos se tiver permissão de visualizar */}
                   {hasPermission('pedidos.visualizar') && (
-                     <Button asChild className="bg-yellow-500 text-black hover:bg-yellow-600 font-medium">
-                        <Link href="/historico-pedidos">PEDIDOS</Link>
+                     <Button asChild className="bg-yellow-500 text-black hover:bg-yellow-600 font-medium flex items-center gap-1.5">
+                        <Link href="/historico-pedidos"><ClipboardList className="h-4 w-4" />PEDIDOS</Link>
                      </Button>
                   )}
 
                   {/* Produtos: Mostra se puder cadastrar OU editar */}
                   {hasAnyPermission(['produtos.cadastrar', 'produtos.editar', 'produtos.deletar']) && (
-                     <Button asChild className="bg-phalis-ciano text-black hover:bg-phalis-ciano-hover font-medium">
-                        <Link href="/adm/produtos">PRODUTOS</Link>
+                     <Button asChild className="bg-phalis-ciano text-black hover:bg-phalis-ciano-hover font-medium flex items-center gap-1.5">
+                        <Link href="/adm/produtos"><Package className="h-4 w-4" />PRODUTOS</Link>
                      </Button>
                   )}
 
@@ -124,8 +124,8 @@ const Header: React.FC = () => {
 
                   {/* Usuários: Apenas quem tem permissão específica */}
                   {hasPermission('usuarios.gerenciar') && (
-                     <Button asChild className="bg-phalis-green text-black hover:bg-phalis-action-hover font-medium">
-                        <Link href="/adm/usuarios">USUARIOS</Link>
+                     <Button asChild className="bg-phalis-green text-black hover:bg-phalis-action-hover font-medium flex items-center gap-1.5">
+                        <Link href="/adm/usuarios"><UserCog className="h-4 w-4" />USUÁRIOS</Link>
                      </Button>
                   )}
                </nav>

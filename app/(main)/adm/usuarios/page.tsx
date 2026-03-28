@@ -42,6 +42,8 @@ export default function GerenciarUsuariosPage() {
    const [editingUser, setEditingUser] = useState<Partial<User> | null>(null);
    const [selectedPermissions, setSelectedPermissions] = useState<Permission[]>([]);
 
+   const [searchTerm, setSearchTerm] = useState('');
+
    useEffect(() => {
       authenticatedFetch('/api/users?size=100')
          .then(res => {
@@ -60,15 +62,21 @@ export default function GerenciarUsuariosPage() {
          });
    }, []);
 
+   const usuariosFiltrados = users.filter(u =>
+      u.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.username.toLowerCase().includes(searchTerm.toLowerCase())
+   );
+
    const handleEditClick = (user: User) => {
       setEditingUser(user);
       setSelectedPermissions(user.permissions || []);
       setIsDialogOpen(true);
    };
 
+   // ...resto inalterado até handleCreateClick
    const handleCreateClick = () => {
       setEditingUser({
-         nome: '', email: '', username: '', password: '', role: 'user', active: true
+         nome: '', email: null, username: '', password: '', role: 'user', active: true
       } as any);
       setSelectedPermissions([]);
       setIsDialogOpen(true);
@@ -113,31 +121,19 @@ export default function GerenciarUsuariosPage() {
          let newPermissions = [...prev];
 
          if (isAdding) {
-            // Se estou adicionando, adiciono o ID
             newPermissions.push(permId);
-
-            // Verifico se existe um pré-requisito (Dependency)
             const dependency = PERMISSION_DEPENDENCIES[permId];
-            // Se existe pré-requisito e eu ainda não tenho, adiciono também
             if (dependency && !newPermissions.includes(dependency)) {
                newPermissions.push(dependency);
             }
          } else {
-            // Se estou removendo
             newPermissions = newPermissions.filter(p => p !== permId);
-
-            // Se removi um "Pai", devo remover os "Filhos" que dependem dele?
-            // Ex: Se removi 'orders.view', devo remover 'orders.edit'
-            // Percorre todas as permissões configuradas
             PERMISSIONS_CONFIG.forEach(p => {
-               // Se a permissão P depende da permissão que acabei de remover (permId)
                if (PERMISSION_DEPENDENCIES[p.id] === permId) {
-                  // Remove a permissão filha também
                   newPermissions = newPermissions.filter(child => child !== p.id);
                }
             });
          }
-
          return newPermissions;
       });
    };
@@ -194,11 +190,25 @@ export default function GerenciarUsuariosPage() {
 
    return (
       <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6">
-         <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-white">Gerenciar Usuários</h1>
-            <Button onClick={handleCreateClick} className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover">
-               <Plus className="mr-2 h-4 w-4" /> Novo Usuário
-            </Button>
+
+         {/* Barra de Título, Pesquisa e Botão de Adicionar (Padrão Unificado) */}
+         <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-phalis-black/50 p-4 rounded-lg">
+            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+               <Shield className="text-phalis-action h-7 w-7" />
+               Equipe
+            </h1>
+
+            <div className="flex w-full md:w-auto gap-2">
+               <Input
+                  placeholder="Pesquisar funcionário..."
+                  className="bg-phalis-gray border-0 w-full md:w-64"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+               />
+               <Button onClick={handleCreateClick} className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover whitespace-nowrap">
+                  <Plus className="mr-2 h-4 w-4" /> Novo Usuário
+               </Button>
+            </div>
          </div>
 
          <div className="bg-phalis-black rounded-lg border border-gray-800">

@@ -2,6 +2,7 @@ import React from 'react';
 import Header from '@/components/header/Header';
 import PageWrapper from '@/components/motion/PageWrapper';
 import { AuthGuard } from '@/lib/auth/AuthGuard';
+import ForcePasswordChangeModal from '@/components/auth/ForcePasswordChangeModal';
 
 export default function MainAppLayout({
    children,
@@ -11,6 +12,7 @@ export default function MainAppLayout({
    return (
       <AuthGuard>
          <div className="min-h-screen">
+            <ForcePasswordChangeModal />
 
             <Header />
 

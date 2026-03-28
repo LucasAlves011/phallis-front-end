@@ -60,6 +60,7 @@ export type User = {
    // Novos campos de segurança
    role: Role;
    active: boolean; // Se false, não consegue logar
+   senhaProvisoria?: boolean; // Se true, força troca de senha
    permissions: Permission[]; // Permissões granulares
 };
 

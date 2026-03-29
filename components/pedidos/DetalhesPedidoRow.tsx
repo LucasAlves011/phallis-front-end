@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCart } from '@/lib/cartStore';
 
 type DetalhesProps = {
    pedido: Pedido;
@@ -216,6 +217,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    const { hasPermission } = usePermission();
    const router = useRouter();
    const { user } = useAuth();
+   const { loadOrderForEdit, clearCart } = useCart();
 
    const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
    const [cancelMotivo, setCancelMotivo] = useState('');
@@ -350,8 +352,31 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
 
    const handleEdit = (e: React.MouseEvent) => {
       e.stopPropagation();
-      // Edição legado suportava só um item
-      router.push(`/pedido?id=${itensToRender[0].productId}&edit=${pedido.id}`);
+      
+      const cartItems = itensToRender.map(item => ({
+         id: `cart_loaded_${item.id || Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+         productId: String(item.productId),
+         itemNome: item.itemNome,
+         itemImageUrl: item.itemImageUrl || '',
+         valor: item.valor,
+         detalhes: item.detalhes || {}
+      }));
+
+      clearCart();
+      loadOrderForEdit(
+         {
+            id: Number(pedido.id),
+            codigoVisual: pedido.codigoVisual || '',
+            cliente: pedido.cliente,
+            totalPago: valorPagoAtual,
+            statusFinanceiro: pedido.statusFinanceiro,
+            statusProducao: pedido.statusProducao || 'PRE_PROD'
+         },
+         cartItems
+      );
+      
+      // Vai direto ao carrinho, que já está populado com os itens do pedido
+      router.push('/carrinho');
    };
 
    const openCancelDialog = (e: React.MouseEvent) => {

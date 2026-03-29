@@ -6,6 +6,8 @@ import { Loader2, PackageOpen, CheckCircle2, Clock, Truck, FileText, Check, Aler
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
+import { Turnstile } from '@marsidev/react-turnstile';
+
 type RastreioItemDTO = {
     nome: string;
     quantidade: number;
@@ -44,16 +46,24 @@ export default function RastreioPublicoPage() {
     const [erro, setErro] = useState('');
     const [pedido, setPedido] = useState<RastreioPedidoDTO | null>(null);
 
+    const [turnstileToken, setTurnstileToken] = useState<string>('');
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITEKEY || '';
+
     useEffect(() => {
-        if (!hash) return;
+        if (!hash || !turnstileToken) return; // Só busca se tiver hash e token validado
 
         // O front-end tem a URL base da API no env NEXT_PUBLIC_API_URL
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-        fetch(`${apiUrl}/api/public/rastreio/${hash}`)
+        fetch(`${apiUrl}/api/public/rastreio/${hash}`, {
+            headers: {
+                'X-Turnstile-Token': turnstileToken
+            }
+        })
             .then(async (res) => {
                 if (!res.ok) {
                     if (res.status === 404) throw new Error("Pedido não encontrado ou link inválido.");
+                    if (res.status === 403) throw new Error("Falha na verificação de segurança. Recarregue a página.");
                     throw new Error("Erro ao carregar o rastreio.");
                 }
                 return res.json();
@@ -66,7 +76,22 @@ export default function RastreioPublicoPage() {
                 setErro(err.message);
                 setLoading(false);
             });
-    }, [hash]);
+    }, [hash, turnstileToken]);
+
+    if (!turnstileToken) {
+        return (
+            <div className="min-h-screen bg-phalis-black flex flex-col items-center justify-center p-4">
+                <p className="text-gray-400 mb-4 text-sm tracking-widest uppercase">Verificação de Segurança</p>
+                <div className="scale-110">
+                    <Turnstile
+                        siteKey={turnstileSiteKey}
+                        onSuccess={(token) => setTurnstileToken(token)}
+                        options={{ theme: 'dark', size: 'flexible' }}
+                    />
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return (

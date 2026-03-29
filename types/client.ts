@@ -94,4 +94,5 @@ export type Cliente = {
    email: string;
    telefone1: string;
    telefone2: string;
+   saldoCredito?: number;
 };

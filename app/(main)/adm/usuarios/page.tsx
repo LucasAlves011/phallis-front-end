@@ -141,6 +141,16 @@ export default function GerenciarUsuariosPage() {
    const handleSave = async () => {
       if (!editingUser) return;
 
+      // Validação de senha forte (apenas se estiver definindo ou trocando)
+      const editingUserAny = editingUser as any;
+      if (editingUserAny.password && editingUserAny.password.trim() !== '') {
+         const isStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(editingUserAny.password);
+         if (!isStrong) {
+            alert('A senha deve ter no mínimo 8 caracteres, contendo maiúscula, minúscula, número e símbolo (@$!%*?&).');
+            return;
+         }
+      }
+
       const payload = {
          ...editingUser,
          permissions: selectedPermissions
@@ -301,13 +311,14 @@ export default function GerenciarUsuariosPage() {
                   </div>
                   {/* Campo de Senha - Se for edição, é opcional e label muda */}
                   <div className="space-y-2 md:col-span-2">
-                     <Label>{editingUser?.id ? 'Nova Senha (deixe em branco para manter)' : 'Senha Inicial'}</Label>
+                     <Label>{editingUser?.id ? 'Nova Senha (deixe em branco para manter)' : 'Senha Inicial*'}</Label>
                      <Input
                         type="password"
                         value={(editingUser as any)?.password || ''}
                         onChange={e => setEditingUser(prev => ({ ...prev!, password: e.target.value }))}
                         className="bg-phalis-gray border-0"
                      />
+                     <p className="text-xs text-gray-500">A senha deve ter no mínimo 8 caracteres, contendo maiúscula, minúscula, número e símbolo (@$!%*?&).</p>
                   </div>
 
                   <div className="space-y-2 md:col-span-2">

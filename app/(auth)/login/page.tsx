@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from '@/lib/auth/AuthContext'; // Import do novo caminho
 import { Loader2 } from 'lucide-react';
 
+import { Turnstile } from '@marsidev/react-turnstile';
+
 export default function LoginPage() {
    // MUDANÇA: de 'email' para 'username'
    const [username, setUsername] = useState('');
@@ -17,19 +19,27 @@ export default function LoginPage() {
    const [isLoading, setIsLoading] = useState(false);
    const router = useRouter();
    const { login } = useAuth();
+   const [turnstileToken, setTurnstileToken] = useState<string>('');
+   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITEKEY || '';
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setError('');
       setIsLoading(true);
 
-      // MUDANÇA: Passando 'username' para a função de login
-      const success = await login(username, password);
+      if (!turnstileToken) {
+         setError('Aguarde a verificação de segurança (Cloudflare).');
+         setIsLoading(false);
+         return;
+      }
+
+      // MUDANÇA: Passando 'username' e o token do Turnstile
+      const success = await login(username, password, turnstileToken);
 
       if (success) {
          router.push('/');
       } else {
-         setError('Credenciais inválidas. Tente novamente.');
+         setError('Credenciais inválidas ou bloqueio de segurança.');
          setIsLoading(false);
       }
    };
@@ -86,6 +96,14 @@ export default function LoginPage() {
                      {error}
                   </p>
                )}
+
+               <div className="flex justify-center my-4">
+                  <Turnstile
+                     siteKey={turnstileSiteKey}
+                     onSuccess={(token) => setTurnstileToken(token)}
+                     options={{ theme: 'dark', size: 'flexible' }}
+                  />
+               </div>
 
                <div>
                   <Button

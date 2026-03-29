@@ -30,6 +30,13 @@ export default function ForcePasswordChangeModal() {
          return;
       }
 
+      // Validação de senha forte (Front-end)
+      const isStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword);
+      if (!isStrong) {
+         setError('Sua senha deve ter 8+ letras, maiúscula, minúscula, número e símbolo (@$!%*?&).');
+         return;
+      }
+
       if (newPassword !== confirmPassword) {
          setError('A nova senha e a confirmação não coincidem.');
          return;

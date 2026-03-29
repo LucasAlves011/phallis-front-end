@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
    user: User | null;
    isLoading: boolean;
-   login: (username: string, pass: string) => Promise<boolean>;
+   login: (username: string, pass: string, turnstileToken?: string) => Promise<boolean>;
    logout: () => Promise<void>;
 }
 
@@ -65,14 +65,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
    // ==========================================================
    // MUDANÇA AQUI: Função de Login
    // ==========================================================
-   const login = async (username: string, pass: string) => {
+   const login = async (username: string, pass: string, turnstileToken?: string) => {
       try {
          const basicAuth = btoa(`${username}:${pass}`);
          const response = await fetch(`/api/auth/login`, {
             method: 'GET',
             headers: {
                'Content-Type': 'application/json',
-               'Authorization': `Basic ${basicAuth}`
+               'Authorization': `Basic ${basicAuth}`,
+               // Envia o token apenas se existir (no login sempre vai, mas de forma segura)
+               ...(turnstileToken && { 'X-Turnstile-Token': turnstileToken })
             },
          });
 

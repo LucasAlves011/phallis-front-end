@@ -12,6 +12,15 @@ export type CartItem = {
    detalhes: Record<string, unknown>; // JSON genérico com type, opcoes, preco, etc.
 };
 
+export type EditOrderInfo = {
+   id: number;
+   codigoVisual: string;
+   cliente: { id: string; nome: string };
+   totalPago: number;
+   statusFinanceiro: string;
+   statusProducao: string;
+};
+
 type CartContextType = {
    itens: CartItem[];
    addItem: (item: Omit<CartItem, 'id'>) => void;
@@ -20,12 +29,20 @@ type CartContextType = {
    updateItem: (id: string, updatedItem: Partial<CartItem>) => void;
    totalItens: number;
    valorTotal: number;
+   editingOrder: EditOrderInfo | null;
+   loadOrderForEdit: (order: EditOrderInfo, loadedItems: CartItem[]) => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
    const [itens, setItens] = useState<CartItem[]>([]);
+   const [editingOrder, setEditingOrder] = useState<EditOrderInfo | null>(null);
+
+   const loadOrderForEdit = useCallback((order: EditOrderInfo, loadedItems: CartItem[]) => {
+      setEditingOrder(order);
+      setItens(loadedItems);
+   }, []);
 
    const addItem = useCallback((item: Omit<CartItem, 'id'>) => {
       const newItem: CartItem = {
@@ -41,6 +58,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
    const clearCart = useCallback(() => {
       setItens([]);
+      setEditingOrder(null);
    }, []);
 
    const updateItem = useCallback((id: string, updatedItem: Partial<CartItem>) => {
@@ -51,7 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
    const valorTotal = itens.reduce((sum, item) => sum + item.valor, 0);
 
    return (
-      <CartContext.Provider value={{ itens, addItem, removeItem, clearCart, updateItem, totalItens, valorTotal }}>
+      <CartContext.Provider value={{ itens, addItem, removeItem, clearCart, updateItem, totalItens, valorTotal, editingOrder, loadOrderForEdit }}>
          {children}
       </CartContext.Provider>
    );

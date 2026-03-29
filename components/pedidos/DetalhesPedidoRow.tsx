@@ -352,7 +352,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
 
    const handleEdit = (e: React.MouseEvent) => {
       e.stopPropagation();
-      
+
       const cartItems = itensToRender.map(item => ({
          id: `cart_loaded_${item.id || Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
          productId: String(item.productId),
@@ -374,7 +374,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
          },
          cartItems
       );
-      
+
       // Vai direto ao carrinho, que já está populado com os itens do pedido
       router.push('/carrinho');
    };
@@ -441,7 +441,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
             formaPagamento: paymentForma,
             observacao: paymentObs
          };
-         
+
          const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/pagamento`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -454,11 +454,11 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
          }
 
          const updatedConta = await response.json();
-         
+
          // Atualiza state local para refletir na barra imediatamente
          setContaReceber(updatedConta);
          setPagamentos(updatedConta.pagamentos || []);
-         
+
          // Injeta evento artificial na timeline para não ter que fazer novo fetch do pedido
          onPedidoUpdated({
             ...pedido,
@@ -513,13 +513,13 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                               Andamento Financeiro
                            </h4>
                            <p className="text-xs text-gray-500 mt-0.5">
-                              Pago: <strong className="text-white">R$ {valorPagoAtual.toFixed(2)}</strong> / 
+                              Pago: <strong className="text-white">R$ {valorPagoAtual.toFixed(2)}</strong> /
                               Total: R$ {valorTotalPedido.toFixed(2)}
                            </p>
                         </div>
                         {valorFaltante > 0 && !isCanceled && hasPermission('pedidos.status.financeiro') && (
-                           <Button 
-                              size="sm" 
+                           <Button
+                              size="sm"
                               className="bg-phalis-action hover:bg-cyan-600 text-black font-bold h-8 text-xs"
                               onClick={openPaymentModal}
                            >
@@ -535,9 +535,9 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
 
                      {/* Progress Bar Container */}
                      <div className="w-full bg-gray-800 rounded-full h-2.5 mt-2 overflow-hidden flex">
-                        <div 
+                        <div
                            className={cn(
-                              "h-2.5 transition-all duration-700 ease-out", 
+                              "h-2.5 transition-all duration-700 ease-out",
                               progressoPorcentagem < 100 ? "bg-phalis-action shadow-[0_0_8px_#00bcd4]" : "bg-green-500 shadow-[0_0_8px_#4ade80]"
                            )}
                            style={{ width: `${progressoPorcentagem}%` }}
@@ -588,9 +588,9 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
 
                <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-800">
                   {pedido.hashRastreio && (
-                     <Button 
-                        variant="outline" 
-                        size="sm" 
+                     <Button
+                        variant="outline"
+                        size="sm"
                         className={cn(
                            "w-full border-gray-700",
                            copiado ? "bg-green-600/20 text-green-400 hover:bg-green-600/30 hover:text-green-300" : "bg-phalis-dark hover:bg-gray-700 hover:text-white"
@@ -662,7 +662,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                            <Label htmlFor="valor" className="text-white text-xs">Valor Cobrado (R$)</Label>
                            <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
-                              <input 
+                              <input
                                  id="valor"
                                  type="number"
                                  step="0.01"
@@ -670,8 +670,10 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                                  max={valorFaltante}
                                  className="flex h-10 w-full rounded-md border border-gray-700 bg-phalis-gray px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-phalis-action pl-8"
                                  value={paymentValor}
-                                 onChange={(e) => setPaymentValor(e.target.value)}
+                                 onChange={(e) => { const v = e.target.value; if (v !== '' && Number(v) < 0) { e.target.value = '0'; } setPaymentValor(e.target.value); }}
+                                  onKeyDown={(e) => { if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                                  onClick={e => e.stopPropagation()}
+                                 onWheel={(e) => e.currentTarget.blur()}
                               />
                            </div>
                         </div>
@@ -694,13 +696,13 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
 
                         <div className="space-y-1.5">
                            <Label htmlFor="obs" className="text-white text-xs">Observação (Opcional)</Label>
-                           <Textarea 
-                              id="obs" 
-                              className="bg-phalis-gray border-gray-700 min-h-[60px]" 
+                           <Textarea
+                              id="obs"
+                              className="bg-phalis-gray border-gray-700 min-h-[60px]"
                               placeholder="Ex: Sinal para iniciar a arte"
-                              value={paymentObs} 
-                              onChange={(e) => setPaymentObs(e.target.value)} 
-                              onClick={(e) => e.stopPropagation()} 
+                              value={paymentObs}
+                              onChange={(e) => setPaymentObs(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
                            />
                         </div>
 
@@ -710,9 +712,9 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                </AlertDialogHeader>
                <AlertDialogFooter className="mt-2">
                   <AlertDialogCancel className="bg-gray-800/50 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                  <Button 
-                     className="bg-phalis-action text-black font-bold hover:bg-cyan-600" 
-                     disabled={paymentLoading} 
+                  <Button
+                     className="bg-phalis-action text-black font-bold hover:bg-cyan-600"
+                     disabled={paymentLoading}
                      onClick={handlePaymentSubmit}
                   >
                      {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar Pagamento"}

@@ -430,7 +430,7 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
                <div className="lg:col-span-1 space-y-4">
                   <div className="space-y-3 pt-2">
                      <h3 className="text-base font-medium text-white">Custo</h3>
-                     <div className="space-y-1"><Label htmlFor="qtd" className="text-gray-300 text-sm ml-1">Quantidade *</Label><Input id="qtd" type="number" value={quantidade} onChange={e => setQuantidade(e.target.value)} className="bg-phalis-gray border-0 h-10 max-h-10" min={1} /></div>
+                     <div className="space-y-1"><Label htmlFor="qtd" className="text-gray-300 text-sm ml-1">Quantidade *</Label><Input id="qtd" type="number" value={quantidade} onChange={e => setQuantidade(e.target.value)} className="bg-phalis-gray border-0 h-10 max-h-10" min={1} onWheel={(e) => e.currentTarget.blur()} onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }} /></div>
                      <div className="space-y-1"><Label htmlFor="custo" className="text-gray-300 text-sm ml-1">Preço Custo (Total) *</Label><MoneyInput id="custo" value={precoCusto} onChange={e => setPrecoCusto(e.target.value)} /></div>
                      <div className="bg-phalis-black rounded-md p-3 text-white text-sm">Custo Total: <span className="font-bold">R$ {custoTotal.toFixed(2)}</span></div>
                   </div>

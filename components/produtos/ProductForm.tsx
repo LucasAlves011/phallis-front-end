@@ -114,7 +114,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
    // Estados do Formulário
    const [nome, setNome] = useState(initialData?.nome || '');
    const [descricao, setDescricao] = useState(initialData?.descricao || '');
-   const [pricingType, setPricingType] = useState<'unidade' | 'metro' | 'servico'>(initialData?.pricingType || 'unidade');
+   const [pricingType, setPricingType] = useState<'UNIDADE' | 'METRO' | 'SERVICO'>(initialData?.pricingType || 'UNIDADE');
 
    const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
    const [imageFile, setImageFile] = useState<File | null>(null);
@@ -129,7 +129,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
    const [coresOptions, setCoresOptions] = useState<string[]>(unformatOpcoes(initialData?.options?.cores));
    const [acabamentoOptions, setAcabamentoOptions] = useState<string[]>(unformatOpcoes(initialData?.options?.acabamento));
 
-   const isOptionsDisabled = pricingType === 'servico';
+   const isOptionsDisabled = pricingType === 'SERVICO';
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -188,8 +188,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
             descricao: descricao || "",
             pricingType,
             options: isOptionsDisabled ? undefined : options,
-            defaultM2Custo: pricingType === 'metro' ? (Number(defaultM2Custo) || undefined) : undefined,
-            defaultM2Venda: pricingType === 'metro' ? (Number(defaultM2Venda) || undefined) : undefined,
+            defaultM2Custo: pricingType === 'METRO' ? (Number(defaultM2Custo) || undefined) : undefined,
+            defaultM2Venda: pricingType === 'METRO' ? (Number(defaultM2Venda) || undefined) : undefined,
          };
 
          const url = isEditMode ? `/api/produtos/${initialData.id}` : '/api/produtos';
@@ -262,22 +262,22 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                            className="flex gap-4"
                         >
                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="unidade" id="r-unidade" className="border-gray-500" />
+                              <RadioGroupItem value="UNIDADE" id="r-unidade" className="border-gray-500" />
                               <Label htmlFor="r-unidade" className="text-white cursor-pointer">Unidade</Label>
                            </div>
                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="metro" id="r-metro" className="border-gray-500" />
+                              <RadioGroupItem value="METRO" id="r-metro" className="border-gray-500" />
                               <Label htmlFor="r-metro" className="text-white cursor-pointer">Metro (m²)</Label>
                            </div>
                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="servico" id="r-servico" className="border-gray-500" />
+                              <RadioGroupItem value="SERVICO" id="r-servico" className="border-gray-500" />
                               <Label htmlFor="r-servico" className="text-white cursor-pointer">Serviço</Label>
                            </div>
                         </RadioGroup>
                      </div>
 
                      {/* Campos Condicionais (Estilo Label Clássica) */}
-                     {pricingType === 'metro' && (
+                     {pricingType === 'METRO' && (
                         <div className="pt-4 space-y-4 animate-in fade-in duration-300">
                            <h3 className="text-sm font-medium text-white">Preços Padrão (Opcional)</h3>
                            <div className="grid grid-cols-2 gap-4">

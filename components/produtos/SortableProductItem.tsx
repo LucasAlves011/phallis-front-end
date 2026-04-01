@@ -59,9 +59,9 @@ export const SortableProductItem: React.FC<SortableProductItemProps> = ({ produc
 
          {/* Nova Coluna Ordem Corrigida */}
          <div className="w-[60px] flex justify-center border-r border-gray-800 pr-2 mr-2">
-             <span className={`font-mono text-xs px-2 py-0.5 rounded-full ${product.ativo === false ? 'bg-red-900 text-red-100' : 'bg-gray-800 text-gray-400'}`}>
-                 #{product.orderIndex || 0}
-             </span>
+            <span className={`font-mono text-xs px-2 py-0.5 rounded-full ${product.ativo === false ? 'bg-red-900 text-gray-400' : 'bg-gray-800 text-white'}`}>
+               #{product.orderIndex || 0}
+            </span>
          </div>
 
          {/* Conteúdo da Linha (adaptado da <table>) */}
@@ -82,7 +82,11 @@ export const SortableProductItem: React.FC<SortableProductItemProps> = ({ produc
                </span>
             )}
          </div>
-         <div className="w-[100px] capitalize">{product.pricingType}</div>
+         <div className="w-[100px] capitalize">
+            <span className={`font-mono text-xxs uppercase px-2 py-0.5 rounded-full ${product.ativo === false ? 'bg-red-900 text-gray-400' : 'bg-gray-800 text-gray-200'}`}>
+               {product.pricingType}
+            </span>
+         </div>
          <div className="w-[140px] text-right space-x-2">
 
             {canEdit && (<Button

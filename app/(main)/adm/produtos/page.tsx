@@ -207,7 +207,7 @@ export default function GerenciarProdutosPage() {
                         <div className="w-[80px] px-4">Imagem</div>
                         <div className="flex-1">Nome</div>
                         <div className="w-[100px]">Tipo</div>
-                        <div className="w-[140px] text-right">Ações</div>
+                        <div className="w-[140px] text-center">Ações</div>
                      </div>
 
                      {/* A Lista Arrastável */}

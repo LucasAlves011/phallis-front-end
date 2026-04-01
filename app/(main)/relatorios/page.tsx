@@ -611,8 +611,8 @@ export default function RelatoriosPage() {
                            >
                               <defs>
                                  <linearGradient id="gradProdutos" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#d80683" stopOpacity={1} />
-                                    <stop offset="100%" stopColor="#d80683" stopOpacity={0.4} />
+                                    <stop offset="0%" stopColor="#00aeee" stopOpacity={1} />
+                                    <stop offset="100%" stopColor="#00aeee" stopOpacity={0.4} />
                                  </linearGradient>
                               </defs>
                               <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />

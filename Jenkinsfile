@@ -7,7 +7,7 @@ pipeline {
     // }
 
     environment {
-        NEXT_PUBLIC_API_URL = "${env.NEXT_PUBLIC_API_URL ?: 'https://back-end.phalis.luukelab.space'}"
+        NEXT_PUBLIC_API_URL = "${env.NEXT_PUBLIC_API_URL ?: 'https://api-phalis.luukelab.space'}"
     }
 
     stages {
@@ -49,8 +49,8 @@ pipeline {
                              chmod +x docker-compose
                         fi
 
-                        ./docker-compose -p sml-front-phalis down
-                        ./docker-compose -p sml-front-phalis up -d --build
+                        ./docker-compose -p sml-phalis down
+                        ./docker-compose -p sml-phalis up -d --build
                     """
                 }
             }

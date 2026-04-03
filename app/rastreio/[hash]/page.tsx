@@ -57,7 +57,8 @@ export default function RastreioPublicoPage() {
 
         fetch(`${apiUrl}/api/public/rastreio/${hash}`, {
             headers: {
-                'X-Turnstile-Token': turnstileToken
+                'X-Turnstile-Token': turnstileToken,
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
             .then(async (res) => {

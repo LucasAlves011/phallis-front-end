@@ -73,6 +73,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             headers: {
                'Content-Type': 'application/json',
                'Authorization': `Basic ${basicAuth}`,
+               'X-Requested-With': 'XMLHttpRequest',
                // Envia o token apenas se existir (no login sempre vai, mas de forma segura)
                ...(turnstileToken && { 'X-Turnstile-Token': turnstileToken })
             },

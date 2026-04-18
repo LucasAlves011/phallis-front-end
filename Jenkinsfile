@@ -7,7 +7,7 @@ pipeline {
     // }
 
     environment {
-        NEXT_PUBLIC_API_URL = "${env.NEXT_PUBLIC_API_URL ?: 'https://api-phalis.luukelab.space'}"
+        NEXT_PUBLIC_API_URL = "${env.NEXT_PUBLIC_API_URL ?: 'https://phalisgrafica.shop'}"
     }
 
     stages {

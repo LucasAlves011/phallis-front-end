@@ -8,6 +8,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
 const getBackendUrlParts = () => {
   try {
     const url = new URL(BACKEND_URL);
+    console.log('url', url);
     return {
       protocol: url.protocol.replace(':', '') as 'http' | 'https',
       hostname: url.hostname,

@@ -17,24 +17,7 @@ pipeline {
             }
         }
 
-        // ALTERAÇÃO AQUI: Rodamos este estágio dentro de um container Node oficial
-        stage('Build Local') {
-            agent {
-                docker {
-                    image 'node:22-alpine' // Usa uma imagem leve do Node
-                    reuseNode true         // Mantém o workspace atual
-                }
-            }
-            steps {
-                echo 'Rodando Build de verificação dentro do container Node...'
-                sh 'npm ci'
-                sh 'npm run build'
 
-                // Nota: Como rodamos dentro do docker, a pasta node_modules gerada
-                // pode ficar com permissão de root. Vamos limpar antes de sair.
-                sh 'rm -rf node_modules .next'
-            }
-        }
 
         stage('Build & Deploy Docker') {
             steps {

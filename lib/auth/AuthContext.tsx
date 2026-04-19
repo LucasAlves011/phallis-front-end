@@ -68,6 +68,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
    const login = async (username: string, pass: string, turnstileToken?: string) => {
       try {
          const basicAuth = btoa(`${username}:${pass}`);
+         console.log("DESTINO DO PROXY NEXT:", process.env.NEXT_PUBLIC_API_URL);
+
          const response = await fetch(`/api/auth/login`, {
             method: 'GET',
             headers: {

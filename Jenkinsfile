@@ -7,7 +7,9 @@ pipeline {
     // }
 
     environment {
-        NEXT_PUBLIC_API_URL = "${env.NEXT_PUBLIC_API_URL ?: 'https://phalisgrafica.shop'}"
+        NEXT_PUBLIC_API_URL = "${env.NEXT_PUBLIC_API_URL}"
+        NEXT_PUBLIC_DISABLE_MSW = "${env.NEXT_PUBLIC_DISABLE_MSW}"
+        NEXT_PUBLIC_TURNSTILE_SITEKEY = "${env.NEXT_PUBLIC_TURNSTILE_SITEKEY}"
     }
 
     stages {

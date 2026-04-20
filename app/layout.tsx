@@ -7,8 +7,11 @@ import { CartProvider } from "@/lib/cartStore";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-   title: "PHALIS Gestão",
+   title: "PHALIS Gráfica",
    description: "Sistema de gestão de pedidos",
+   icons: {
+      icon: "/phalis-logo.ico",
+   },
 };
 
 export default function RootLayout({
@@ -28,4 +31,4 @@ export default function RootLayout({
          </body>
       </html>
    );
-}
+}

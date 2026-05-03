@@ -193,13 +193,13 @@ export default function GerenciarProdutosPage() {
             </div>
 
             {/* --- Tabela/Lista Arrastável (Sem mudança) --- */}
-            <div className="bg-phalis-black rounded-lg">
+            <div className="bg-phalis-black rounded-lg overflow-x-auto">
                {isLoading ? (
-                  <div className="flex justify-center items-center p-12">
+                  <div className="flex justify-center items-center p-12 min-w-[800px]">
                      <Loader2 className="h-12 w-12 animate-spin text-phalis-action" />
                   </div>
                ) : (
-                  <div>
+                  <div className="min-w-[800px]">
                      {/* O "Cabeçalho" da nossa nova lista */}
                      <div className="flex items-center p-4 border-b border-gray-800 text-sm font-medium text-gray-400">
                         <div className="w-10"></div> {/* Espaço do Handle */}

@@ -689,7 +689,6 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                                  <SelectItem value="CREDITO"><div className="flex items-center"><CreditCard className="w-4 h-4 mr-2" /> Cartão de Crédito</div></SelectItem>
                                  <SelectItem value="DEBITO"><div className="flex items-center"><CreditCard className="w-4 h-4 mr-2" /> Cartão de Débito</div></SelectItem>
                                  <SelectItem value="DINHEIRO"><div className="flex items-center"><Landmark className="w-4 h-4 mr-2" /> Dinheiro</div></SelectItem>
-                                 <SelectItem value="TRANSFERENCIA"><div className="flex items-center"><Landmark className="w-4 h-4 mr-2" /> Transferência</div></SelectItem>
                               </SelectContent>
                            </Select>
                         </div>

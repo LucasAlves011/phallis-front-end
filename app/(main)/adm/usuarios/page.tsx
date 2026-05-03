@@ -221,8 +221,8 @@ export default function GerenciarUsuariosPage() {
             </div>
          </div>
 
-         <div className="bg-phalis-black rounded-lg border border-gray-800">
-            <Table>
+         <div className="bg-phalis-black rounded-lg border border-gray-800 overflow-x-auto">
+            <Table className="min-w-[800px]">
                <TableHeader>
                   <TableRow className="border-gray-800">
                      <TableHead className="text-gray-400">Nome</TableHead>
@@ -284,7 +284,7 @@ export default function GerenciarUsuariosPage() {
          </div>
 
          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="bg-phalis-black border-gray-800 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-phalis-black border-gray-800 text-white w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
                <DialogHeader>
                   <DialogTitle>
                      {editingUser?.id ? 'Editar Usuário' : 'Criar Novo Usuário'}

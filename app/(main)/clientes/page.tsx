@@ -153,8 +153,8 @@ export default function ClientesPage() {
          )}
 
          {/* Tabela de Clientes */}
-         <div className="bg-phalis-black rounded-lg border border-gray-800">
-            <Table>
+         <div className="bg-phalis-black rounded-lg border border-gray-800 overflow-x-auto">
+            <Table className="min-w-[800px]">
                <TableHeader>
                   <TableRow className="hover:bg-transparent border-gray-800">
                      <TableHead className="text-gray-400">Nome</TableHead>

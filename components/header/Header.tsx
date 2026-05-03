@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart, BarChart2, Users, ClipboardList, Package, UserCog } from 'lucide-react';
+import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart, BarChart2, Users, ClipboardList, Package, UserCog, Menu } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useCart } from '@/lib/cartStore';
@@ -23,6 +23,13 @@ import {
    DialogHeader,
    DialogTitle,
 } from "@/components/ui/dialog";
+import {
+   Sheet,
+   SheetContent,
+   SheetHeader,
+   SheetTitle,
+   SheetTrigger,
+} from "@/components/ui/sheet";
 
 const Header: React.FC = () => {
    const { user, logout } = useAuth();
@@ -81,7 +88,52 @@ const Header: React.FC = () => {
       <>
          <header className="flex h-16 items-center justify-between bg-phalis-black px-4 shadow-md sticky top-0 z-50">
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+               {/* Botão Hambúrguer Mobile */}
+               <div className="md:hidden">
+                  <Sheet>
+                     <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-gray-800">
+                           <Menu className="h-6 w-6" />
+                        </Button>
+                     </SheetTrigger>
+                     <SheetContent side="left" className="bg-phalis-black border-r border-gray-800 text-white p-0 w-[280px]">
+                        <SheetHeader className="p-4 border-b border-gray-800 text-left">
+                           <SheetTitle className="text-white flex items-center justify-start">
+                              <Image src="/phalis-logo.svg" alt="PHALIS" width={100} height={40} />
+                           </SheetTitle>
+                        </SheetHeader>
+                        <div className="flex flex-col gap-2 p-4">
+                           {hasPermission('clientes.visualizar') && (
+                              <Button asChild variant="ghost" className="justify-start w-full text-left text-gray-300 hover:text-white hover:bg-gray-800">
+                                 <Link href="/clientes"><Users className="mr-3 h-5 w-5 text-phalis-nav" />Clientes</Link>
+                              </Button>
+                           )}
+                           {hasPermission('pedidos.visualizar') && (
+                              <Button asChild variant="ghost" className="justify-start w-full text-left text-gray-300 hover:text-white hover:bg-gray-800">
+                                 <Link href="/historico-pedidos"><ClipboardList className="mr-3 h-5 w-5 text-yellow-500" />Pedidos</Link>
+                              </Button>
+                           )}
+                           {hasAnyPermission(['produtos.cadastrar', 'produtos.editar', 'produtos.deletar']) && (
+                              <Button asChild variant="ghost" className="justify-start w-full text-left text-gray-300 hover:text-white hover:bg-gray-800">
+                                 <Link href="/adm/produtos"><Package className="mr-3 h-5 w-5 text-phalis-ciano" />Produtos</Link>
+                              </Button>
+                           )}
+                           {hasPermission('relatorios.ver') && (
+                              <Button asChild variant="ghost" className="justify-start w-full text-left text-gray-300 hover:text-white hover:bg-gray-800">
+                                 <Link href="/relatorios"><BarChart2 className="mr-3 h-5 w-5 text-purple-600" />Relatórios</Link>
+                              </Button>
+                           )}
+                           {hasPermission('usuarios.gerenciar') && (
+                              <Button asChild variant="ghost" className="justify-start w-full text-left text-gray-300 hover:text-white hover:bg-gray-800">
+                                 <Link href="/adm/usuarios"><UserCog className="mr-3 h-5 w-5 text-phalis-green" />Usuários</Link>
+                              </Button>
+                           )}
+                        </div>
+                     </SheetContent>
+                  </Sheet>
+               </div>
+
                <Link href="/">
                   <Image
                      src="/phalis-logo.svg"
@@ -92,7 +144,7 @@ const Header: React.FC = () => {
                   />
                </Link>
 
-               <nav className="hidden md:flex items-center gap-3 border-l border-gray-700 pl-6">
+               <nav className="hidden md:flex items-center gap-3 border-l border-gray-700 pl-6 ml-2">
 
                   {/* Só mostra Clientes se tiver permissão de visualizar */}
                   {hasPermission('clientes.visualizar') && (

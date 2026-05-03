@@ -43,38 +43,43 @@ const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (i
    };
 
    return (
-      <div className="bg-phalis-gray rounded-lg p-5 group border border-transparent hover:border-phalis-action/20 transition-all shadow-md">
-         <div className="flex gap-5">
-            <div className="h-16 w-16 rounded overflow-hidden bg-black flex-shrink-0 relative border border-white/5 self-center">
-               <Image src={item.itemImageUrl || "https://placehold.co/100x100?text=Sem+Foto"} alt={item.itemNome} fill className="object-cover" />
-            </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-               <div>
-                  <h3 className="text-white font-bold text-base leading-tight truncate">{item.itemNome}</h3>
-                  {renderOpcoes()}
+      <div className="bg-phalis-black/40 rounded-lg p-4 group border border-gray-800 hover:border-phalis-action/20 transition-all shadow-md">
+         <div className="flex flex-col sm:flex-row gap-5">
+            {/* Imagem e Informações Principais */}
+            <div className="flex flex-1 gap-4 min-w-0">
+               <div className="h-16 w-16 rounded overflow-hidden bg-black flex-shrink-0 relative border border-white/5 self-center">
+                  <Image src={item.itemImageUrl || "https://placehold.co/100x100?text=Sem+Foto"} alt={item.itemNome} fill className="object-cover" />
                </div>
-               <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 text-[11px]">
-                  <div className="flex gap-1"><span className="text-gray-500">Custo:</span><span className="text-red-400 font-medium">R$ {(Number(preco.valorTotalCusto || preco.custoTotal || preco.precoCusto || preco.valorCusto || preco.m2Custo || 0)).toFixed(2)}</span></div>
-                  <div className="flex gap-1"><span className="text-gray-500">Arte:</span><span className="text-blue-400 font-medium">R$ {(Number(preco.precoArte || preco.valorArte || 0)).toFixed(2)}</span></div>
-                  <div className="flex gap-1"><span className="text-gray-500">Desconto:</span><span className="text-yellow-500 font-medium">R$ {(Number(preco.desconto || 0)).toFixed(2)}</span></div>
-                  <div className="flex gap-1 text-gray-400 font-medium pl-4 border-l border-white/10">
-                     {type === 'UNIDADE' && `Qtd: ${preco.quantidade}`}
-                     {type === 'METRO' && `Dim: ${preco.largura}x${preco.altura}m`}
-                     {type === 'SERVICO' && `Serviço`}
+               <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <div>
+                     <h3 className="text-white font-bold text-base leading-tight truncate">{item.itemNome}</h3>
+                     {renderOpcoes()}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px]">
+                     <div className="flex gap-1"><span className="text-gray-500">Custo:</span><span className="text-red-400 font-medium">R$ {(Number(preco.valorTotalCusto || preco.custoTotal || preco.precoCusto || preco.valorCusto || preco.m2Custo || 0)).toFixed(2)}</span></div>
+                     <div className="flex gap-1"><span className="text-gray-500">Arte:</span><span className="text-blue-400 font-medium">R$ {(Number(preco.precoArte || preco.valorArte || 0)).toFixed(2)}</span></div>
+                     <div className="flex gap-1"><span className="text-gray-500">Desc.:</span><span className="text-yellow-500 font-medium">R$ {(Number(preco.desconto || 0)).toFixed(2)}</span></div>
+                     <div className="flex gap-1 text-gray-400 font-medium sm:pl-3 sm:border-l border-white/10">
+                        {type === 'UNIDADE' && `Qtd: ${preco.quantidade}`}
+                        {type === 'METRO' && `Dim: ${preco.largura}x${preco.altura}m`}
+                        {type === 'SERVICO' && `Serviço`}
+                     </div>
                   </div>
                </div>
             </div>
-            <div className="flex flex-col items-end justify-between min-w-[140px] pl-5 border-l border-white/5">
-               <div className="text-right">
+
+            {/* Preço e Botões de Ação */}
+            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:min-w-[140px] pt-4 sm:pt-0 border-t sm:border-t-0 sm:border-l border-white/5">
+               <div className="text-left sm:text-right">
                   <p className="text-white font-bold text-xl leading-none">R$ {item.valor.toFixed(2)}</p>
                   <p className="text-[9px] text-phalis-action font-black uppercase tracking-widest mt-1.5">{type}</p>
                </div>
-               <div className="flex gap-2 mt-auto">
+               <div className="flex gap-2">
                   <Button variant="ghost" size="sm" className="h-8 px-2.5 text-gray-400 hover:text-white hover:bg-white/5 text-xs gap-1.5 font-semibold" onClick={() => onEdit(item)}>
-                     <Pencil className="h-3.5 w-3.5" />Editar
+                     <Pencil className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Editar</span>
                   </Button>
                   <Button variant="ghost" size="sm" className="h-8 px-2.5 text-gray-500 hover:text-red-400 hover:bg-red-400/5 text-xs gap-1.5 font-semibold" onClick={() => onRemove(item.id)}>
-                     <Trash2 className="h-3.5 w-3.5" />Excluir
+                     <Trash2 className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Excluir</span>
                   </Button>
                </div>
             </div>

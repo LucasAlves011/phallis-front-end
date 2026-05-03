@@ -160,7 +160,7 @@ export default function HistoricoPedidosPage() {
          </div>
 
          {/* Tabela com pedidos FILTRADOS */}
-         <div className="bg-phalis-black rounded-lg border border-gray-800 overflow-hidden">
+         <div className="bg-phalis-black rounded-lg border border-gray-800 overflow-x-auto">
             <TabelaPedidos
                pedidos={pedidos}
                onPedidoUpdated={handlePedidoUpdated}

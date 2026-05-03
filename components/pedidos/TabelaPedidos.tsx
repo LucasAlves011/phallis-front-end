@@ -101,8 +101,21 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
             url = `/api/pedidos/${pedidoId}/pagamento`;
             const pedidoInfo = pedidos.find(p => String(p.id) === pedidoId);
             const valor = pedidoInfo?.valor || Number(pedidoInfo?.valor) || 0;
+            
+            // Verifica o quanto já foi pago presumindo que PARCIAL = 50%
+            const jaPago = pedidoInfo?.statusFinanceiro === 'PARCIAL' ? valor / 2 : 0;
+            const faltante = valor - jaPago;
+
+            let valorEnviar = 0;
+            if (value === 'PAGO') {
+               valorEnviar = faltante;
+            } else if (value === 'PARCIAL') {
+               // Se está mudando para parcial, presume que está pagando metade
+               valorEnviar = valor / 2;
+            }
+
             body = {
-               valorPago: value === 'PARCIAL' ? valor / 2 : valor,
+               valorPago: valorEnviar,
                formaPagamento: 'DINHEIRO',
                observacao: 'Atualização rápida via Tabela'
             };
@@ -138,7 +151,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
    };
 
    return (
-      <Table>
+      <Table className="min-w-[1000px]">
          <TableHeader>
             <TableRow className="hover:bg-transparent border-gray-800">
                <TableHead className="w-[120px] text-gray-400">Pedido</TableHead>

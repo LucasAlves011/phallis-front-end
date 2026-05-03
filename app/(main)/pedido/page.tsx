@@ -102,12 +102,12 @@ const OrderFooter = ({
    labelTotal?: string,
    missingItems?: string[]
 }) => (
-   <div className="bg-phalis-black p-4 rounded-lg flex justify-between items-center gap-4">
-      <div className="text-right text-white">
+   <div className="bg-phalis-black p-4 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="text-center sm:text-right text-white w-full sm:w-auto">
          <span className="text-sm text-gray-400 block">{labelTotal}</span>
          <span className="text-3xl font-bold">R$ {total.toFixed(2)}</span>
       </div>
-      <div className="flex gap-4 items-stretch">
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch w-full sm:w-auto">
          <div className="relative group">
             <Button
                disabled={!isValid || isLoading}
@@ -371,9 +371,9 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
                   </Button>
                   {isPrecoLoading && <div className="flex justify-center items-center p-4"><Loader2 className="h-6 w-6 animate-spin text-phalis-action" /></div>}
                   {precoData && (
-                     <div className="bg-phalis-black rounded-md p-3 max-h-96 overflow-y-auto animate-in fade-in duration-300">
+                     <div className="bg-phalis-black rounded-md p-3 max-h-96 overflow-y-auto overflow-x-auto animate-in fade-in duration-300">
                         <h4 className="text-sm font-medium text-white mb-2">Preços - {precoData.nomeProduto}</h4>
-                        <Table className="text-white">
+                        <Table className="text-white min-w-[300px]">
                            <TableHeader><TableRow><TableHead className="text-white">Qtd</TableHead><TableHead className="text-white text-right">Preço</TableHead></TableRow></TableHeader>
                            <TableBody>
                               {precoData.precos.map((item) => (

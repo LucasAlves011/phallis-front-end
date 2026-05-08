@@ -223,7 +223,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                                  <Input
                                     placeholder="(00) 00000-0000"
                                     {...field}
-                                    value={formatTelefone(field.value)}
+                                    value={formatTelefone(field.value || '')}
                                     onChange={(e) => field.onChange(onlyDigits(e.target.value).slice(0, 11))}
                                     className="bg-phalis-gray border-0"
                                  />
@@ -242,7 +242,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                                  <Input
                                     placeholder="(00) 00000-0000"
                                     {...field}
-                                    value={formatTelefone(field.value)}
+                                    value={formatTelefone(field.value || '')}
                                     onChange={(e) => field.onChange(onlyDigits(e.target.value).slice(0, 11))}
                                     className="bg-phalis-gray border-0"
                                  />

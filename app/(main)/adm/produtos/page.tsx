@@ -39,6 +39,8 @@ import {
 } from '@dnd-kit/sortable';
 
 import { SortableProductItem } from '@/components/produtos/SortableProductItem';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle } from 'lucide-react';
 
 
 export default function GerenciarProdutosPage() {
@@ -104,6 +106,15 @@ export default function GerenciarProdutosPage() {
       setDeleteLoading(false);
    };
 
+   const [successMessage, setSuccessMessage] = useState('');
+
+   useEffect(() => {
+      if (successMessage) {
+         const timer = setTimeout(() => setSuccessMessage(''), 3000);
+         return () => clearTimeout(timer);
+      }
+   }, [successMessage]);
+
    const handleDeleteConfirm = async () => {
       if (!productToDelete) return;
       setDeleteLoading(true);
@@ -120,6 +131,7 @@ export default function GerenciarProdutosPage() {
             throw new Error('Falha ao deletar o produto.');
          }
          setProdutos(prev => prev.filter(p => p.id !== productToDelete.id));
+         setSuccessMessage(`O produto "${productToDelete.nome}" foi removido.`);
          setIsDeleteDialogOpen(false);
       } catch (error: any) {
          setDeleteError(error.message);
@@ -178,6 +190,19 @@ export default function GerenciarProdutosPage() {
          onDragEnd={handleDragEnd}
       >
          <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6">
+            <AnimatePresence>
+               {successMessage && (
+                  <motion.div
+                     initial={{ opacity: 0, x: 20 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     exit={{ opacity: 0, scale: 0.95 }}
+                     className="fixed top-24 right-6 z-[100] bg-green-600 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 border border-green-400"
+                  >
+                     <CheckCircle className="h-5 w-5" />
+                     <span className="font-medium">{successMessage}</span>
+                  </motion.div>
+               )}
+            </AnimatePresence>
 
             {/* --- Cabeçalho (Sem mudança) --- */}
             <div className="flex justify-between items-center">

@@ -1,7 +1,7 @@
 // Arquivo: components/produtos/ProductForm.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
@@ -9,81 +9,115 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Plus, X, Loader2, ImageOff, FileUp } from 'lucide-react';
+import { Plus, X, Loader2, ImageOff, FileUp, Info } from 'lucide-react';
 import { type Product, type ProductOptions, type ProductOption } from '@/lib/productData';
 import { MoneyInput } from '@/components/ui/money-input';
-import { authenticatedFetch } from '@/lib/api'; // Adicionado
+import { authenticatedFetch } from '@/lib/api';
 
 // ==========================================================
 // 1. Sub-Componente: O Grupo de Input de Opções
-// (Mantido igual, pois h3 aqui funciona bem como título de seção)
 // ==========================================================
 interface OptionInputGroupProps {
    title: string;
    options: string[];
    setOptions: React.Dispatch<React.SetStateAction<string[]>>;
    disabled: boolean;
+   helpText?: string;
 }
-const OptionInputGroup: React.FC<OptionInputGroupProps> = ({ title, options, setOptions, disabled }) => {
-   const [inputValue, setInputValue] = useState('');
-   const handleAddOption = () => {
-      if (inputValue && !options.includes(inputValue)) {
-         setOptions([...options, inputValue]);
-         setInputValue('');
-      }
-   };
-   const handleRemoveOption = (optionToRemove: string) => {
-      setOptions(options.filter(op => op !== optionToRemove));
-   };
-   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-         e.preventDefault();
-         handleAddOption();
-      }
-   };
-   return (
-      <div className={`space-y-3 ${disabled ? 'opacity-50' : ''}`}>
-         <h3 className="text-sm font-semibold text-white">{title}</h3>
-         <div className="flex gap-2 items-center">
-            <Input
-               placeholder="Digite a opção..."
-               value={inputValue}
-               onChange={(e) => setInputValue(e.target.value)}
-               onKeyDown={handleKeyDown}
-               disabled={disabled}
-               className="bg-phalis-gray border-0 h-10"
-            />
-            <Button
-               type="button"
-               size="icon"
-               onClick={handleAddOption}
-               disabled={disabled}
-               className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover h-10 w-10 shrink-0"
-            >
-               <Plus className="h-4 w-4" />
-            </Button>
-         </div>
-         <div className="flex flex-col gap-2 min-h-[40px]">
-            {options.map((option) => (
-               <div
-                  key={option}
-                  className="flex items-center justify-between h-auto text-wrap py-2 px-3 rounded-md bg-phalis-gray text-white text-sm"
+
+export interface OptionInputGroupRef {
+   flush: () => string | null;
+}
+
+const OptionInputGroup = forwardRef<OptionInputGroupRef, OptionInputGroupProps>(
+   ({ title, options, setOptions, disabled, helpText }, ref) => {
+      const [inputValue, setInputValue] = useState('');
+
+      const handleAddOption = () => {
+         if (inputValue.trim() && !options.includes(inputValue.trim())) {
+            setOptions(prev => [...prev, inputValue.trim()]);
+            setInputValue('');
+         }
+      };
+
+      // Expõe o método flush para o componente pai
+      useImperativeHandle(ref, () => ({
+         flush: () => {
+            const val = inputValue.trim();
+            if (val && !options.includes(val)) {
+               setOptions(prev => [...prev, val]);
+               setInputValue('');
+               return val; // Retorna o valor para ser usado imediatamente
+            }
+            return null;
+         }
+      }));
+
+      const handleRemoveOption = (optionToRemove: string) => {
+         setOptions(options.filter(op => op !== optionToRemove));
+      };
+
+      const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+         if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAddOption();
+         }
+      };
+
+      return (
+         <div className={`space-y-3 ${disabled ? 'opacity-50' : ''}`}>
+            <h3 className="text-sm font-semibold text-white">{title}</h3>
+            <div className="flex gap-2 items-center">
+               <Input
+                  placeholder="Digite a opção..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={disabled}
+                  className="bg-phalis-gray border-0 h-10"
+               />
+               <Button
+                  type="button"
+                  size="icon"
+                  onClick={handleAddOption}
+                  disabled={disabled}
+                  className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover h-10 w-10 shrink-0"
                >
-                  <span className="text-left mr-2">{option}</span>
-                  <button
-                     type="button"
-                     onClick={() => handleRemoveOption(option)}
-                     disabled={disabled}
-                     className="ml-2 rounded-full p-0.5 outline-none hover:bg-phalis-danger flex-shrink-0"
+                  <Plus className="h-4 w-4" />
+               </Button>
+            </div>
+
+            {helpText && (
+               <p className="text-[11px] text-phalis-action/80 flex items-start gap-1 leading-tight">
+                  <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                  {helpText}
+               </p>
+            )}
+
+            <div className="flex flex-col gap-2 min-h-[40px]">
+               {options.map((option) => (
+                  <div
+                     key={option}
+                     className="flex items-center justify-between h-auto text-wrap py-2 px-3 rounded-md bg-phalis-gray text-white text-sm"
                   >
-                     <X className="h-3 w-3" />
-                  </button>
-               </div>
-            ))}
+                     <span className="text-left mr-2">{option}</span>
+                     <button
+                        type="button"
+                        onClick={() => handleRemoveOption(option)}
+                        disabled={disabled}
+                        className="ml-2 rounded-full p-0.5 outline-none hover:bg-phalis-danger flex-shrink-0"
+                     >
+                        <X className="h-3 w-3" />
+                     </button>
+                  </div>
+               ))}
+            </div>
          </div>
-      </div>
-   );
-};
+      );
+   }
+);
+
+OptionInputGroup.displayName = 'OptionInputGroup';
 
 // ==========================================================
 // 2. O Formulário Principal
@@ -96,6 +130,7 @@ const unformatOpcoes = (options: ProductOption[] | undefined): string[] => {
    if (!options) return [];
    return options.map(op => op.name);
 };
+
 const formatarOpcoes = (opcoes: string[]): ProductOption[] => {
    if (opcoes.length === 0) return [];
    return opcoes.map(op => ({
@@ -110,6 +145,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
 
    const isEditMode = !!initialData;
    const title = isEditMode ? "Editar Produto" : "Cadastrar Novo Produto";
+
+   // Refs para os grupos de opções para forçar o "flush" do que foi digitado
+   const papelRef = useRef<OptionInputGroupRef>(null);
+   const tamanhoRef = useRef<OptionInputGroupRef>(null);
+   const coresRef = useRef<OptionInputGroupRef>(null);
+   const acabamentoRef = useRef<OptionInputGroupRef>(null);
 
    // Estados do Formulário
    const [nome, setNome] = useState(initialData?.nome || '');
@@ -156,10 +197,22 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
       e.preventDefault();
       setIsLoading(true);
 
+      // FORÇAR ADIÇÃO DE OPÇÕES DIGITADAS MAS NÃO CONFIRMADAS NO "+"
+      // Capturamos os retornos pois o setState é assíncrono
+      const pendingPapel = papelRef.current?.flush();
+      const pendingTamanho = tamanhoRef.current?.flush();
+      const pendingCores = coresRef.current?.flush();
+      const pendingAcabamento = acabamentoRef.current?.flush();
+
+      // Funções auxiliares para mesclar o estado atual com o valor pendente
+      const getFinalOptions = (current: string[], pending: string | null | undefined) => {
+         return pending ? [...current, pending] : current;
+      };
+
       try {
          let finalImageUrl = imagePreview || "/images/catalogo/phalis-kekw.png";
 
-         // 1. Se houver arquivo selecionado, fazer upload primeiro
+         // ... (upload de imagem igual)
          if (imageFile) {
             const formData = new FormData();
             formData.append('file', imageFile);
@@ -172,7 +225,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
 
             const uploadResponse = await fetch('/api/upload', {
                method: 'POST',
-               headers: uploadHeaders, // Não setar Content-Type com FormData, o browser faz isso
+               headers: uploadHeaders,
                body: formData
             });
 
@@ -181,17 +234,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
             }
 
             const uploadData = await uploadResponse.json();
-            // O backend retorna: { fileName, fileDownloadUri, ... }
             if (uploadData.fileDownloadUri) {
                finalImageUrl = uploadData.fileDownloadUri;
             }
          }
 
          const options: ProductOptions = {
-            papel: formatarOpcoes(papelOptions),
-            tamanho: formatarOpcoes(tamanhoOptions),
-            cores: formatarOpcoes(coresOptions),
-            acabamento: formatarOpcoes(acabamentoOptions),
+            papel: formatarOpcoes(getFinalOptions(papelOptions, pendingPapel)),
+            tamanho: formatarOpcoes(getFinalOptions(tamanhoOptions, pendingTamanho)),
+            cores: formatarOpcoes(getFinalOptions(coresOptions, pendingCores)),
+            acabamento: formatarOpcoes(getFinalOptions(acabamentoOptions, pendingAcabamento)),
          };
 
          const produtoData: Product = {
@@ -215,7 +267,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
 
          if (!response.ok) throw new Error('Falha ao salvar o produto');
 
-         // alert(`Produto "${produtoData.nome}" salvo com sucesso!`);
          router.push('/catalogo');
 
       } catch (error) {
@@ -241,7 +292,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                   {/* Coluna da Direita (Inputs) */}
                   <div className="flex-1 space-y-5">
 
-                     {/* Campo Nome (Estilo Label Clássica) */}
+                     {/* Campo Nome */}
                      <div className="space-y-1">
                         <Label htmlFor="nome" className="text-gray-300 text-sm ml-1">Nome do Produto *</Label>
                         <Input
@@ -254,7 +305,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                         />
                      </div>
 
-                     {/* Campo Descrição (Estilo Label Clássica) */}
+                     {/* Campo Descrição */}
                      <div className="space-y-1">
                         <Label htmlFor="desc" className="text-gray-300 text-sm ml-1">Descrição (Opcional)</Label>
                         <Textarea
@@ -266,7 +317,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                         />
                      </div>
 
-                     {/* Campo Tipo Precificação (Estilo Label Clássica) */}
+                     {/* Campo Tipo Precificação */}
                      <div className="space-y-2">
                         <Label className="text-gray-300 text-sm ml-1">Tipo de Precificação *</Label>
                         <RadioGroup
@@ -289,7 +340,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                         </RadioGroup>
                      </div>
 
-                     {/* Campos Condicionais (Estilo Label Clássica) */}
+                     {/* Campos Condicionais */}
                      {pricingType === 'METRO' && (
                         <div className="pt-4 space-y-4 animate-in fade-in duration-300">
                            <h3 className="text-sm font-medium text-white">Preços Padrão (Opcional)</h3>
@@ -356,29 +407,40 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                </div>
             </div>
 
-            {/* Bloco 2: Configurador de Opções (Sem mudança) */}
+            {/* Bloco 2: Configurador de Opções */}
             <div className={`bg-phalis-black p-6 rounded-lg space-y-6 ${isOptionsDisabled ? 'pointer-events-none opacity-40' : ''}`}>
                <h2 className="text-xl font-semibold text-white">Configurador de Opções</h2>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <OptionInputGroup
+                     ref={papelRef}
                      title="01. Papel / Material"
                      options={papelOptions}
                      setOptions={setPapelOptions}
                      disabled={isOptionsDisabled}
                   />
                   <OptionInputGroup
+                     ref={tamanhoRef}
                      title="02. Tamanho"
                      options={tamanhoOptions}
                      setOptions={setTamanhoOptions}
                      disabled={isOptionsDisabled}
+                     helpText={
+                        pricingType === 'METRO' 
+                           ? "Deixe vazio p/ entrada manual de m² no carrinho." 
+                           : pricingType === 'UNIDADE'
+                              ? "Deixe vazio p/ entrada manual de dimensões (cm) no carrinho."
+                              : undefined
+                     }
                   />
                   <OptionInputGroup
+                     ref={coresRef}
                      title="03. Cores"
                      options={coresOptions}
                      setOptions={setCoresOptions}
                      disabled={isOptionsDisabled}
                   />
                   <OptionInputGroup
+                     ref={acabamentoRef}
                      title="04. Acabamento"
                      options={acabamentoOptions}
                      setOptions={setAcabamentoOptions}

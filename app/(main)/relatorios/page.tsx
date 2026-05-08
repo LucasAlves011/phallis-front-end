@@ -118,6 +118,14 @@ const formatarData = (dataISO: string) => {
    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 };
 
+const formatarEixoMoeda = (valor: number) => {
+   if (valor === 0) return 'R$ 0';
+   if (valor >= 1000) {
+      return `R$ ${(valor / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}k`;
+   }
+   return `R$ ${valor}`;
+};
+
 const calcularDatas = (periodo: Periodo): { inicio: string; fim: string } => {
    const agora = new Date();
    const fim = agora.toISOString().split('T')[0];
@@ -474,8 +482,8 @@ export default function RelatoriosPage() {
                               tick={{ fill: '#6b7280', fontSize: 11 }}
                               axisLine={false}
                               tickLine={false}
-                              tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`}
-                              width={50}
+                              tickFormatter={formatarEixoMoeda}
+                              width={55}
                            />
                            <Tooltip content={<CustomTooltip />} />
                            <Area
@@ -615,7 +623,7 @@ export default function RelatoriosPage() {
                                     <stop offset="100%" stopColor="#00aeee" stopOpacity={0.4} />
                                  </linearGradient>
                               </defs>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" vertical={false} />
                               <XAxis
                                  dataKey="nome"
                                  tick={{ fill: '#9ca3af', fontSize: 10 }}
@@ -629,8 +637,8 @@ export default function RelatoriosPage() {
                                  tick={{ fill: '#6b7280', fontSize: 10 }}
                                  axisLine={false}
                                  tickLine={false}
-                                 tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`}
-                                 width={45}
+                                 tickFormatter={formatarEixoMoeda}
+                                 width={55}
                               />
                               <Tooltip
                                  content={({ active, payload }) =>
@@ -647,7 +655,7 @@ export default function RelatoriosPage() {
                                     ) : null
                                  }
                               />
-                              <Bar dataKey="faturamento" fill="url(#gradProdutos)" radius={[4, 4, 0, 0]} />
+                              <Bar dataKey="faturamento" fill="url(#gradProdutos)" radius={[4, 4, 0, 0]} animationDuration={1500} />
                            </BarChart>
                         </ResponsiveContainer>
                      )}

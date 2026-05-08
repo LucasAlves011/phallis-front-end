@@ -39,6 +39,18 @@ const formatCpfCnpj = (value: string): string => {
    return digits;
 };
 
+// Função de formatação de Telefone
+const formatTelefone = (value: string): string => {
+   const digits = value.replace(/\D/g, '');
+   if (digits.length === 11) {
+      return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+   }
+   if (digits.length === 10) {
+      return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+   }
+   return digits;
+};
+
 // Helpers para permitir apenas dígitos
 const onlyDigits = (value: string) => value.replace(/\D/g, '');
 
@@ -176,11 +188,10 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                            <FormLabel>CPF/CNPJ</FormLabel>
                            <FormControl>
                               <Input
-                                 placeholder="Apenas números (11 ou 14 dígitos)"
+                                 placeholder="000.000.000-00 ou 00.000.000/0000-00"
                                  {...field}
                                  value={field.value ? formatCpfCnpj(field.value) : ''}
-                                 onChange={(e) => field.onChange(onlyDigits(e.target.value))}
-                                 maxLength={18}
+                                 onChange={(e) => field.onChange(onlyDigits(e.target.value).slice(0, 14))}
                                  className="bg-phalis-gray border-0"
                               />
                            </FormControl>
@@ -210,10 +221,10 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                               <FormLabel>Telefone 1 (Principal) *</FormLabel>
                               <FormControl>
                                  <Input
-                                    placeholder="Apenas números"
+                                    placeholder="(00) 00000-0000"
                                     {...field}
-                                    onChange={(e) => field.onChange(onlyDigits(e.target.value))}
-                                    maxLength={11}
+                                    value={formatTelefone(field.value)}
+                                    onChange={(e) => field.onChange(onlyDigits(e.target.value).slice(0, 11))}
                                     className="bg-phalis-gray border-0"
                                  />
                               </FormControl>
@@ -229,10 +240,10 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                               <FormLabel>Telefone 2 (Secundário)</FormLabel>
                               <FormControl>
                                  <Input
-                                    placeholder="Apenas números"
+                                    placeholder="(00) 00000-0000"
                                     {...field}
-                                    onChange={(e) => field.onChange(onlyDigits(e.target.value))}
-                                    maxLength={11}
+                                    value={formatTelefone(field.value)}
+                                    onChange={(e) => field.onChange(onlyDigits(e.target.value).slice(0, 11))}
                                     className="bg-phalis-gray border-0"
                                  />
                               </FormControl>

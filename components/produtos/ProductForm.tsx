@@ -139,6 +139,19 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
       }
    };
 
+   const handlePaste = (e: React.ClipboardEvent) => {
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+         if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            if (blob) {
+               setImageFile(blob);
+               setImagePreview(URL.createObjectURL(blob));
+            }
+         }
+      }
+   };
+
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setIsLoading(true);
@@ -214,7 +227,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
    };
 
    return (
-      <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6">
+      <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6" onPaste={handlePaste}>
          <h1 className="text-3xl font-bold text-white">{title}</h1>
 
          <form onSubmit={handleSubmit} className="space-y-8">
@@ -309,7 +322,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
 
                   {/* Coluna da Esquerda (Upload da Imagem) */}
                   <div className="flex flex-col items-center gap-2 pt-6 md:pt-0">
-                     <Label className="text-xs text-gray-400">Imagem (125x125)</Label>
+                     <Label className="text-xs text-gray-400">Imagem (125x125) ou Ctrl+V</Label>
                      <div className="flex items-center justify-center w-[125px] h-[125px] rounded-md bg-phalis-dark overflow-hidden border border-phalis-gray">
                         {imagePreview ? (
                            <Image

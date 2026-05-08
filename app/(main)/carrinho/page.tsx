@@ -59,11 +59,12 @@ const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (i
                      <div className="flex gap-1"><span className="text-gray-500">Custo:</span><span className="text-red-400 font-medium">R$ {(Number(preco.valorTotalCusto || preco.custoTotal || preco.precoCusto || preco.valorCusto || preco.m2Custo || 0)).toFixed(2)}</span></div>
                      <div className="flex gap-1"><span className="text-gray-500">Arte:</span><span className="text-blue-400 font-medium">R$ {(Number(preco.precoArte || preco.valorArte || 0)).toFixed(2)}</span></div>
                      <div className="flex gap-1"><span className="text-gray-500">Desc.:</span><span className="text-yellow-500 font-medium">R$ {(Number(preco.desconto || 0)).toFixed(2)}</span></div>
-                     <div className="flex gap-1 text-gray-400 font-medium sm:pl-3 sm:border-l border-white/10">
-                        {type === 'UNIDADE' && `Qtd: ${preco.quantidade}`}
-                        {type === 'METRO' && `Dim: ${preco.largura}x${preco.altura}m`}
-                        {type === 'SERVICO' && `Serviço`}
-                     </div>
+                      <div className="flex gap-1 text-gray-400 font-medium sm:pl-3 sm:border-l border-white/10">
+                         {type === 'UNIDADE' && `Qtd: ${preco.quantidade}`}
+                         {type === 'METRO' && `Dim: ${preco.largura}x${preco.altura}m`}
+                         {type === 'SERVICO' && `Serviço`}
+                         <span className="ml-2 text-phalis-action">Lucro: R$ {(item.valor - Number(preco.valorTotalCusto || preco.custoTotal || preco.precoCusto || preco.valorCusto || preco.m2Custo || 0)).toFixed(2)}</span>
+                      </div>
                   </div>
                </div>
             </div>
@@ -222,6 +223,56 @@ export default function CarrinhoPage() {
                      onEdit={(it) => router.push(`/pedido?id=${it.productId}&editCart=${it.id}`)}
                   />
                ))}
+               {/* Resumo Financeiro Detalhado */}
+               <div className="bg-[#111111] border border-gray-800 rounded-lg p-4 flex flex-wrap gap-y-3 justify-between items-center">
+                  <div className="text-center px-2 flex-1 min-w-[100px]">
+                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Custo Total</p>
+                     <p className="text-base font-bold text-red-400">
+                        R$ {itens.reduce((acc, item) => {
+                           const p = (item.detalhes as any)?.preco || {};
+                           return acc + Number(p.valorTotalCusto || p.custoTotal || p.precoCusto || p.valorCusto || p.m2Custo || 0);
+                        }, 0).toFixed(2)}
+                     </p>
+                  </div>
+                  <div className="w-px h-6 bg-gray-800 hidden lg:block" />
+                  <div className="text-center px-2 flex-1 min-w-[100px]">
+                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Total Arte</p>
+                     <p className="text-base font-bold text-blue-400">
+                        R$ {itens.reduce((acc, item) => {
+                           const p = (item.detalhes as any)?.preco || {};
+                           return acc + Number(p.precoArte || p.valorArte || 0);
+                        }, 0).toFixed(2)}
+                     </p>
+                  </div>
+                  <div className="w-px h-6 bg-gray-800 hidden lg:block" />
+                  <div className="text-center px-2 flex-1 min-w-[100px]">
+                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Total Desconto</p>
+                     <p className="text-base font-bold text-yellow-500">
+                        R$ {itens.reduce((acc, item) => {
+                           const p = (item.detalhes as any)?.preco || {};
+                           return acc + Number(p.desconto || 0);
+                        }, 0).toFixed(2)}
+                     </p>
+                  </div>
+                  <div className="w-px h-6 bg-gray-800 hidden lg:block" />
+                  <div className="text-center px-2 flex-1 min-w-[110px]">
+                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Lucro Líquido</p>
+                     <p className="text-base font-bold text-phalis-action">
+                        R$ {(valorTotal - itens.reduce((acc, item) => {
+                           const p = (item.detalhes as any)?.preco || {};
+                           return acc + Number(p.valorTotalCusto || p.custoTotal || p.precoCusto || p.valorCusto || p.m2Custo || 0);
+                        }, 0)).toFixed(2)}
+                     </p>
+                  </div>
+                  <div className="w-px h-6 bg-gray-800 hidden lg:block" />
+                  <div className="text-center px-2 flex-1 min-w-[100px]">
+                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Total Pedido</p>
+                     <p className="text-base font-bold text-white">
+                        R$ {valorTotal.toFixed(2)}
+                     </p>
+                  </div>
+               </div>
+
                <Button asChild variant="outline" className="w-full border-dashed border-gray-600 text-gray-400 hover:border-phalis-action hover:text-phalis-action bg-transparent hover:bg-transparent">
                   <Link href="/catalogo"><Plus className="h-4 w-4 mr-2" />Adicionar mais produtos</Link>
                </Button>

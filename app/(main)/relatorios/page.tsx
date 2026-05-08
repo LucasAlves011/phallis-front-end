@@ -30,6 +30,9 @@ import {
    BarChart2,
    Trophy,
    Users,
+   Banknote,
+   Wallet,
+   Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,6 +51,8 @@ interface ResumoRelatorio {
    pedidosCancelados: number;
    totalRecebido: number;
    totalAReceber: number;
+   lucroLiquido: number;
+   custosTotais: number;
 }
 
 interface FaturamentoDiario {
@@ -110,8 +115,8 @@ const LABEL_PRODUCAO: Record<string, string> = {
 // ============================================================
 // HELPERS
 // ============================================================
-const formatarMoeda = (valor: number) =>
-   valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const formatarMoeda = (valor?: number) =>
+   (valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const formatarData = (dataISO: string) => {
    const d = new Date(dataISO + 'T00:00:00');
@@ -349,6 +354,8 @@ export default function RelatoriosPage() {
       pedidosCancelados: 0,
       totalRecebido: 0,
       totalAReceber: 0,
+      lucroLiquido: 0,
+      custosTotais: 0,
    };
 
    return (
@@ -384,9 +391,9 @@ export default function RelatoriosPage() {
          {/* ─── LOADING OVERLAY COM SKELETONS ─── */}
          {isLoading ? (
             <div className="space-y-4">
-               {/* Skeletons dos GPUs (4 cards) */}
-               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                  {[1, 2, 3, 4].map(i => (
+               {/* Skeletons dos KPIs (5 cards) */}
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                  {[1, 2, 3, 4, 5].map(i => (
                      <div key={i} className="bg-[#111111] border border-gray-800 rounded-xl p-5 flex items-start gap-4">
                         <Skeleton className="h-11 w-11 rounded-lg" />
                         <div className="space-y-2 flex-1">
@@ -421,7 +428,7 @@ export default function RelatoriosPage() {
          ) : (
             <>
                {/* ─── CARDS KPI ─── */}
-               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                   <KpiCard
                      titulo="Total de Pedidos"
                      valor={kpis.totalPedidos.toString()}
@@ -439,12 +446,20 @@ export default function RelatoriosPage() {
                      corBorda="#00f0b5"
                   />
                   <KpiCard
-                     titulo="Ticket Médio"
-                     valor={formatarMoeda(kpis.ticketMedio)}
-                     subtitulo="Por pedido no período"
-                     icone={<TrendingUp size={20} />}
-                     corIcone="#d80683"
-                     corBorda="#d80683"
+                     titulo="Custos"
+                     valor={formatarMoeda(kpis.custosTotais || 0)}
+                     subtitulo="Investimento em materiais"
+                     icone={<Receipt size={20} />}
+                     corIcone="#ffeb3b"
+                     corBorda="#ffeb3b"
+                  />
+                  <KpiCard
+                     titulo="Lucro Líquido"
+                     valor={formatarMoeda(kpis.lucroLiquido || 0)}
+                     subtitulo="Faturamento - Custos"
+                     icone={<Banknote size={20} />}
+                     corIcone="#00f0b5"
+                     corBorda="#00f0b5"
                   />
                   <KpiCard
                      titulo="Pagamentos Pendentes"

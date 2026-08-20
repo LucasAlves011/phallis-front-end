@@ -96,6 +96,8 @@ export type Pedido = {
    historicoProducao?: HistoricoItem[] | null;
    itens?: ItemPedido[];
    motivoCancelamento?: string | null;
+   orcamentoVisual?: string | null;
+   orcamentoId?: number | null;
 
    // Legado (Mantido como opcional para não quebrar o MOCK_ORDERS imediatamente)
    itemNome?: string;

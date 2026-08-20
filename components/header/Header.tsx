@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart, BarChart2, Users, ClipboardList, Package, UserCog, Menu } from 'lucide-react';
+import { User, LogOut, KeyRound, Loader2, ChevronDown, ShoppingCart, BarChart2, Users, ClipboardList, Package, UserCog, Menu, FileText } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useCart } from '@/lib/cartStore';
@@ -114,6 +114,11 @@ const Header: React.FC = () => {
                                  <Link href="/historico-pedidos"><ClipboardList className="mr-3 h-5 w-5 text-yellow-500" />Pedidos</Link>
                               </Button>
                            )}
+                           {hasPermission('pedidos.visualizar') && (
+                              <Button asChild variant="ghost" className="justify-start w-full text-left text-gray-300 hover:text-white hover:bg-gray-800">
+                                 <Link href="/orcamentos"><FileText className="mr-3 h-5 w-5 text-orange-400" />Orçamentos</Link>
+                              </Button>
+                           )}
                            {hasAnyPermission(['produtos.cadastrar', 'produtos.editar', 'produtos.deletar']) && (
                               <Button asChild variant="ghost" className="justify-start w-full text-left text-gray-300 hover:text-white hover:bg-gray-800">
                                  <Link href="/adm/produtos"><Package className="mr-3 h-5 w-5 text-phalis-ciano" />Produtos</Link>
@@ -157,6 +162,13 @@ const Header: React.FC = () => {
                   {hasPermission('pedidos.visualizar') && (
                      <Button asChild className="bg-yellow-500 text-black hover:bg-yellow-600 font-medium flex items-center gap-1.5">
                         <Link href="/historico-pedidos"><ClipboardList className="h-4 w-4" />PEDIDOS</Link>
+                     </Button>
+                  )}
+
+                  {/* Orçamentos */}
+                  {hasPermission('pedidos.visualizar') && (
+                     <Button asChild className="bg-orange-500 text-black hover:bg-orange-600 font-medium flex items-center gap-1.5">
+                        <Link href="/orcamentos"><FileText className="h-4 w-4" />ORÇAMENTOS</Link>
                      </Button>
                   )}
 

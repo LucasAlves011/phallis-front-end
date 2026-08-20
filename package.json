@@ -38,7 +38,9 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.6",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -18,7 +18,18 @@ import {
 } from "@/components/ui/select";
 import { authenticatedFetch } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { Loader2, Trash2, ShoppingCart, Plus, Pencil, AlertTriangle, Wallet } from 'lucide-react';
+import { Loader2, Trash2, ShoppingCart, Plus, Pencil, AlertTriangle, Wallet, FileText } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import {
+   AlertDialog,
+   AlertDialogCancel,
+   AlertDialogContent,
+   AlertDialogDescription,
+   AlertDialogFooter,
+   AlertDialogHeader,
+   AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ==============================
 // Componente de cada item do carrinho
@@ -93,11 +104,14 @@ const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (i
 // Página principal do Carrinho
 // ==============================
 export default function CarrinhoPage() {
-   const { itens, removeItem, clearCart, valorTotal, editingOrder } = useCart();
-   const [cliente, setCliente] = useState<Cliente | null>(null);
+   const { itens, removeItem, clearCart, valorTotal, editingOrder, selectedClient, setSelectedClient, origemOrcamento } = useCart();
+   const [cliente, setCliente] = useState<Cliente | null>(selectedClient);
    const [pagamento, setPagamento] = useState<string | null>(null);
    const [formaPagamento, setFormaPagamento] = useState<string | null>(null);
    const [isLoading, setIsLoading] = useState(false);
+   const [isClienteAvulsoModalOpen, setIsClienteAvulsoModalOpen] = useState(false);
+   const [isConfirmNovoOrcamentoOpen, setIsConfirmNovoOrcamentoOpen] = useState(false);
+   const [isConfirmCancelarAnteriorOpen, setIsConfirmCancelarAnteriorOpen] = useState(false);
    const router = useRouter();
    const { user } = useAuth();
 
@@ -108,8 +122,15 @@ export default function CarrinhoPage() {
    const geraDebitoExtra = diferenca < 0;
 
    useEffect(() => {
-      // Sem ação necessária, apenas garante re-render ao mudar o editingOrder
-   }, [editingOrder]);
+      if (selectedClient) {
+         setCliente(selectedClient);
+      }
+   }, [selectedClient]);
+
+   const handleSelectCliente = (c: Cliente | null) => {
+      setCliente(c);
+      setSelectedClient(c);
+   };
 
    const isFormCompleto = isEditMode
       ? itens.length > 0
@@ -154,6 +175,7 @@ export default function CarrinhoPage() {
                formaPagamento: pagamento === 'PENDENTE' ? null : formaPagamento,
                total: valorTotal,
                itens: buildItensPayload(),
+               orcamentoId: origemOrcamento?.id || null,
             };
             const response = await authenticatedFetch('/api/pedidos', { method: 'POST', body: JSON.stringify(payload) });
             if (!response.ok) throw new Error('Falha ao criar pedido');
@@ -164,6 +186,250 @@ export default function CarrinhoPage() {
       } catch (error) {
          console.error(error);
          alert('Erro ao finalizar pedido.');
+      } finally {
+         setIsLoading(false);
+      }
+   };
+
+   // Helper para converter imagem local para DataURL
+   const carregarImagemComoDataURL = async (url: string): Promise<string> => {
+      try {
+         const response = await fetch(url);
+         const blob = await response.blob();
+         return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+         });
+      } catch (error) {
+         console.error("Erro ao carregar imagem:", url, error);
+         throw error;
+      }
+   };
+
+   const handleGerarOrcamentoClick = () => {
+      if (!cliente) {
+         setIsClienteAvulsoModalOpen(true);
+         return;
+      }
+      prosseguirFluxoOrcamento();
+   };
+
+   const prosseguirFluxoOrcamento = () => {
+      if (origemOrcamento) {
+         setIsConfirmNovoOrcamentoOpen(true);
+      } else {
+         executarGeracaoPDF(false);
+      }
+   };
+
+   const executarGeracaoPDF = async (cancelarAnterior: boolean = false) => {
+      if (itens.length === 0) return;
+      setIsLoading(true);
+
+      try {
+         // 0. Salva o orçamento no backend para gerar o código visual único e auditoria (e marcar o anterior como substituído se aplicável)
+         let codigoVisual = '';
+         let savedOrcamentoId: number | null = null;
+         try {
+            const payload = {
+               clientId: cliente?.id || null,
+               total: valorTotal,
+               itens: buildItensPayload(),
+               substituiOrcamentoId: (cancelarAnterior && origemOrcamento) ? origemOrcamento.id : null,
+            };
+            const response = await authenticatedFetch('/api/orcamentos', {
+               method: 'POST',
+               body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+               const orcamentoSalvo = await response.json();
+               codigoVisual = orcamentoSalvo.codigoVisual || '';
+               savedOrcamentoId = orcamentoSalvo.id || null;
+            }
+         } catch (apiErr) {
+            console.warn('Não foi possível registrar o orçamento no servidor:', apiErr);
+         }
+
+         const doc = new jsPDF();
+         const pageWidth = doc.internal.pageSize.getWidth();
+         const pageHeight = doc.internal.pageSize.getHeight();
+
+         // 1. Carrega as imagens de fundo
+         const bgPag1 = await carregarImagemComoDataURL('/bg-pag1.png');
+         const bgPag2 = await carregarImagemComoDataURL('/bg-pag2.png');
+
+         // 2. Adiciona o background na primeira página (já criada pelo new jsPDF)
+         doc.addImage(bgPag1, 'PNG', 0, 0, pageWidth, pageHeight);
+
+         // 3. Monkey-patch na função addPage para que toda nova página (criada pelo autoTable) receba o background 2.
+         const originalAddPage = doc.addPage.bind(doc);
+         doc.addPage = function () {
+            originalAddPage();
+            // Sempre que uma nova página for criada, injetamos a imagem da página 2
+            this.addImage(bgPag2, 'PNG', 0, 0, pageWidth, pageHeight);
+            return this;
+         };
+
+         // 4. Desenha as informações do Cliente
+         // Ajustamos o Y inicial para 75 para descer o bloco e não sobrepor a arte do papel timbrado
+         let currentY = 75; 
+         doc.setFont("helvetica", "bold");
+         doc.setFontSize(11);
+         doc.setTextColor(0, 0, 0);
+
+         // Código do Orçamento
+         if (codigoVisual) {
+            doc.text(`Orçamento Nº: ${codigoVisual}`, 14, currentY);
+            currentY += 5;
+         }
+         
+         if (cliente) {
+            doc.text(`Cliente: ${cliente.nome}`, 14, currentY);
+            currentY += 5;
+            doc.setFont("helvetica", "normal");
+            
+            if (cliente.telefone1) {
+               doc.text(`Telefone: ${cliente.telefone1}`, 14, currentY);
+               currentY += 5;
+            }
+            if (cliente.email) {
+               doc.text(`Email: ${cliente.email}`, 14, currentY);
+               currentY += 5;
+            }
+            if (cliente.cpfCnpj) {
+               doc.text(`CPF/CNPJ: ${cliente.cpfCnpj}`, 14, currentY);
+               currentY += 5;
+            }
+         } else {
+            doc.text(`Cliente: Não Informado (Orçamento Avulso)`, 14, currentY);
+            currentY += 5;
+         }
+
+         currentY += 2;
+         doc.setFont("helvetica", "italic");
+         doc.setFontSize(9);
+         doc.text(`Emitido em: ${new Date().toLocaleString('pt-BR')} por ${user?.nome || 'Atendente'}`, 14, currentY);
+         
+         currentY += 6;
+
+         // 5. Monta os Dados da Tabela
+         // Colunas: Item - Ficha do item (Tipo) - Observação - Quantidade - Valor unidade - Valor do item
+         const tableColumn = ["Item", "Ficha do item", "Observação", "Qtd", "Valor Un.", "Valor Total"];
+         const tableRows: any[] = [];
+
+         itens.forEach(item => {
+            const det = item.detalhes as any;
+            const type = (det?.type as string)?.toUpperCase() || 'UNIDADE';
+            const preco = det?.preco || {};
+            
+            // Ficha do Item (itens/opções técnicas que compõem o produto)
+            const itemsFicha: string[] = [];
+            const opcaoNomes = det?.opcaoNomes as Record<string, string> | undefined;
+
+            if (opcaoNomes && typeof opcaoNomes === 'object') {
+               const orderedKeys = ['papel', 'tamanho', 'cores', 'acabamento'];
+               const visited = new Set<string>();
+
+               orderedKeys.forEach(k => {
+                  if (opcaoNomes[k]) {
+                     itemsFicha.push(`- ${opcaoNomes[k]}`);
+                     visited.add(k);
+                  }
+               });
+
+               Object.entries(opcaoNomes).forEach(([k, v]) => {
+                  if (!visited.has(k) && v) {
+                     itemsFicha.push(`- ${v}`);
+                  }
+               });
+            } else if (det?.opcoes && typeof det.opcoes === 'object') {
+               Object.entries(det.opcoes).forEach(([_, val]) => {
+                  if (val && val !== 'personalizado') {
+                     itemsFicha.push(`- ${val}`);
+                  }
+               });
+            }
+
+            if (type === 'METRO' && (!opcaoNomes?.tamanho || !itemsFicha.some(i => i.includes('x')))) {
+               if (preco.largura || preco.altura) {
+                  itemsFicha.push(`- ${preco.largura || 0}x${preco.altura || 0}m`);
+               }
+            }
+
+            const fichaStr = itemsFicha.length > 0 ? itemsFicha.join('\n') : '-';
+
+            // Observação (Apenas o texto digitado pelo usuário)
+            const obsStr = det.observacao || "-";
+
+            // Quantidade
+            const qtd = type === 'UNIDADE' ? (preco.quantidade || 1) : 1;
+            
+            // Valor Unidade
+            const valorUnidade = item.valor / qtd;
+
+            tableRows.push([
+               item.itemNome,
+               fichaStr,
+               obsStr,
+               qtd.toString(),
+               `R$ ${valorUnidade.toFixed(2)}`,
+               `R$ ${item.valor.toFixed(2)}`
+            ]);
+         });
+
+         // 6. Desenha a Tabela usando autoTable
+         autoTable(doc, {
+            startY: currentY + 4, // Abaixo das informações do cliente
+            head: [tableColumn],
+            body: tableRows,
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [41, 41, 41], textColor: [255, 255, 255], fontStyle: 'bold' }, // Cabeçalho escuro/neutro
+            columnStyles: {
+               4: { fontStyle: 'italic' }, // Valor Unitário em itálico
+               5: { fontStyle: 'bold' }    // Valor Total em negrito
+            },
+            margin: { bottom: 65 }, // Margem inferior de 65 para não escrever em cima do grande rodapé do cliente
+         });
+
+         let finalY = (doc as any).lastAutoTable.finalY || (currentY + 30);
+         
+         // Se a tabela terminou muito perto do rodapé, pulamos para a próxima página antes de escrever o TOTAL
+         if (finalY + 25 > pageHeight - 60) {
+            doc.addPage();
+            finalY = 75; // Ao pular página, resetamos o Y para a margem superior
+         }
+         
+         // 7. Desenha o Total e Validade
+         doc.setFontSize(14);
+         doc.setFont("helvetica", "bold");
+         doc.text(`TOTAL DO ORÇAMENTO: R$ ${valorTotal.toFixed(2)}`, 14, finalY + 12);
+         
+         doc.setFontSize(9);
+         doc.setFont("helvetica", "normal");
+         doc.text("Este orçamento pode ser aprovado e convertido em pedido a qualquer momento.", 14, finalY + 20);
+
+         // 8. Salva o PDF
+         const clienteNomeFormatado = cliente?.nome?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'avulso';
+         const fileName = codigoVisual 
+            ? `Orcamento_${codigoVisual}_${clienteNomeFormatado}.pdf`
+            : `Orcamento_${clienteNomeFormatado}_${new Date().getTime()}.pdf`;
+         doc.save(fileName);
+
+         // 9. Limpa o carrinho e redireciona para a tela de orçamentos com o orçamento recém-criado expandido
+         clearCart();
+         if (savedOrcamentoId) {
+            router.push(`/orcamentos?highlight=${savedOrcamentoId}`);
+         } else {
+            router.push('/orcamentos');
+         }
+
+      } catch (error) {
+         console.error("Erro ao gerar PDF:", error);
+         alert("Ocorreu um erro ao gerar o PDF. Verifique se os arquivos de background estão corretos.");
       } finally {
          setIsLoading(false);
       }
@@ -292,7 +558,7 @@ export default function CarrinhoPage() {
                      <>
                         <div className="space-y-1">
                            <Label className="text-gray-300 text-sm ml-1">Cliente *</Label>
-                           <ClientCombobox selectedClientId={cliente?.id || null} onSelectClient={setCliente} />
+                           <ClientCombobox selectedClientId={cliente?.id || null} onSelectClient={handleSelectCliente} />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-gray-300 text-sm ml-1">Status Financeiro *</Label>
@@ -359,13 +625,24 @@ export default function CarrinhoPage() {
                   </div>
                </div>
 
-               <Button
-                  disabled={!isFormCompleto || isLoading}
-                  onClick={handleFinalizar}
-                  className="w-full bg-phalis-action text-phalis-black font-bold text-lg py-6 hover:bg-phalis-action-hover disabled:opacity-50"
-               >
-                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : isEditMode ? 'SALVAR ALTERAÇÕES' : 'FINALIZAR PEDIDO'}
-               </Button>
+               <div className="flex flex-col gap-3">
+                  <Button
+                     disabled={itens.length === 0 || isLoading}
+                     onClick={handleGerarOrcamentoClick}
+                     variant="outline"
+                     className="w-full border-gray-600 text-gray-300 hover:text-white bg-transparent hover:bg-gray-800 font-bold py-6 text-lg"
+                  >
+                     <FileText className="mr-2 h-5 w-5" /> GERAR ORÇAMENTO
+                  </Button>
+
+                  <Button
+                     disabled={!isFormCompleto || isLoading}
+                     onClick={handleFinalizar}
+                     className="w-full bg-phalis-action text-phalis-black font-bold text-lg py-6 hover:bg-phalis-action-hover disabled:opacity-50"
+                  >
+                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : isEditMode ? 'SALVAR ALTERAÇÕES' : 'FINALIZAR PEDIDO'}
+                  </Button>
+               </div>
 
                {!isFormCompleto && !isEditMode && (
                   <p className="text-xs text-gray-500 text-center">
@@ -376,6 +653,122 @@ export default function CarrinhoPage() {
                )}
             </div>
          </div>
+
+         {/* Modal de Aviso de Cliente não selecionado (Avulso) */}
+         <AlertDialog open={isClienteAvulsoModalOpen} onOpenChange={setIsClienteAvulsoModalOpen}>
+            <AlertDialogContent className="bg-phalis-black border border-gray-800 text-white">
+               <AlertDialogHeader>
+                  <AlertDialogTitle className="text-phalis-action flex items-center gap-2">
+                     <FileText className="h-5 w-5" />
+                     Gerar orçamento sem cliente?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                     <div className="text-sm text-gray-300 space-y-2 mt-2">
+                        <div>
+                           Nenhum cliente foi selecionado para este orçamento.
+                        </div>
+                        <div>
+                           Você pode <strong className="text-white">vincular um cliente</strong> agora para salvar os dados de contato, ou pode prosseguir gerando como um <strong className="text-phalis-action">orçamento avulso</strong>.
+                        </div>
+                     </div>
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter className="flex gap-2 mt-4">
+                  <Button
+                     variant="outline"
+                     onClick={() => setIsClienteAvulsoModalOpen(false)}
+                     className="border-gray-700 text-gray-300 hover:text-white bg-phalis-gray/50 hover:bg-phalis-gray"
+                  >
+                     Vincular Cliente
+                  </Button>
+                  <Button
+                     onClick={() => {
+                        setIsClienteAvulsoModalOpen(false);
+                        prosseguirFluxoOrcamento();
+                     }}
+                     className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover font-bold"
+                  >
+                     Gerar como Avulso
+                  </Button>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+
+         {/* Passo 1: Confirmação de Gerar Novo Orçamento */}
+         <AlertDialog open={isConfirmNovoOrcamentoOpen} onOpenChange={setIsConfirmNovoOrcamentoOpen}>
+            <AlertDialogContent className="bg-phalis-black border border-gray-800 text-white">
+               <AlertDialogHeader>
+                  <AlertDialogTitle className="text-orange-400 flex items-center gap-2">
+                     <FileText className="h-5 w-5" />
+                     Gerar novo orçamento?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                     <div className="text-sm text-gray-300 space-y-2 mt-2">
+                        <div>
+                           Este carrinho foi carregado a partir do orçamento <strong className="text-white font-mono">{origemOrcamento?.codigoVisual}</strong>.
+                        </div>
+                        <div>
+                           Deseja realmente gerar um novo orçamento a partir destes itens?
+                        </div>
+                     </div>
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter className="flex gap-2 mt-4">
+                  <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+                     Voltar
+                  </AlertDialogCancel>
+                  <Button
+                     onClick={() => {
+                        setIsConfirmNovoOrcamentoOpen(false);
+                        setIsConfirmCancelarAnteriorOpen(true);
+                     }}
+                     className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover font-bold"
+                  >
+                     Continuar
+                  </Button>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+
+         {/* Passo 2: Pergunta se deseja Cancelar o Orçamento Anterior */}
+         <AlertDialog open={isConfirmCancelarAnteriorOpen} onOpenChange={setIsConfirmCancelarAnteriorOpen}>
+            <AlertDialogContent className="bg-phalis-black border border-gray-800 text-white">
+               <AlertDialogHeader>
+                  <AlertDialogTitle className="text-orange-400 flex items-center gap-2">
+                     <AlertTriangle className="h-5 w-5" />
+                     Cancelar orçamento anterior?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                     <div className="text-sm text-gray-300 space-y-2 mt-2">
+                        <div>
+                           Deseja cancelar o orçamento anterior (<strong className="text-white font-mono">{origemOrcamento?.codigoVisual}</strong>) para evitar orçamentos duplicados?
+                        </div>
+                     </div>
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter className="flex gap-2 mt-4">
+                  <Button
+                     variant="outline"
+                     onClick={() => {
+                        setIsConfirmCancelarAnteriorOpen(false);
+                        executarGeracaoPDF(false);
+                     }}
+                     className="border-gray-700 text-gray-300 hover:text-white bg-phalis-gray/50 hover:bg-phalis-gray"
+                  >
+                     Não, manter ativo
+                  </Button>
+                  <Button
+                     onClick={() => {
+                        setIsConfirmCancelarAnteriorOpen(false);
+                        executarGeracaoPDF(true);
+                     }}
+                     className="bg-orange-500 text-black hover:bg-orange-600 font-bold"
+                  >
+                     Sim, cancelar anterior
+                  </Button>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
       </div>
    );
 }

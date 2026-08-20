@@ -496,6 +496,12 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                         <span className="text-gray-500 font-medium">Adicional Arte:</span>
                         <span className="text-blue-400/80 font-medium">R$ {resumoFinanceiro.arte.toFixed(2)}</span>
                      </div>
+                     {pedido.orcamentoVisual && (
+                        <div className="flex items-center gap-1.5">
+                           <span className="text-gray-500 font-medium">Orçamento:</span>
+                           <span className="text-orange-400 font-medium">{pedido.orcamentoVisual}</span>
+                        </div>
+                     )}
                      <div className="flex items-center gap-1.5 ml-auto border-l border-gray-700/50 pl-4 py-0.5">
                         <span className="text-gray-400 font-semibold">Lucro Líquido:</span>
                         <span className="font-bold text-green-500/90">R$ {resumoFinanceiro.lucro.toFixed(2)}</span>
@@ -671,7 +677,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                                  className="flex h-10 w-full rounded-md border border-gray-700 bg-phalis-gray px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-phalis-action pl-8"
                                  value={paymentValor}
                                  onChange={(e) => { const v = e.target.value; if (v !== '' && Number(v) < 0) { e.target.value = '0'; } setPaymentValor(e.target.value); }}
-                                  onKeyDown={(e) => { if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
+                                 onKeyDown={(e) => { if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                                  onClick={e => e.stopPropagation()}
                                  onWheel={(e) => e.currentTarget.blur()}
                               />

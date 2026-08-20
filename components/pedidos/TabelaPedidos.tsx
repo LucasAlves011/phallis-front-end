@@ -25,7 +25,7 @@ import {
 } from '@/lib/orderData';
 import DetalhesPedidoRow from './DetalhesPedidoRow';
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageCircle } from 'lucide-react';
 import { type User } from '@/types/client';
 import { usePermission } from '@/lib/auth/usePermission';
 import { authenticatedFetch } from '@/lib/api';
@@ -205,18 +205,23 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                         </TableCell>
                         <TableCell>{pedido.cliente.nome}</TableCell>
                         <TableCell>
-                           <a
-                              href={formatarWhatsApp(pedido.cliente.telefone1)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={cn(
-                                 "text-white hover:text-phalis-action hover:underline",
-                                 isCanceled && "pointer-events-none"
-                              )}
-                              onClick={(e) => e.stopPropagation()}
-                           >
-                              {pedido.cliente.telefone1 || '---'}
-                           </a>
+                           {pedido.cliente.telefone1 ? (
+                              <a
+                                 href={formatarWhatsApp(pedido.cliente.telefone1)}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className={cn(
+                                    "inline-flex items-center gap-1.5 text-white hover:text-phalis-action hover:underline w-fit cursor-pointer",
+                                    isCanceled && "pointer-events-none"
+                                 )}
+                                 onClick={(e) => e.stopPropagation()}
+                              >
+                                 <MessageCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
+                                 <span>{pedido.cliente.telefone1}</span>
+                              </a>
+                           ) : (
+                              <span className="text-gray-500">---</span>
+                           )}
                         </TableCell>
                         <TableCell>
                            {pedido.itens && pedido.itens.length > 0 ? (

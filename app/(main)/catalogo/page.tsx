@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { type Product } from '@/lib/productData'; // 2. MUDANÇA: Importar apenas o *tipo*
-import { Loader2 } from 'lucide-react'; // 3. MUDANÇA: Importar o ícone de loading
+import { Loader2, Search } from 'lucide-react'; // 3. MUDANÇA: Importar o ícone de loading e search
 import { authenticatedFetch } from '@/lib/api'; // 4. MUDANÇA: Importar fetch autenticado
 import { usePermission } from '@/lib/auth/usePermission';
+import { Input } from '@/components/ui/input';
 
 // --- O Componente do Card (Sem mudanças) ---
 // (Este subcomponente está perfeito como você colou)
@@ -56,6 +57,7 @@ export default function CatalogoPage() {
    // Estados para loading e dados
    const [produtos, setProdutos] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
+   const [filtroBusca, setFiltroBusca] = useState('');
 
    const [error, setError] = useState('');
 
@@ -100,9 +102,24 @@ export default function CatalogoPage() {
       router.push(url);
    };
 
+   const produtosFiltrados = produtos.filter(p => p.nome.toLowerCase().includes(filtroBusca.toLowerCase()));
+
    return (
       <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6">
-         <h1 className="text-3xl font-bold text-white">Catálogo de Produtos</h1>
+         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h1 className="text-3xl font-bold text-white">Catálogo de Produtos</h1>
+
+            <div className="relative w-full md:w-96">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+               <Input
+                  type="text"
+                  placeholder="Pesquisar produto pelo nome..."
+                  className="pl-10 bg-phalis-black border-gray-800 text-white placeholder:text-gray-500 h-12 text-base focus-visible:ring-phalis-action"
+                  value={filtroBusca}
+                  onChange={(e) => setFiltroBusca(e.target.value)}
+               />
+            </div>
+         </div>
 
          {error && (
             <div className="bg-red-900/20 border border-red-900/50 text-red-200 p-4 rounded-md">
@@ -116,15 +133,15 @@ export default function CatalogoPage() {
             <div className="flex justify-center items-center p-12">
                <Loader2 className="h-12 w-12 animate-spin text-phalis-action" />
             </div>
-         ) : !error && produtos.length === 0 ? (
+         ) : !error && produtosFiltrados.length === 0 ? (
             <div className="text-center text-gray-400 p-12">
                Nenhum produto encontrado.
             </div>
          ) : (
             // Se terminou, mostra a grade
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-               {/* 6. MUDANÇA: Mapeia o 'produtos' do estado, não o importado */}
-               {produtos.map(produto => (
+               {/* 6. MUDANÇA: Mapeia o 'produtosFiltrados' */}
+               {produtosFiltrados.map(produto => (
                   <ProductCard
                      key={produto.id}
                      product={produto}

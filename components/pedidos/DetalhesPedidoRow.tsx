@@ -139,11 +139,13 @@ const MiniItemCard: React.FC<{ item: ItemPedido }> = ({ item }) => {
          if (produtoFetched && produtoFetched.options) {
             const optsConfig = produtoFetched.options;
             Object.entries(opts).forEach(([key, val]) => {
-               const optName = optsConfig[key as keyof typeof optsConfig]?.find((o: any) => o.id === val)?.name;
-               if (optName) specs.push(optName);
+               const optName = optsConfig[key as keyof typeof optsConfig]?.find((o: any) => o.id === val)?.name || String(val);
+               if (optName && optName !== 'personalizado') specs.push(optName);
             });
          } else {
-            specs.push("Carregando opções...");
+            Object.entries(opts).forEach(([_, val]) => {
+               if (val && val !== 'personalizado') specs.push(String(val));
+            });
          }
 
          if (w && h) {

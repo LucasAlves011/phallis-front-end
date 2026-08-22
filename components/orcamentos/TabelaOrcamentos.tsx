@@ -113,6 +113,7 @@ export default function TabelaOrcamentos({ orcamentos, highlightId, isLoading = 
          detalhes: {
             type: item.tipoPrecificacao ? item.tipoPrecificacao.toLowerCase() : 'unidade',
             opcoes: item.opcoes || {},
+            opcaoNomes: item.opcoes || {},
             observacao: item.observacao || '',
             preco: {
                quantidade: item.quantidade || 1,
@@ -233,14 +234,25 @@ export default function TabelaOrcamentos({ orcamentos, highlightId, isLoading = 
             const itemsFicha: string[] = [];
 
             if (item.opcoes && typeof item.opcoes === 'object') {
-               Object.entries(item.opcoes).forEach(([_, val]) => {
-                  if (val && val !== 'personalizado') {
+               const opcoes = item.opcoes as Record<string, any>;
+               const orderedKeys = ['papel', 'tamanho', 'cores', 'acabamento'];
+               const visited = new Set<string>();
+
+               orderedKeys.forEach(k => {
+                  if (opcoes[k] && opcoes[k] !== 'personalizado') {
+                     itemsFicha.push(`- ${opcoes[k]}`);
+                     visited.add(k);
+                  }
+               });
+
+               Object.entries(opcoes).forEach(([k, val]) => {
+                  if (!visited.has(k) && val && val !== 'personalizado') {
                      itemsFicha.push(`- ${val}`);
                   }
                });
             }
 
-            if (type === 'METRO' && !itemsFicha.some(i => i.includes('x'))) {
+            if (type === 'METRO' && !itemsFicha.some(i => i.includes('x') || i.includes('m²') || i.includes('m'))) {
                if (item.largura || item.altura) {
                   itemsFicha.push(`- ${item.largura || 0}x${item.altura || 0}m`);
                }
@@ -603,8 +615,20 @@ export default function TabelaOrcamentos({ orcamentos, highlightId, isLoading = 
                                                       {item.largura && item.altura && (
                                                          <p><span className="text-gray-500">Dimensões:</span> {item.largura}x{item.altura}m</p>
                                                       )}
+                                                      {item.opcoes && Object.keys(item.opcoes).length > 0 && (
+                                                         <div className="flex flex-wrap gap-1 pt-1">
+                                                            {Object.entries(item.opcoes).map(([k, v]) => {
+                                                               if (!v || v === 'personalizado') return null;
+                                                               return (
+                                                                  <span key={k} className="inline-block bg-gray-800 text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-gray-700">
+                                                                     {String(v)}
+                                                                  </span>
+                                                               );
+                                                            })}
+                                                         </div>
+                                                      )}
                                                       {item.observacao && item.observacao !== '-' && (
-                                                         <p className="italic text-gray-300"><span className="text-gray-500 not-italic">Obs:</span> {item.observacao}</p>
+                                                         <p className="italic text-gray-300 pt-1"><span className="text-gray-500 not-italic">Obs:</span> {item.observacao}</p>
                                                       )}
                                                    </div>
                                                 </div>

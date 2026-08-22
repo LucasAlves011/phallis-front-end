@@ -152,7 +152,7 @@ export default function CarrinhoPage() {
          largura: type === 'metro' ? preco.largura : null,
          altura: type === 'metro' ? preco.altura : null,
          observacao: det?.observacao || null,
-         opcoes: det?.opcoes || null,
+         opcoes: det?.opcaoNomes || det?.opcoes || null,
       };
    });
 
@@ -327,33 +327,27 @@ export default function CarrinhoPage() {
             
             // Ficha do Item (itens/opções técnicas que compõem o produto)
             const itemsFicha: string[] = [];
-            const opcaoNomes = det?.opcaoNomes as Record<string, string> | undefined;
+            const opcoesParaFicha = (det?.opcaoNomes || det?.opcoes) as Record<string, string> | undefined;
 
-            if (opcaoNomes && typeof opcaoNomes === 'object') {
+            if (opcoesParaFicha && typeof opcoesParaFicha === 'object') {
                const orderedKeys = ['papel', 'tamanho', 'cores', 'acabamento'];
                const visited = new Set<string>();
 
                orderedKeys.forEach(k => {
-                  if (opcaoNomes[k]) {
-                     itemsFicha.push(`- ${opcaoNomes[k]}`);
+                  if (opcoesParaFicha[k] && opcoesParaFicha[k] !== 'personalizado') {
+                     itemsFicha.push(`- ${opcoesParaFicha[k]}`);
                      visited.add(k);
                   }
                });
 
-               Object.entries(opcaoNomes).forEach(([k, v]) => {
-                  if (!visited.has(k) && v) {
+               Object.entries(opcoesParaFicha).forEach(([k, v]) => {
+                  if (!visited.has(k) && v && v !== 'personalizado') {
                      itemsFicha.push(`- ${v}`);
-                  }
-               });
-            } else if (det?.opcoes && typeof det.opcoes === 'object') {
-               Object.entries(det.opcoes).forEach(([_, val]) => {
-                  if (val && val !== 'personalizado') {
-                     itemsFicha.push(`- ${val}`);
                   }
                });
             }
 
-            if (type === 'METRO' && (!opcaoNomes?.tamanho || !itemsFicha.some(i => i.includes('x')))) {
+            if (type === 'METRO' && (!det?.opcaoNomes?.tamanho || !itemsFicha.some(i => i.includes('x')))) {
                if (preco.largura || preco.altura) {
                   itemsFicha.push(`- ${preco.largura || 0}x${preco.altura || 0}m`);
                }

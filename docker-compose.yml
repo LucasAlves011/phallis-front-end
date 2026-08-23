@@ -1,7 +1,7 @@
 version: '3'
 services:
   app:
-    container_name: sml-front-phalis
+    container_name: prd-front-phalis
     build:
       context: .
       args:

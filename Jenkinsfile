@@ -34,8 +34,8 @@ pipeline {
                              chmod +x docker-compose
                         fi
 
-                        ./docker-compose -p sml-phalis down
-                        ./docker-compose -p sml-phalis up -d --build
+                        ./docker-compose -p prd-phalis down
+                        ./docker-compose -p prd-phalis up -d --build
                     """
                 }
             }

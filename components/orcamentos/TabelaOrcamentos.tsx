@@ -20,7 +20,7 @@ import {
    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { type Orcamento, type ItemOrcamento } from '@/types/orcamento';
-import { cn } from '@/lib/utils';
+import { cn, formatarTelefone } from '@/lib/utils';
 import { Loader2, Download, ShoppingCart, ChevronDown, ChevronUp, MessageCircle, FileText, AlertTriangle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart, type CartItem } from '@/lib/cartStore';
@@ -204,7 +204,7 @@ export default function TabelaOrcamentos({ orcamentos, highlightId, isLoading = 
             currentY += 5;
             doc.setFont("helvetica", "normal");
             if (orcamento.cliente.telefone1) {
-               doc.text(`Telefone: ${orcamento.cliente.telefone1}`, 14, currentY);
+               doc.text(`Telefone: ${formatarTelefone(orcamento.cliente.telefone1)}`, 14, currentY);
                currentY += 5;
             }
             if (orcamento.cliente.email) {

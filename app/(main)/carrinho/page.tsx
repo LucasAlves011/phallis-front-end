@@ -21,6 +21,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { Loader2, Trash2, ShoppingCart, Plus, Pencil, AlertTriangle, Wallet, FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatarTelefone } from '@/lib/utils';
 import {
    AlertDialog,
    AlertDialogCancel,
@@ -292,7 +293,7 @@ export default function CarrinhoPage() {
             doc.setFont("helvetica", "normal");
             
             if (cliente.telefone1) {
-               doc.text(`Telefone: ${cliente.telefone1}`, 14, currentY);
+               doc.text(`Telefone: ${formatarTelefone(cliente.telefone1)}`, 14, currentY);
                currentY += 5;
             }
             if (cliente.email) {

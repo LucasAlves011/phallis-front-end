@@ -24,7 +24,7 @@ import {
    statusProducaoOptions
 } from '@/lib/orderData';
 import DetalhesPedidoRow from './DetalhesPedidoRow';
-import { cn } from '@/lib/utils';
+import { cn, formatarTelefone } from '@/lib/utils';
 import { Loader2, MessageCircle } from 'lucide-react';
 import { type User } from '@/types/client';
 import { usePermission } from '@/lib/auth/usePermission';
@@ -217,7 +217,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                                  onClick={(e) => e.stopPropagation()}
                               >
                                  <MessageCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
-                                 <span>{pedido.cliente.telefone1}</span>
+                                 <span>{formatarTelefone(pedido.cliente.telefone1)}</span>
                               </a>
                            ) : (
                               <span className="text-gray-500">---</span>

@@ -18,6 +18,7 @@ import { Loader2, Plus, Edit, RefreshCw, AlertCircle } from 'lucide-react';
 import { usePermission } from '@/lib/auth/usePermission';
 import { authenticatedFetch } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatarTelefone } from '@/lib/utils';
 
 // Função de formatar CPF/CNPJ
 const formatCpfCnpj = (value: string): string => {
@@ -196,10 +197,10 @@ export default function ClientesPage() {
                                  rel="noopener noreferrer"
                                  className="text-phalis-action hover:underline flex items-center gap-1"
                               >
-                                 {cliente.telefone1}
+                                 {formatarTelefone(cliente.telefone1)}
                               </a>
                            </TableCell>
-                           <TableCell className="text-gray-300">{cliente.telefone2 || '-'}</TableCell>
+                           <TableCell className="text-gray-300">{cliente.telefone2 ? formatarTelefone(cliente.telefone2) : '-'}</TableCell>
 
                            <TableCell>
                               {hasPermission('clientes.alterar') && (

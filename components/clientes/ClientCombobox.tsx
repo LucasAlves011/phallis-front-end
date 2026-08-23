@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Check, ChevronsUpDown, PlusCircle, Loader2, Edit, Pencil } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatarTelefone } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import {
    Command,
@@ -121,7 +121,7 @@ export function ClientCombobox({ selectedClientId, onSelectClient }: ClientCombo
                                     selectedClientId === cliente.id ? "opacity-100" : "opacity-0"
                                  )}
                               />
-                              {cliente.nome} - {cliente.telefone1}
+                              {cliente.nome}{cliente.telefone1 ? ` - ${formatarTelefone(cliente.telefone1)}` : ''}
                            </CommandItem>
                         ))}
                      </CommandGroup>

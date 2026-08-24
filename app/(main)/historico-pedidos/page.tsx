@@ -22,6 +22,8 @@ import {
    SelectValue,
 } from "@/components/ui/select";
 
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter';
+
 export default function HistoricoPedidosPage() {
    const [pedidos, setPedidos] = useState<Pedido[]>([]);
    const [page, setPage] = useState(0);
@@ -35,11 +37,26 @@ export default function HistoricoPedidosPage() {
    const { user } = useAuth();
 
    // ==========================================================
-   // Estados dos filtros (server-side)
+   // Estados dos filtros (server-side) inicializados via URL se presentes
    // ==========================================================
-   const [filtroCliente, setFiltroCliente] = useState('');
-   const [filtroFinanceiro, setFiltroFinanceiro] = useState('todos');
-   const [filtroStatus, setFiltroStatus] = useState('todos');
+   const parseParamArray = (paramVal: string | null): string[] => {
+      if (!paramVal || paramVal === 'todos') return [];
+      return paramVal.split(',').map(s => s.trim()).filter(Boolean);
+   };
+
+   const [filtroCliente, setFiltroCliente] = useState(searchParams.get('cliente') || '');
+   const [filtroFinanceiro, setFiltroFinanceiro] = useState<string[]>(() => parseParamArray(searchParams.get('financeiro')));
+   const [filtroStatus, setFiltroStatus] = useState<string[]>(() => parseParamArray(searchParams.get('status')));
+
+   // Sincroniza se a URL mudar
+   useEffect(() => {
+      const pFin = searchParams.get('financeiro');
+      const pStat = searchParams.get('status');
+      const pCli = searchParams.get('cliente');
+      setFiltroFinanceiro(parseParamArray(pFin));
+      setFiltroStatus(parseParamArray(pStat));
+      if (pCli !== null && pCli !== undefined) setFiltroCliente(pCli);
+   }, [searchParams]);
 
    // Timeout para debounce
    const debounceTimeout = React.useRef<NodeJS.Timeout | null>(null);
@@ -58,8 +75,8 @@ export default function HistoricoPedidosPage() {
       params.append('sort', 'dataCriacao,desc');
       
       if (filtroCliente.trim()) params.append('cliente', filtroCliente.trim());
-      if (filtroFinanceiro !== 'todos') params.append('financeiro', filtroFinanceiro);
-      if (filtroStatus !== 'todos') params.append('status', filtroStatus);
+      if (filtroFinanceiro.length > 0) params.append('financeiro', filtroFinanceiro.join(','));
+      if (filtroStatus.length > 0) params.append('status', filtroStatus.join(','));
 
       try {
          const response = await authenticatedFetch(`/api/pedidos?${params.toString()}`);
@@ -135,28 +152,20 @@ export default function HistoricoPedidosPage() {
                value={filtroCliente}
                onChange={(e) => setFiltroCliente(e.target.value)}
             />
-            <Select value={filtroFinanceiro} onValueChange={setFiltroFinanceiro}>
-               <SelectTrigger className="bg-phalis-gray border-0">
-                  <SelectValue placeholder="Status Financeiro" />
-               </SelectTrigger>
-               <SelectContent className="bg-phalis-gray border-0">
-                  <SelectItem value="todos">Todos (Financeiro)</SelectItem>
-                  {statusFinanceiroOptions.map(opt => (
-                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-               </SelectContent>
-            </Select>
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-               <SelectTrigger className="bg-phalis-gray border-0">
-                  <SelectValue placeholder="Status Produção" />
-               </SelectTrigger>
-               <SelectContent className="bg-phalis-gray border-0">
-                  <SelectItem value="todos">Todos (Produção)</SelectItem>
-                  {statusProducaoOptions.map(opt => (
-                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-               </SelectContent>
-            </Select>
+            <MultiSelectFilter
+               title="Financeiro"
+               options={statusFinanceiroOptions}
+               selectedValues={filtroFinanceiro}
+               onChange={setFiltroFinanceiro}
+               className="md:w-56"
+            />
+            <MultiSelectFilter
+               title="Produção"
+               options={statusProducaoOptions}
+               selectedValues={filtroStatus}
+               onChange={setFiltroStatus}
+               className="md:w-56"
+            />
          </div>
 
          {/* Tabela com pedidos FILTRADOS */}

@@ -17,6 +17,15 @@ import {
    SelectValue,
 } from "@/components/ui/select";
 
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter';
+
+const statusOrcamentoOptions = [
+   { value: 'ABERTO', label: 'Aberto' },
+   { value: 'CONVERTIDO', label: 'Convertido' },
+   { value: 'CANCELADO', label: 'Cancelado' },
+   { value: 'SUBSTITUIDO', label: 'Substituído' },
+];
+
 export default function OrcamentosPage() {
    const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
    const [page, setPage] = useState(0);
@@ -29,9 +38,23 @@ export default function OrcamentosPage() {
    const highlightId = searchParams.get('highlight');
    const { user } = useAuth();
 
-   // Filtros
-   const [filtroCliente, setFiltroCliente] = useState('');
-   const [filtroStatus, setFiltroStatus] = useState('todos');
+   // Função auxiliar para converter query param em array
+   const parseParamArray = (paramVal: string | null): string[] => {
+      if (!paramVal || paramVal === 'todos') return [];
+      return paramVal.split(',').map(s => s.trim()).filter(Boolean);
+   };
+
+   // Filtros inicializados com base nos parametros da URL
+   const [filtroCliente, setFiltroCliente] = useState(searchParams.get('cliente') || '');
+   const [filtroStatus, setFiltroStatus] = useState<string[]>(() => parseParamArray(searchParams.get('status')));
+
+   // Sincroniza se a URL mudar
+   useEffect(() => {
+      const pStat = searchParams.get('status');
+      const pCli = searchParams.get('cliente');
+      setFiltroStatus(parseParamArray(pStat));
+      if (pCli !== null && pCli !== undefined) setFiltroCliente(pCli);
+   }, [searchParams]);
 
    // Timeout para debounce
    const debounceTimeout = React.useRef<NodeJS.Timeout | null>(null);
@@ -49,7 +72,7 @@ export default function OrcamentosPage() {
       params.append('sort', 'dataCriacao,desc');
       
       if (filtroCliente.trim()) params.append('cliente', filtroCliente.trim());
-      if (filtroStatus !== 'todos') params.append('status', filtroStatus);
+      if (filtroStatus.length > 0) params.append('status', filtroStatus.join(','));
 
       try {
          const response = await authenticatedFetch(`/api/orcamentos?${params.toString()}`);
@@ -122,17 +145,13 @@ export default function OrcamentosPage() {
                value={filtroCliente}
                onChange={(e) => setFiltroCliente(e.target.value)}
             />
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-               <SelectTrigger className="bg-phalis-gray border-0 text-white md:w-56">
-                  <SelectValue placeholder="Status" />
-               </SelectTrigger>
-               <SelectContent className="bg-phalis-gray border-0 text-white">
-                  <SelectItem value="todos">Todos os Status</SelectItem>
-                  <SelectItem value="ABERTO">Aberto</SelectItem>
-                  <SelectItem value="CONVERTIDO">Convertido</SelectItem>
-                  <SelectItem value="CANCELADO">Cancelado</SelectItem>
-               </SelectContent>
-            </Select>
+            <MultiSelectFilter
+               title="Status"
+               options={statusOrcamentoOptions}
+               selectedValues={filtroStatus}
+               onChange={setFiltroStatus}
+               className="md:w-56"
+            />
          </div>
 
          {/* Tabela com Orçamentos */}

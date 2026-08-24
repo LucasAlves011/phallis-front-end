@@ -96,7 +96,7 @@ const CORES_FINANCEIRO: Record<string, string> = {
 };
 
 const CORES_PRODUCAO: Record<string, string> = {
-   PRE_PROD: '#6b7280',
+   PRE_PRODUCAO: '#6b7280',
    EM_PRODUCAO: '#00bcd4',
    ACABAMENTO: '#ffeb3b',
    PRONTO: '#00f0b5',
@@ -105,7 +105,7 @@ const CORES_PRODUCAO: Record<string, string> = {
 };
 
 const LABEL_PRODUCAO: Record<string, string> = {
-   PRE_PROD: 'Pré-Produção',
+   PRE_PRODUCAO: 'Pré-Produção',
    EM_PRODUCAO: 'Em Produção',
    ACABAMENTO: 'Acabamento',
    PRONTO: 'Pronto',

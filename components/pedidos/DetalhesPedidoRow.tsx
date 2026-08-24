@@ -36,7 +36,7 @@ const STATUS_NOME_MAP: Record<string, string> = {
    PARCIAL: 'Pagamento Parcial',
    PAGO: 'Pago',
    REEMBOLSADO: 'Reembolsado',
-   PRE_PROD: 'Pré-Produção',
+   PRE_PRODUCAO: 'Pré-Produção',
    EM_PRODUCAO: 'Em Produção',
    ACABAMENTO: 'Acabamento',
    PRONTO: 'Pronto p/ Retirada',
@@ -51,7 +51,7 @@ const STATUS_COR_MAP: Record<string, string> = {
    PAGO: 'bg-green-600',
    REEMBOLSADO: 'bg-purple-600',
    CANCELADO: 'bg-red-600',
-   PRE_PROD: 'bg-gray-500',
+   PRE_PRODUCAO: 'bg-gray-500',
    EM_PRODUCAO: 'bg-blue-600',
    ACABAMENTO: 'bg-indigo-600',
    PRONTO: 'bg-teal-400',
@@ -427,7 +427,7 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
             cliente: pedido.cliente,
             totalPago: valorPagoAtual,
             statusFinanceiro: pedido.statusFinanceiro,
-            statusProducao: pedido.statusProducao || 'PRE_PROD'
+            statusProducao: pedido.statusProducao || 'PRE_PRODUCAO'
          },
          cartItems
       );

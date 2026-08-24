@@ -48,7 +48,7 @@ type RastreioPedidoDTO = {
 
 const ETAPAS_PRODUCAO = [
    {
-      id: 'PRE_PROD',
+      id: 'PRE_PRODUCAO',
       titulo: 'Pedido Recebido',
       descricao: 'Arquivos recebidos e conferência inicial.',
       icone: PackageCheck,
@@ -89,7 +89,7 @@ const STATUS_INFO: Record<string, {
    textColor: string;
    icon: React.ElementType;
 }> = {
-   PRE_PROD: {
+   PRE_PRODUCAO: {
       badge: 'Aguardando Produção',
       badgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
       titulo: 'Recebemos o seu pedido!',
@@ -265,7 +265,7 @@ export default function RastreioPublicoPage() {
    const currentStatusIndex = ETAPAS_PRODUCAO.findIndex(step => step.id === pedido.statusProducao);
    const isCancelado = pedido.statusProducao === 'CANCELADO';
    const isPronto = pedido.statusProducao === 'PRONTO';
-   const infoAtual = STATUS_INFO[pedido.statusProducao] || STATUS_INFO.PRE_PROD;
+   const infoAtual = STATUS_INFO[pedido.statusProducao] || STATUS_INFO.PRE_PRODUCAO;
    const CurrentIcon = infoAtual.icon;
 
    // Cálculos Financeiros

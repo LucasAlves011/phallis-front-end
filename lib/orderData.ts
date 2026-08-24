@@ -4,7 +4,7 @@ import { type Cliente } from "@/types/client";
 
 // --- TIPOS DE DADOS PARA OS PEDIDOS ---
 export type StatusFinanceiro = 'PAGO' | 'PARCIAL' | 'PENDENTE' | 'REEMBOLSADO' | 'CANCELADO';
-export type StatusProducao = 'PRE_PROD' | 'EM_PRODUCAO' | 'ACABAMENTO' | 'PRONTO' | 'ENTREGUE' | 'CANCELADO';
+export type StatusProducao = 'PRE_PRODUCAO' | 'EM_PRODUCAO' | 'ACABAMENTO' | 'PRONTO' | 'ENTREGUE' | 'CANCELADO';
 
 export type HistoricoItem = {
    status: StatusFinanceiro | StatusProducao;
@@ -115,7 +115,7 @@ export const statusFinanceiroOptions: { value: StatusFinanceiro, label: string }
 ];
 
 export const statusProducaoOptions: { value: StatusProducao, label: string }[] = [
-   { value: 'PRE_PROD', label: 'Pré-Produção' },
+   { value: 'PRE_PRODUCAO', label: 'Pré-Produção' },
    { value: 'EM_PRODUCAO', label: 'Em Produção' },
    { value: 'ACABAMENTO', label: 'Acabamento' },
    { value: 'PRONTO', label: 'Pronto p/ retirada' },

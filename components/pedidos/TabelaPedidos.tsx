@@ -55,7 +55,7 @@ const financeiroHoverColors: Record<StatusFinanceiro, string> = {
 };
 
 const producaoBadgeColors: Record<StatusProducao, string> = {
-   PRE_PROD: 'bg-gray-500 text-white hover:bg-gray-600',
+   PRE_PRODUCAO: 'bg-gray-500 text-white hover:bg-gray-600',
    EM_PRODUCAO: 'bg-blue-600 text-white hover:bg-blue-700',
    ACABAMENTO: 'bg-indigo-600 text-white hover:bg-indigo-700',
    PRONTO: 'bg-teal-600 text-white hover:bg-teal-700',

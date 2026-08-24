@@ -88,10 +88,11 @@ interface DadoStatus {
 // CORES
 // ============================================================
 const CORES_FINANCEIRO: Record<string, string> = {
-   PAGO: '#00f0b5',
-   PARCIAL: '#ffeb3b',
-   PENDENTE: '#e11d48',
-   REEMBOLSADO: '#00bcd4',
+   PAGO: '#22c55e',
+   PARCIAL: '#eab308',
+   PENDENTE: '#f59e0b',
+   REEMBOLSADO: '#a855f7',
+   CANCELADO: '#ef4444',
 };
 
 const CORES_PRODUCAO: Record<string, string> = {

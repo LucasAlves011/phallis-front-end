@@ -40,25 +40,27 @@ interface TabelaPedidosProps {
 }
 
 const financeiroBadgeColors: Record<StatusFinanceiro, string> = {
-   PENDENTE: 'bg-red-600 text-white',
+   PENDENTE: 'bg-amber-600 text-white',
    PARCIAL: 'bg-yellow-500 text-black',
    PAGO: 'bg-green-600 text-white',
-   REEMBOLSADO: 'bg-gray-500 text-white',
+   REEMBOLSADO: 'bg-purple-600 text-white',
+   CANCELADO: 'bg-red-600 text-white',
 };
 const financeiroHoverColors: Record<StatusFinanceiro, string> = {
-   PENDENTE: 'hover:bg-red-700',
+   PENDENTE: 'hover:bg-amber-700',
    PARCIAL: 'hover:bg-yellow-600',
    PAGO: 'hover:bg-green-700',
-   REEMBOLSADO: 'hover:bg-gray-600',
+   REEMBOLSADO: 'hover:bg-purple-700',
+   CANCELADO: 'hover:bg-red-700',
 };
 
 const producaoBadgeColors: Record<StatusProducao, string> = {
    PRE_PROD: 'bg-gray-500 text-white hover:bg-gray-600',
    EM_PRODUCAO: 'bg-blue-600 text-white hover:bg-blue-700',
    ACABAMENTO: 'bg-indigo-600 text-white hover:bg-indigo-700',
-   PRONTO: 'bg-purple-600 text-white hover:bg-purple-700',
+   PRONTO: 'bg-teal-600 text-white hover:bg-teal-700',
    ENTREGUE: 'bg-green-600 text-white hover:bg-green-700',
-   CANCELADO: 'bg-gray-700 text-gray-400 border-gray-600'
+   CANCELADO: 'bg-red-600 text-white hover:bg-red-700'
 };
 
 // ... (Funções formatarWhatsApp e formatarData - sem mudança)
@@ -186,24 +188,23 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
 
                return (
                   <React.Fragment key={pedido.id}>
-
                      <TableRow
                         data-state={openRowId === String(pedido.id) ? 'open' : 'closed'}
                         className={cn(
                            "cursor-pointer hover:bg-phalis-gray/50 data-[state=open]:bg-phalis-gray",
                            pedido.id === highlightId && 'animate-flashCiano',
-                           isCanceled && 'line-through text-gray-600 hover:bg-phalis-gray/30'
+                           isCanceled && 'text-gray-500 hover:bg-phalis-gray/30'
                         )}
                         onClick={() => toggleRow(String(pedido.id))}
                      >
                         <TableCell>
-                           <div className="font-medium text-white">{pedido.codigoVisual || '-'}</div>
+                           <div className={cn("font-medium text-white", isCanceled && "line-through text-gray-500")}>{pedido.codigoVisual || '-'}</div>
                            <div className="text-xs text-gray-500">#{pedido.id}</div>
                         </TableCell>
-                        <TableCell className="text-xs" suppressHydrationWarning={true}>
+                        <TableCell className={cn("text-xs", isCanceled && "line-through")} suppressHydrationWarning={true}>
                            {formatarData(pedido.dataCriacao)}
                         </TableCell>
-                        <TableCell>{pedido.cliente.nome}</TableCell>
+                        <TableCell className={cn(isCanceled && "line-through text-gray-500")}>{pedido.cliente.nome}</TableCell>
                         <TableCell>
                            {pedido.cliente.telefone1 ? (
                               <a
@@ -212,7 +213,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                                  rel="noopener noreferrer"
                                  className={cn(
                                     "inline-flex items-center gap-1.5 text-white hover:text-phalis-action hover:underline w-fit cursor-pointer",
-                                    isCanceled && "pointer-events-none"
+                                    isCanceled && "pointer-events-none line-through text-gray-500"
                                  )}
                                  onClick={(e) => e.stopPropagation()}
                               >
@@ -223,7 +224,7 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                               <span className="text-gray-500">---</span>
                            )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className={cn(isCanceled && "line-through text-gray-500")}>
                            {pedido.itens && pedido.itens.length > 0 ? (
                               <div className="flex items-center gap-2">
                                  <span>{pedido.itens[0].itemNome}</span>
@@ -238,40 +239,45 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                            )}
                         </TableCell>
                         <TableCell>
-                           <Select
-                              value={pedido.statusFinanceiro}
-                              onValueChange={(value) => handleStatusChange(String(pedido.id), 'financeiro', value)}
-                              disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.financeiro')}
-                           >
-                              <SelectTrigger
-                                 className={cn(
-                                    "font-semibold border-0 rounded-full px-3 py-1 text-xs",
-                                    // 1. Aplica a cor base
-                                    financeiroBadgeColors[pedido.statusFinanceiro],
-                                    // 2. Aplica o hover SÓ SE NÃO ESTIVER cancelado
-                                    !isCanceled && financeiroHoverColors[pedido.statusFinanceiro],
-                                    // 3. Aplica o override de cancelado (que agora não tem hover)
-                                    isCanceled && "bg-gray-700 text-gray-400"
-                                 )}
-                                 onClick={(e) => e.stopPropagation()}
+                           {isCanceled && (pedido.statusFinanceiro === 'PAGO' || pedido.statusFinanceiro === 'PARCIAL') ? (
+                              <div 
+                                 className="flex h-10 w-full items-center justify-center font-semibold rounded-full px-3 py-1 text-xs bg-amber-600 text-white select-none whitespace-nowrap"
+                                 title="Pedido cancelado com estorno ainda pendente"
                               >
-                                 {loadingStatus[`financeiro-${pedido.id}`] ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                 ) : (
-                                    <SelectValue className="flex-1 text-center" />
-                                 )}
-                              </SelectTrigger>
-                              <SelectContent className="bg-phalis-gray border-0">
-                                 {statusFinanceiroOptions.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                 ))}
-                              </SelectContent>
-                           </Select>
+                                 Estorno Pendente
+                              </div>
+                           ) : (
+                              <Select
+                                 value={isCanceled && pedido.statusFinanceiro === 'PENDENTE' ? 'CANCELADO' : pedido.statusFinanceiro}
+                                 onValueChange={(value) => handleStatusChange(String(pedido.id), 'financeiro', value)}
+                                 disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.financeiro')}
+                              >
+                                 <SelectTrigger
+                                    className={cn(
+                                       "font-semibold border-0 rounded-full px-3 py-1 text-xs focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none",
+                                       financeiroBadgeColors[isCanceled && pedido.statusFinanceiro === 'PENDENTE' ? 'CANCELADO' : pedido.statusFinanceiro],
+                                       !isCanceled && financeiroHoverColors[isCanceled && pedido.statusFinanceiro === 'PENDENTE' ? 'CANCELADO' : pedido.statusFinanceiro]
+                                    )}
+                                    onClick={(e) => e.stopPropagation()}
+                                 >
+                                    {loadingStatus[`financeiro-${pedido.id}`] ? (
+                                       <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                       <SelectValue className="flex-1 text-center" />
+                                    )}
+                                 </SelectTrigger>
+                                 <SelectContent className="bg-phalis-gray border-0">
+                                    {statusFinanceiroOptions.map(opt => (
+                                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                    ))}
+                                 </SelectContent>
+                              </Select>
+                           )}
                         </TableCell>
 
-                        <TableCell>R$ {(Number(pedido.valor) || 0).toFixed(2)}</TableCell>
+                        <TableCell className={cn(isCanceled && "line-through text-gray-500")}>R$ {(Number(pedido.valor) || 0).toFixed(2)}</TableCell>
 
-                        <TableCell>
+                        <TableCell className="w-[180px]">
                            <Select
                               value={pedido.statusProducao || ""}
                               onValueChange={(value) => handleStatusChange(String(pedido.id), 'producao', value)}
@@ -279,16 +285,15 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
                            >
                               <SelectTrigger
                                  className={cn(
-                                    "font-semibold border-0 rounded-full px-3 py-1 text-xs",
-                                    pedido.statusProducao ? producaoBadgeColors[pedido.statusProducao] : "bg-gray-700 text-gray-400",
-                                    isCanceled && "bg-gray-700 text-gray-400 hover:bg-gray-700"
+                                    "font-semibold border-0 rounded-full px-3 py-1 text-xs focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none w-full",
+                                    pedido.statusProducao ? producaoBadgeColors[pedido.statusProducao] : "bg-gray-700 text-gray-400"
                                  )}
                                  onClick={(e) => e.stopPropagation()}
                               >
                                  {loadingStatus[`producao-${pedido.id}`] ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                  ) : (
-                                    <SelectValue placeholder="Indefinido" className="flex-1 text-center truncate" />
+                                    <SelectValue placeholder="Indefinido" className="flex-1 text-center whitespace-nowrap" />
                                  )}
                               </SelectTrigger>
                               <SelectContent className="bg-phalis-gray border-0">

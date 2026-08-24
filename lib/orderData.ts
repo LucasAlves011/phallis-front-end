@@ -3,7 +3,7 @@ import { type Product, type ProductOptions } from "./productData";
 import { type Cliente } from "@/types/client";
 
 // --- TIPOS DE DADOS PARA OS PEDIDOS ---
-export type StatusFinanceiro = 'PAGO' | 'PARCIAL' | 'PENDENTE' | 'REEMBOLSADO';
+export type StatusFinanceiro = 'PAGO' | 'PARCIAL' | 'PENDENTE' | 'REEMBOLSADO' | 'CANCELADO';
 export type StatusProducao = 'PRE_PROD' | 'EM_PRODUCAO' | 'ACABAMENTO' | 'PRONTO' | 'ENTREGUE' | 'CANCELADO';
 
 export type HistoricoItem = {
@@ -111,13 +111,14 @@ export const statusFinanceiroOptions: { value: StatusFinanceiro, label: string }
    { value: 'PARCIAL', label: 'Pagamento Parcial' },
    { value: 'PAGO', label: 'Pago' },
    { value: 'REEMBOLSADO', label: 'Reembolsado' },
+   { value: 'CANCELADO', label: 'Cancelado' },
 ];
 
 export const statusProducaoOptions: { value: StatusProducao, label: string }[] = [
    { value: 'PRE_PROD', label: 'Pré-Produção' },
    { value: 'EM_PRODUCAO', label: 'Em Produção' },
-   { value: 'ACABAMENTO', label: 'Acabamento/Finalização' },
-   { value: 'PRONTO', label: 'Pronto p/ Retirada/Envio' },
+   { value: 'ACABAMENTO', label: 'Acabamento' },
+   { value: 'PRONTO', label: 'Pronto p/ retirada' },
    { value: 'ENTREGUE', label: 'Entregue' },
    { value: 'CANCELADO', label: 'Cancelado' }
 ];

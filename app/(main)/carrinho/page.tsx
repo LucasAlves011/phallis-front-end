@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/select";
 import { authenticatedFetch } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { Loader2, Trash2, ShoppingCart, Plus, Pencil, AlertTriangle, Wallet, FileText } from 'lucide-react';
+import { Loader2, Trash2, ShoppingCart, Plus, Pencil, AlertTriangle, Wallet, FileText, CreditCard, Banknote } from 'lucide-react';
+import { PixIcon } from '@/components/icons/PixIcon';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatarTelefone } from '@/lib/utils';
@@ -71,12 +72,12 @@ const CartItemCard = ({ item, onRemove, onEdit }: { item: CartItem; onRemove: (i
                      <div className="flex gap-1"><span className="text-gray-500">Custo:</span><span className="text-red-400 font-medium">R$ {(Number(preco.valorTotalCusto || preco.custoTotal || preco.precoCusto || preco.valorCusto || preco.m2Custo || 0)).toFixed(2)}</span></div>
                      <div className="flex gap-1"><span className="text-gray-500">Arte:</span><span className="text-blue-400 font-medium">R$ {(Number(preco.precoArte || preco.valorArte || 0)).toFixed(2)}</span></div>
                      <div className="flex gap-1"><span className="text-gray-500">Desc.:</span><span className="text-yellow-500 font-medium">R$ {(Number(preco.desconto || 0)).toFixed(2)}</span></div>
-                      <div className="flex gap-1 text-gray-400 font-medium sm:pl-3 sm:border-l border-white/10">
-                         {type === 'UNIDADE' && `Qtd: ${preco.quantidade}`}
-                         {type === 'METRO' && `Dim: ${preco.largura}x${preco.altura}m`}
-                         {type === 'SERVICO' && `Serviço`}
-                         <span className="ml-2 text-phalis-action">Lucro: R$ {(item.valor - Number(preco.valorTotalCusto || preco.custoTotal || preco.precoCusto || preco.valorCusto || preco.m2Custo || 0)).toFixed(2)}</span>
-                      </div>
+                     <div className="flex gap-1 text-gray-400 font-medium sm:pl-3 sm:border-l border-white/10">
+                        {type === 'UNIDADE' && `Qtd: ${preco.quantidade}`}
+                        {type === 'METRO' && `Dim: ${preco.largura}x${preco.altura}m`}
+                        {type === 'SERVICO' && `Serviço`}
+                        <span className="ml-2 text-phalis-action">Lucro: R$ {(item.valor - Number(preco.valorTotalCusto || preco.custoTotal || preco.precoCusto || preco.valorCusto || preco.m2Custo || 0)).toFixed(2)}</span>
+                     </div>
                   </div>
                </div>
             </div>
@@ -276,7 +277,7 @@ export default function CarrinhoPage() {
 
          // 4. Desenha as informações do Cliente
          // Ajustamos o Y inicial para 75 para descer o bloco e não sobrepor a arte do papel timbrado
-         let currentY = 75; 
+         let currentY = 75;
          doc.setFont("helvetica", "bold");
          doc.setFontSize(11);
          doc.setTextColor(0, 0, 0);
@@ -286,12 +287,12 @@ export default function CarrinhoPage() {
             doc.text(`Orçamento Nº: ${codigoVisual}`, 14, currentY);
             currentY += 5;
          }
-         
+
          if (cliente) {
             doc.text(`Cliente: ${cliente.nome}`, 14, currentY);
             currentY += 5;
             doc.setFont("helvetica", "normal");
-            
+
             if (cliente.telefone1) {
                doc.text(`Telefone: ${formatarTelefone(cliente.telefone1)}`, 14, currentY);
                currentY += 5;
@@ -313,7 +314,7 @@ export default function CarrinhoPage() {
          doc.setFont("helvetica", "italic");
          doc.setFontSize(9);
          doc.text(`Emitido em: ${new Date().toLocaleString('pt-BR')} por ${user?.nome || 'Atendente'}`, 14, currentY);
-         
+
          currentY += 6;
 
          // 5. Monta os Dados da Tabela
@@ -325,7 +326,7 @@ export default function CarrinhoPage() {
             const det = item.detalhes as any;
             const type = (det?.type as string)?.toUpperCase() || 'UNIDADE';
             const preco = det?.preco || {};
-            
+
             // Ficha do Item (itens/opções técnicas que compõem o produto)
             const itemsFicha: string[] = [];
             const opcoesParaFicha = (det?.opcaoNomes || det?.opcoes) as Record<string, string> | undefined;
@@ -361,7 +362,7 @@ export default function CarrinhoPage() {
 
             // Quantidade
             const qtd = type === 'UNIDADE' ? (preco.quantidade || 1) : 1;
-            
+
             // Valor Unidade
             const valorUnidade = item.valor / qtd;
 
@@ -391,25 +392,25 @@ export default function CarrinhoPage() {
          });
 
          let finalY = (doc as any).lastAutoTable.finalY || (currentY + 30);
-         
+
          // Se a tabela terminou muito perto do rodapé, pulamos para a próxima página antes de escrever o TOTAL
          if (finalY + 25 > pageHeight - 60) {
             doc.addPage();
             finalY = 75; // Ao pular página, resetamos o Y para a margem superior
          }
-         
+
          // 7. Desenha o Total e Validade
          doc.setFontSize(14);
          doc.setFont("helvetica", "bold");
          doc.text(`TOTAL DO ORÇAMENTO: R$ ${valorTotal.toFixed(2)}`, 14, finalY + 12);
-         
+
          doc.setFontSize(9);
          doc.setFont("helvetica", "normal");
          doc.text("Este orçamento pode ser aprovado e convertido em pedido a qualquer momento.", 14, finalY + 20);
 
          // 8. Salva o PDF
          const clienteNomeFormatado = cliente?.nome?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'avulso';
-         const fileName = codigoVisual 
+         const fileName = codigoVisual
             ? `Orcamento_${codigoVisual}_${clienteNomeFormatado}.pdf`
             : `Orcamento_${clienteNomeFormatado}_${new Date().getTime()}.pdf`;
          doc.save(fileName);
@@ -571,11 +572,31 @@ export default function CarrinhoPage() {
                               <Label className="text-gray-300 text-sm ml-1">Forma de Pagamento *</Label>
                               <Select value={formaPagamento || ""} onValueChange={setFormaPagamento}>
                                  <SelectTrigger className="bg-phalis-gray border-0"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                                 <SelectContent className="bg-phalis-gray border-0">
-                                    <SelectItem value="PIX">PIX</SelectItem>
-                                    <SelectItem value="CREDITO">Crédito</SelectItem>
-                                    <SelectItem value="DEBITO">Débito</SelectItem>
-                                    <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
+                                 <SelectContent className="bg-phalis-gray border-0 text-white">
+                                    <SelectItem value="PIX">
+                                       <div className="flex items-center gap-2">
+                                          <PixIcon className="w-4 h-4 text-[#37b4aa]" />
+                                          <span>PIX</span>
+                                       </div>
+                                    </SelectItem>
+                                    <SelectItem value="CREDITO">
+                                       <div className="flex items-center gap-2">
+                                          <CreditCard className="w-4 h-4 text-blue-400" />
+                                          <span>Crédito</span>
+                                       </div>
+                                    </SelectItem>
+                                    <SelectItem value="DEBITO">
+                                       <div className="flex items-center gap-2">
+                                          <CreditCard className="w-4 h-4 text-amber-400" />
+                                          <span>Débito</span>
+                                       </div>
+                                    </SelectItem>
+                                    <SelectItem value="DINHEIRO">
+                                       <div className="flex items-center gap-2">
+                                          <Banknote className="w-4 h-4 text-green-400" />
+                                          <span>Dinheiro</span>
+                                       </div>
+                                    </SelectItem>
                                  </SelectContent>
                               </Select>
                            </div>

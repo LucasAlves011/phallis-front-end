@@ -17,11 +17,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Pencil, XOctagon, Loader2, DollarSign, Eye, Link as LinkIcon, Check, PlusCircle, CreditCard, Banknote, Landmark } from 'lucide-react';
+import { Pencil, XOctagon, Loader2, DollarSign, Eye, Link as LinkIcon, Check, PlusCircle, CreditCard, Banknote, Landmark, RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermission } from '@/lib/auth/usePermission';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PixIcon } from '@/components/icons/PixIcon';
 import { useCart } from '@/lib/cartStore';
 
 type DetalhesProps = {
@@ -45,22 +46,22 @@ const STATUS_NOME_MAP: Record<string, string> = {
    PAGAMENTO: 'Pagamento Realizado'
 };
 const STATUS_COR_MAP: Record<string, string> = {
-   PENDENTE: 'bg-red-600',
+   PENDENTE: 'bg-amber-600',
    PARCIAL: 'bg-yellow-500',
    PAGO: 'bg-green-600',
-   REEMBOLSADO: 'bg-gray-500',
+   REEMBOLSADO: 'bg-purple-600',
+   CANCELADO: 'bg-red-600',
    PRE_PROD: 'bg-gray-500',
    EM_PRODUCAO: 'bg-blue-600',
    ACABAMENTO: 'bg-indigo-600',
-   PRONTO: 'bg-purple-600',
+   PRONTO: 'bg-teal-400',
    ENTREGUE: 'bg-green-600',
-   CANCELADO: 'bg-gray-700',
    CRIADO: 'bg-gray-500',
    PAGAMENTO: 'bg-green-400'
 };
 
 // TIMELINE ITEM
-const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, user: string, subStatus?: string, motivo?: string, observacao?: string }, isLast: boolean }) => {
+const TimelineItem = ({ item, isLast }: { item: { status: string, data: string, user: string, subStatus?: string, motivo?: string | null, observacao?: string | null }, isLast: boolean }) => {
    const nomeStatus = STATUS_NOME_MAP[item.status] || item.status.replace(/_/g, ' ');
    const corStatus = STATUS_COR_MAP[item.status] || 'bg-cyan-500';
    return (
@@ -227,6 +228,11 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
    const [cancelError, setCancelError] = useState('');
    const [copiado, setCopiado] = useState(false);
 
+   // Modal de Estorno Sob Demanda
+   const [isEstornoDialogOpen, setIsEstornoDialogOpen] = useState(false);
+   const [estornoLoading, setEstornoLoading] = useState(false);
+   const [estornoError, setEstornoError] = useState('');
+
    // Modal de Pagamento
    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
    const [paymentValor, setPaymentValor] = useState('');
@@ -267,9 +273,19 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
       });
    }, [pedido.id, pedido.statusProducao, pedido.statusFinanceiro]);
 
+   // ==================== LÓGICA DE PAGAMENTO PARCIAL & STATUS ====================
+   const valorTotalPedido = Number(contaReceber?.valorTotal || pedido.valor || 0);
+   const valorPagoAtual = Number(contaReceber?.valorPago || 0);
+   const valorFaltante = Math.max(0, valorTotalPedido - valorPagoAtual);
+   const progressoPorcentagem = valorTotalPedido > 0 ? Math.min(100, (valorPagoAtual / valorTotalPedido) * 100) : 0;
+   const isCanceled = pedido.statusProducao === 'CANCELADO' || pedido.statusFinanceiro === 'CANCELADO';
+   const isCanceladoSemPagamento = pedido.statusFinanceiro === 'CANCELADO' || (isCanceled && valorPagoAtual === 0);
+   const isReembolsado = !isCanceladoSemPagamento && (pedido.statusFinanceiro === 'REEMBOLSADO' || contaReceber?.status === 'REEMBOLSADO');
+   const isEstornoPendente = isCanceled && valorPagoAtual > 0 && !isReembolsado;
+
    const historicoCompleto = useMemo(() => {
       // Começamos o evento inicial de criação:
-      const eventos: { status: string, data: string, user: string, subStatus?: string, motivo?: string, observacao?: string }[] = [
+      const eventos: { status: string, data: string, user: string, subStatus?: string, motivo?: string | null, observacao?: string | null }[] = [
          {
             status: 'CRIADO',
             data: pedido.dataCriacao,
@@ -277,13 +293,40 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
          }
       ];
 
+      let hasCancelado = false;
+      const isPedidoReembolsado = pedido.statusFinanceiro === 'REEMBOLSADO' || contaReceber?.status === 'REEMBOLSADO';
+      let hasReembolsadoEvent = false;
+
       // Mapeamos a Producao
       historicoProd.forEach((hp: any) => {
-         eventos.push({
-            status: hp.status,
-            data: hp.dataAlteracao,
-            user: hp.nomeUsuario || 'Sistema'
-         });
+         if (hp.status === 'CANCELADO') {
+            if (!hasCancelado) {
+               // Primeiro evento de cancelamento
+               hasCancelado = true;
+               eventos.push({
+                  status: 'CANCELADO',
+                  data: hp.dataAlteracao,
+                  user: hp.nomeUsuario || 'Sistema',
+                  motivo: pedido.motivoCancelamento || undefined
+               });
+            } else if (isPedidoReembolsado && !hasReembolsadoEvent) {
+               // Segundo evento gravado durante o estorno -> vira o evento de Reembolso!
+               hasReembolsadoEvent = true;
+               eventos.push({
+                  status: 'REEMBOLSADO',
+                  subStatus: valorPagoAtual > 0 ? `(R$ ${valorPagoAtual.toFixed(2)} devolvido ao cliente)` : undefined,
+                  data: hp.dataAlteracao,
+                  user: hp.nomeUsuario || 'Sistema',
+                  observacao: contaReceber?.observacoes || 'Valor estornado ao cliente.'
+               });
+            }
+         } else {
+            eventos.push({
+               status: hp.status,
+               data: hp.dataAlteracao,
+               user: hp.nomeUsuario || 'Sistema'
+            });
+         }
       });
 
       // Mapeamos o Financeiro (Pagamentos)
@@ -297,9 +340,23 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
          });
       });
 
+      // Se for reembolsado e ainda não gerou o evento na lista, adiciona o evento de REEMBOLSADO
+      if (isPedidoReembolsado && !hasReembolsadoEvent) {
+         const dataCancelamento = historicoProd.find((hp: any) => hp.status === 'CANCELADO')?.dataAlteracao;
+         const dataReembolso = contaReceber?.dataPagamento || (dataCancelamento ? new Date(new Date(dataCancelamento).getTime() + 1000).toISOString() : new Date().toISOString());
+
+         eventos.push({
+            status: 'REEMBOLSADO',
+            subStatus: valorPagoAtual > 0 ? `(R$ ${valorPagoAtual.toFixed(2)} devolvido ao cliente)` : undefined,
+            data: dataReembolso,
+            user: (historicoProd.find((hp: any) => hp.status === 'CANCELADO')?.nomeUsuario) || pedido.criadoPor?.nome || 'Sistema',
+            observacao: contaReceber?.observacoes || 'Valor estornado ao cliente.'
+         });
+      }
+
       eventos.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
       return eventos;
-   }, [pedido.dataCriacao, pedido.criadoPor, historicoProd, pagamentos]);
+   }, [pedido.dataCriacao, pedido.criadoPor, pedido.motivoCancelamento, pedido.statusFinanceiro, contaReceber, historicoProd, pagamentos, valorPagoAtual]);
 
    const itensToRender = pedido.itens && pedido.itens.length > 0
       ? pedido.itens
@@ -350,8 +407,6 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
       return { custo, arte, desconto, lucro };
    }, [itensToRender, pedido.valor]);
 
-   const isCanceled = pedido.statusProducao === 'CANCELADO';
-
    const handleEdit = (e: React.MouseEvent) => {
       e.stopPropagation();
 
@@ -386,19 +441,28 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
       setCancelMotivo(''); setCancelError(''); setCancelLoading(false); setIsCancelDialogOpen(true);
    };
 
-   const handleCancelConfirm = async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!cancelMotivo) { setCancelError("O motivo é obrigatório."); return; }
+   const handleCancelConfirm = async () => {
+      if (!cancelMotivo.trim()) { setCancelError("O motivo é obrigatório."); return; }
       setCancelLoading(true); setCancelError('');
       try {
          const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/cancelar`, {
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userName: user?.nome || 'Usuário', motivo: cancelMotivo }),
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               userName: user?.nome || 'Usuário',
+               motivo: cancelMotivo.trim(),
+               estornar: false
+            }),
          });
-         if (!response.ok) throw new Error('Falha ao cancelar');
+         if (!response.ok) throw new Error('Falha ao cancelar o pedido');
          const updatedPedido = await response.json();
          onPedidoUpdated(updatedPedido);
          setIsCancelDialogOpen(false);
+
+         // Se tiver pagamento registrado, abre o segundo modal perguntando sobre o estorno
+         if (valorPagoAtual > 0) {
+            setEstornoError('');
+            setIsEstornoDialogOpen(true);
+         }
       } catch (error: any) {
          setCancelError(error.message);
       } finally {
@@ -406,12 +470,23 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
       }
    };
 
-   // ==================== LÓGICA DE PAGAMENTO PARCIAL ====================
-
-   const valorTotalPedido = Number(contaReceber?.valorTotal || pedido.valor || 0);
-   const valorPagoAtual = Number(contaReceber?.valorPago || 0);
-   const valorFaltante = Math.max(0, valorTotalPedido - valorPagoAtual);
-   const progressoPorcentagem = valorTotalPedido > 0 ? Math.min(100, (valorPagoAtual / valorTotalPedido) * 100) : 0;
+   const handleEstornoConfirm = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setEstornoLoading(true); setEstornoError('');
+      try {
+         const response = await authenticatedFetch(`/api/pedidos/${pedido.id}/estornar`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+         });
+         if (!response.ok) throw new Error('Falha ao realizar o estorno');
+         const updatedPedido = await response.json();
+         onPedidoUpdated(updatedPedido);
+         setIsEstornoDialogOpen(false);
+      } catch (error: any) {
+         setEstornoError(error.message);
+      } finally {
+         setEstornoLoading(false);
+      }
+   };
 
    const openPaymentModal = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -511,33 +586,61 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                   </div>
                </div>
 
-               {/* Barra de Progresso Financeiro (Pagamentos Parciais) */}
+               {/* Barra de Progresso Financeiro (Pagamentos Parciais e Estornos) */}
                {contaReceber && (
                   <div className="py-4 px-5 border-b border-gray-800 bg-[#151515]">
                      <div className="flex justify-between items-end mb-2">
                         <div>
                            <h4 className="text-gray-300 text-sm font-bold flex items-center gap-2">
-                              <DollarSign className="w-4 h-4 text-phalis-action" />
+                              <DollarSign className={cn("w-4 h-4", isCanceladoSemPagamento ? "text-red-400" : isReembolsado ? "text-purple-400" : isEstornoPendente ? "text-amber-400" : "text-phalis-action")} />
                               Andamento Financeiro
                            </h4>
-                           <p className="text-xs text-gray-500 mt-0.5">
-                              Pago: <strong className="text-white">R$ {valorPagoAtual.toFixed(2)}</strong> /
-                              Total: R$ {valorTotalPedido.toFixed(2)}
+                           <p className="text-xs text-gray-400 mt-0.5">
+                              {isCanceladoSemPagamento ? (
+                                 <>Cancelado sem pagamentos / Total: R$ {valorTotalPedido.toFixed(2)}</>
+                              ) : isReembolsado ? (
+                                 valorPagoAtual > 0 ? (
+                                    <>Estornado: <strong className="text-purple-300 font-semibold">R$ {valorPagoAtual.toFixed(2)}</strong> (Devolvido ao Cliente) / Total: R$ {valorTotalPedido.toFixed(2)}</>
+                                 ) : (
+                                    <>Cancelado sem pagamentos / Total: R$ {valorTotalPedido.toFixed(2)}</>
+                                 )
+                              ) : isEstornoPendente ? (
+                                 <>Pago: <strong className="text-amber-300 font-semibold">R$ {valorPagoAtual.toFixed(2)}</strong> (Estorno Pendente) / Total: R$ {valorTotalPedido.toFixed(2)}</>
+                              ) : (
+                                 <>Pago: <strong className="text-white">R$ {valorPagoAtual.toFixed(2)}</strong> / Total: R$ {valorTotalPedido.toFixed(2)}</>
+                              )}
                            </p>
                         </div>
-                        {valorFaltante > 0 && !isCanceled && hasPermission('pedidos.status.financeiro') && (
-                           <Button
-                              size="sm"
-                              className="bg-phalis-action hover:bg-cyan-600 text-black font-bold h-8 text-xs"
-                              onClick={openPaymentModal}
-                           >
-                              <PlusCircle className="w-3.5 h-3.5 mr-1" /> Registrar Pagamento
-                           </Button>
-                        )}
-                        {valorFaltante <= 0 && !isCanceled && (
-                           <span className="bg-green-600/20 text-green-400 font-bold text-xs px-2 py-1 rounded border border-green-600/30">
-                              <Check className="w-3 h-3 inline mr-1" /> Quitada
+
+                        {isCanceladoSemPagamento ? (
+                           <span className="bg-red-950/60 text-red-400 font-bold text-xs px-2.5 py-1 rounded-full border border-red-800/50 flex items-center gap-1.5 shadow-sm">
+                              <XOctagon className="w-3.5 h-3.5" /> Cancelado
                            </span>
+                        ) : isReembolsado ? (
+                           <span className="bg-purple-950/60 text-purple-300 font-bold text-xs px-2.5 py-1 rounded-full border border-purple-700/50 flex items-center gap-1.5 shadow-sm">
+                              <RotateCcw className="w-3.5 h-3.5" /> Reembolsado
+                           </span>
+                        ) : isEstornoPendente ? (
+                           <span className="bg-amber-950/60 text-amber-300 font-bold text-xs px-2.5 py-1 rounded-full border border-amber-600/50 flex items-center gap-1.5 shadow-sm">
+                              <AlertTriangle className="w-3.5 h-3.5" /> Estorno Pendente
+                           </span>
+                        ) : (
+                           <>
+                              {valorFaltante > 0 && !isCanceled && hasPermission('pedidos.status.financeiro') && (
+                                 <Button
+                                    size="sm"
+                                    className="bg-phalis-action hover:bg-cyan-600 text-black font-bold h-8 text-xs"
+                                    onClick={openPaymentModal}
+                                 >
+                                    <PlusCircle className="w-3.5 h-3.5 mr-1" /> Registrar Pagamento
+                                 </Button>
+                              )}
+                              {valorFaltante <= 0 && !isCanceled && (
+                                 <span className="bg-green-600/20 text-green-400 font-bold text-xs px-2 py-1 rounded border border-green-600/30">
+                                    <Check className="w-3 h-3 inline mr-1" /> Quitada
+                                 </span>
+                              )}
+                           </>
                         )}
                      </div>
 
@@ -546,15 +649,40 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                         <div
                            className={cn(
                               "h-2.5 transition-all duration-700 ease-out",
-                              progressoPorcentagem < 100 ? "bg-phalis-action shadow-[0_0_8px_#00bcd4]" : "bg-green-500 shadow-[0_0_8px_#4ade80]"
+                              isCanceladoSemPagamento
+                                 ? "bg-red-600/40"
+                                 : isReembolsado
+                                    ? "bg-purple-500 shadow-[0_0_8px_#a855f7]"
+                                    : isEstornoPendente
+                                       ? "bg-amber-500 shadow-[0_0_8px_#f59e0b]"
+                                       : progressoPorcentagem < 100
+                                          ? "bg-phalis-action shadow-[0_0_8px_#00bcd4]"
+                                          : "bg-green-500 shadow-[0_0_8px_#4ade80]"
                            )}
-                           style={{ width: `${progressoPorcentagem}%` }}
+                           style={{ width: isCanceladoSemPagamento ? "100%" : `${progressoPorcentagem}%` }}
                         />
                      </div>
-                     {valorFaltante > 0 && (
-                        <p className="text-[10px] text-yellow-500/80 text-right mt-1 font-medium">
-                           Falta receber: R$ {valorFaltante.toFixed(2)}
+
+                     {isCanceladoSemPagamento ? (
+                        <p className="text-[11px] text-red-400/90 text-right mt-1.5 font-medium flex items-center justify-end gap-1.5">
+                           <XOctagon className="w-3.5 h-3.5" /> Pedido cancelado sem pagamentos efetuados
                         </p>
+                     ) : isReembolsado ? (
+                        valorPagoAtual > 0 ? (
+                           <p className="text-[11px] text-purple-300 text-right mt-1.5 font-medium flex items-center justify-end gap-1.5">
+                              <RotateCcw className="w-3.5 h-3.5" /> Valor de R$ {valorPagoAtual.toFixed(2)} foi estornado / devolvido ao cliente
+                           </p>
+                        ) : null
+                     ) : isEstornoPendente ? (
+                        <p className="text-[11px] text-amber-300 text-right mt-1.5 font-medium flex items-center justify-end gap-1.5">
+                           <AlertTriangle className="w-3.5 h-3.5" /> R$ {valorPagoAtual.toFixed(2)} pago — clique no botão "Estornar Pagamento" ao lado para devolver
+                        </p>
+                     ) : (
+                        valorFaltante > 0 && !isCanceled && (
+                           <p className="text-[10px] text-yellow-500/80 text-right mt-1 font-medium">
+                              Falta receber: R$ {valorFaltante.toFixed(2)}
+                           </p>
+                        )
                      )}
                   </div>
                )}
@@ -625,29 +753,135 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                         <XOctagon className="h-4 w-4 mr-2" /> Cancelar Pedido
                      </Button>
                   )}
+                  {hasPermission('pedidos.cancelar') && isCanceled && valorPagoAtual > 0 && pedido.statusFinanceiro !== 'REEMBOLSADO' && (
+                     <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30 hover:text-amber-300 font-semibold"
+                        onClick={(e) => { e.stopPropagation(); setEstornoError(''); setIsEstornoDialogOpen(true); }}
+                     >
+                        <RotateCcw className="h-4 w-4 mr-2" /> Estornar Pagamento (R$ {valorPagoAtual.toFixed(2)})
+                     </Button>
+                  )}
                </div>
             </div>
 
          </div>
 
+         {/* Modal 1: Cancelamento do Pedido (2 Opções) */}
          <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-            <AlertDialogContent className="bg-phalis-black border-gray-800 text-white">
+            <AlertDialogContent className="bg-phalis-black border border-gray-800 text-white sm:max-w-[480px] p-6 shadow-2xl">
                <AlertDialogHeader>
-                  <AlertDialogTitle>Cancelar Pedido {pedido.id}?</AlertDialogTitle>
+                  <AlertDialogTitle className="text-lg font-bold text-white flex items-center gap-2">
+                     <XOctagon className="h-5 w-5 text-phalis-danger" />
+                     Cancelar Pedido {pedido.codigoVisual || `#${pedido.id}`}
+                  </AlertDialogTitle>
                   <AlertDialogDescription asChild>
-                     <div className="text-gray-400 space-y-3 mt-2">
-                        <p className="text-yellow-400">Esta ação não pode ser desfeita. Todos os itens associados serão cancelados.</p>
-                        <div className="space-y-2 pt-2">
-                           <Label htmlFor="motivo" className="text-white">Motivo (Obrigatório)</Label>
-                           <Textarea id="motivo" className="bg-phalis-gray border-0" value={cancelMotivo} onChange={(e) => setCancelMotivo(e.target.value)} onClick={(e) => e.stopPropagation()} />
-                           {cancelError && <p className="text-sm text-phalis-danger">{cancelError}</p>}
+                     <div className="text-gray-300 space-y-3.5 mt-3 text-sm">
+                        <div className="text-yellow-400/90 text-xs bg-yellow-950/20 border border-yellow-900/40 p-2.5 rounded-md">
+                           ⚠️ Esta ação cancelará a produção do pedido e todos os seus itens associados.
+                        </div>
+
+                        <div className="space-y-1.5">
+                           <Label htmlFor="motivo" className="text-xs font-semibold text-gray-200">
+                              Motivo do Cancelamento <span className="text-red-400">*</span>
+                           </Label>
+                           <Textarea
+                              id="motivo"
+                              className={cn(
+                                 "bg-black/50 border text-xs text-white min-h-[75px] placeholder-gray-500 focus:outline-none focus:ring-1",
+                                 cancelError ? "border-red-500 focus:ring-red-500" : "border-gray-700 focus:ring-phalis-action"
+                              )}
+                              placeholder="Informe o motivo do cancelamento..."
+                              value={cancelMotivo}
+                              onChange={(e) => {
+                                 setCancelMotivo(e.target.value);
+                                 if (e.target.value.trim()) setCancelError('');
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                           />
+                           {cancelError && <p className="text-xs text-phalis-danger">{cancelError}</p>}
                         </div>
                      </div>
                   </AlertDialogDescription>
                </AlertDialogHeader>
-               <AlertDialogFooter>
-                  <AlertDialogCancel className="bg-gray-700 border-0 hover:text-white" onClick={(e) => e.stopPropagation()}>Voltar</AlertDialogCancel>
-                  <Button className="bg-phalis-danger text-white hover:bg-red-700" disabled={cancelLoading} onClick={handleCancelConfirm}>{cancelLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Cancelamento"}</Button>
+
+               <AlertDialogFooter className="flex gap-2.5 pt-3 border-t border-gray-800/80 mt-2">
+                  <AlertDialogCancel
+                     className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white h-9 text-xs"
+                     onClick={(e) => e.stopPropagation()}
+                  >
+                     Voltar
+                  </AlertDialogCancel>
+
+                  <Button
+                     type="button"
+                     className="bg-red-600 text-white hover:bg-red-700 font-semibold text-xs h-9 shadow-md flex items-center justify-center gap-1.5"
+                     disabled={cancelLoading}
+                     onClick={(e) => { e.stopPropagation(); handleCancelConfirm(); }}
+                  >
+                     {cancelLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <XOctagon className="h-3.5 w-3.5" />}
+                     Confirmar Cancelamento
+                  </Button>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+
+         {/* Modal 2: Estorno do Pagamento (2 Opções) */}
+         <AlertDialog open={isEstornoDialogOpen} onOpenChange={setIsEstornoDialogOpen}>
+            <AlertDialogContent className="bg-phalis-black border border-gray-800 text-white sm:max-w-[480px] p-6 shadow-2xl">
+               <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2 text-amber-400 text-lg font-bold">
+                     <RotateCcw className="w-5 h-5" /> Devolução de Pagamento
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                     <div className="text-gray-300 space-y-3 mt-2 text-xs leading-relaxed">
+
+                        {/* 1. Confirmação explícita de que o pedido foi cancelado com sucesso */}
+                        <div className="bg-green-950/40 border border-green-700/60 p-3 rounded-lg flex items-center gap-2.5 text-green-300">
+                           <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+                           <div>
+                              <p className="font-bold text-xs text-white">Pedido cancelado com sucesso!</p>
+                              <p className="text-[11px] text-green-300/90">A produção e os itens deste pedido foram cancelados.</p>
+                           </div>
+                        </div>
+
+                        {/* 2. Questionário de estorno do valor pago */}
+                        <div className="bg-amber-950/30 border border-amber-800/50 p-3.5 rounded-lg text-amber-200 space-y-1.5">
+                           <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                              <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                              <span>Pagamento Detectado</span>
+                           </div>
+                           <p className="text-gray-300 text-xs">
+                              Existe um pagamento de <strong className="text-white font-bold">R$ {valorPagoAtual.toFixed(2)}</strong> registrado neste pedido.
+                           </p>
+                           <p className="text-amber-200/90 text-[11px] pt-1">
+                              Deseja realizar o estorno/devolução desse valor ao cliente agora?
+                           </p>
+                        </div>
+
+                        <p className="text-gray-400 text-[11px]">
+                           Se optar por <strong>Estornar Depois</strong>, o pedido ficará marcado com estorno pendente e você poderá estornar a qualquer momento.
+                        </p>
+                        {estornoError && <p className="text-xs text-phalis-danger">{estornoError}</p>}
+                     </div>
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter className="flex gap-2.5 mt-4 pt-3 border-t border-gray-800/80">
+                  <AlertDialogCancel
+                     className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white h-9 text-xs"
+                     onClick={(e) => e.stopPropagation()}
+                  >
+                     Estornar Depois
+                  </AlertDialogCancel>
+                  <Button
+                     className="bg-amber-500 text-black font-bold hover:bg-amber-600 h-9 text-xs flex items-center gap-1.5 shadow-md"
+                     disabled={estornoLoading}
+                     onClick={handleEstornoConfirm}
+                  >
+                     {estornoLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+                     Estornar Agora (R$ {valorPagoAtual.toFixed(2)})
+                  </Button>
                </AlertDialogFooter>
             </AlertDialogContent>
          </AlertDialog>
@@ -693,10 +927,10 @@ const DetalhesPedidoRow: React.FC<DetalhesProps> = ({ pedido, onPedidoUpdated })
                                  <SelectValue placeholder="Selecione..." />
                               </SelectTrigger>
                               <SelectContent className="bg-phalis-dark border-gray-700 text-white">
-                                 <SelectItem value="PIX"><div className="flex items-center"><Banknote className="w-4 h-4 mr-2" /> PIX</div></SelectItem>
-                                 <SelectItem value="CREDITO"><div className="flex items-center"><CreditCard className="w-4 h-4 mr-2" /> Cartão de Crédito</div></SelectItem>
-                                 <SelectItem value="DEBITO"><div className="flex items-center"><CreditCard className="w-4 h-4 mr-2" /> Cartão de Débito</div></SelectItem>
-                                 <SelectItem value="DINHEIRO"><div className="flex items-center"><Landmark className="w-4 h-4 mr-2" /> Dinheiro</div></SelectItem>
+                                 <SelectItem value="PIX"><div className="flex items-center gap-2"><PixIcon className="w-4 h-4 text-[#77B6A8]" /> <span>PIX</span></div></SelectItem>
+                                 <SelectItem value="CREDITO"><div className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-blue-400" /> <span>Cartão de Crédito</span></div></SelectItem>
+                                 <SelectItem value="DEBITO"><div className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-amber-400" /> <span>Cartão de Débito</span></div></SelectItem>
+                                 <SelectItem value="DINHEIRO"><div className="flex items-center gap-2"><Banknote className="w-4 h-4 text-green-400" /> <span>Dinheiro</span></div></SelectItem>
                               </SelectContent>
                            </Select>
                         </div>

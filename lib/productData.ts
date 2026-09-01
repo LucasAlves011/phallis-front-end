@@ -15,6 +15,14 @@ export type ProductOptions = {
   acabamento: ProductOption[];
 };
 
+export type ProductCatalogoConfig = {
+  nomeExibicao?: string;
+  resumo?: string;
+  descricaoDetalhada?: string;
+  categoria?: 'METRO' | 'UNIDADE' | 'SERVICO';
+  destaque?: boolean; // Badge "Mais Pedido"
+};
+
 export type Product = {
   id: string;
   nome: string;
@@ -27,6 +35,8 @@ export type Product = {
   defaultM2Venda?: number;
   orderIndex?: number;
   ativo?: boolean;
+  visivelCatalogoPublico?: boolean;
+  catalogoConfig?: ProductCatalogoConfig;
 };
 
 // --- CONFIGURAÇÃO DAS COLUNAS (PARA ORDEM E RESET) ---

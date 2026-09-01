@@ -18,11 +18,24 @@ import {
    ExternalLink,
    Sparkles,
    ShieldCheck,
-   ShoppingBag
+   ShoppingBag,
+   Linkedin,
+   Code2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Turnstile } from '@marsidev/react-turnstile';
+
+const WhatsAppIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+   <svg
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 448 512"
+      aria-hidden="true"
+   >
+      <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+   </svg>
+);
 
 type RastreioItemDTO = {
    nome: string;
@@ -274,12 +287,12 @@ export default function RastreioPublicoPage() {
    const saldoRestante = Math.max(0, totalPedido - totalPago);
 
    return (
-      <div className="min-h-screen bg-[#09090b] text-white flex flex-col font-sans pb-12 selection:bg-phalis-action/20 selection:text-phalis-action">
+      <div className="min-h-screen bg-phalis-dark text-white flex flex-col font-sans pb-12 selection:bg-phalis-action/30 selection:text-white">
 
          {/* HEADER MOBILE-FIRST */}
-         <header className="relative bg-gradient-to-b from-[#141418] via-[#0e0e11] to-[#09090b] px-5 pt-8 pb-3 overflow-hidden">
-            {/* Linha decorativa no topo */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-phalis-action via-purple-500 to-pink-500" />
+         <header className="relative bg-gradient-to-b from-[#222222] via-[#1c1c1c] to-[#181818] px-5 pt-8 pb-4 overflow-hidden border-b border-phalis-gray/80">
+            {/* Linha decorativa CMYK no topo */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-phalis-ciano via-phalis-rosa via-phalis-yellow to-phalis-action" />
 
             <div className="max-w-md mx-auto flex flex-col items-center text-center relative z-10">
                {/* Logo Phalis */}
@@ -289,12 +302,12 @@ export default function RastreioPublicoPage() {
                      alt="Logo Gráfica Phalis"
                      fill
                      priority
-                     className="object-contain drop-shadow-[0_0_15px_rgba(234,88,12,0.2)]"
+                     className="object-contain drop-shadow-md"
                   />
                </div>
 
                {/* Saudação e Código */}
-               <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/5 border border-white/15 text-xs sm:text-sm font-mono text-gray-200 mb-3 shadow-lg shadow-black/40">
+               <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#242424] border border-gray-700 text-xs sm:text-sm font-mono text-gray-200 mb-3 shadow-lg shadow-black/40">
                   <span className="text-gray-400 font-medium">Pedido</span>
                   <strong className="text-phalis-action font-extrabold text-sm sm:text-base tracking-wider">{pedido.codigoVisual}</strong>
                </div>
@@ -366,18 +379,18 @@ export default function RastreioPublicoPage() {
                         href="https://www.google.com/maps/search/?api=1&query=Grafica+Phalis+Rua+Vinte+e+Um+de+Abril+2210+San+Martin+Recife+PE"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold text-xs py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-500/20"
+                        className="flex-1 bg-phalis-action hover:bg-phalis-action-hover text-phalis-black font-extrabold text-xs py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-phalis-action/20"
                      >
                         <ExternalLink className="w-4 h-4" />
                         Como Chegar (Maps)
                      </a>
                      <a
-                        href={`https://wa.me/55819985890254?text=${encodeURIComponent('Olá! Estou indo retirar o pedido ' + pedido.codigoVisual)}`}
+                        href={`https://wa.me/5581985890254?text=${encodeURIComponent('Olá! Estou indo retirar o pedido ' + pedido.codigoVisual)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold text-xs py-3 px-4 rounded-2xl flex items-center justify-center gap-2 border border-white/10 transition-colors"
                      >
-                        <MessageCircle className="w-4 h-4 text-green-400" />
+                        <MessageCircle className="w-4 h-4 text-phalis-action" />
                         Avisar no WhatsApp
                      </a>
                   </div>
@@ -385,13 +398,13 @@ export default function RastreioPublicoPage() {
             )}
 
             {/* CARD 2: TIMELINE / LINHA DO TEMPO */}
-            <div className="bg-[#121215] border border-gray-800/80 rounded-3xl p-5 shadow-xl space-y-4">
-               <div className="flex items-center justify-between border-b border-gray-800/60 pb-3">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="bg-[#242424] border border-gray-700/60 rounded-3xl p-5 shadow-xl space-y-4">
+               <div className="flex items-center justify-between border-b border-gray-700/50 pb-3">
+                  <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
                      <Sparkles className="w-3.5 h-3.5 text-phalis-action" />
                      Etapas de Produção
                   </h3>
-                  <span className="text-[11px] text-gray-500 font-mono">
+                  <span className="text-[11px] text-gray-400 font-mono">
                      Criado em {formatarDataHora(pedido.dataCriacao)}
                   </span>
                </div>
@@ -426,7 +439,7 @@ export default function RastreioPublicoPage() {
                                  <div className={cn(
                                     "w-7 h-7 rounded-full flex items-center justify-center transition-all z-10",
                                     isCurrent
-                                       ? "bg-phalis-action text-black ring-4 ring-phalis-action/20 shadow-[0_0_14px_rgba(234,88,12,0.5)]"
+                                       ? "bg-phalis-action text-black ring-4 ring-phalis-action/20 shadow-[0_0_14px_rgba(0,240,181,0.4)]"
                                        : isCompleted
                                           ? "bg-green-600 text-white shadow-[0_0_8px_rgba(34,197,94,0.3)]"
                                           : "bg-gray-800 text-gray-500 border border-gray-700"
@@ -481,10 +494,10 @@ export default function RastreioPublicoPage() {
             </div>
 
             {/* CARD 3: RESUMO DOS ITENS */}
-            <div className="bg-[#121215] border border-gray-800/80 rounded-3xl p-5 shadow-xl space-y-3">
-               <div className="flex items-center justify-between border-b border-gray-800/60 pb-3">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                     <ShoppingBag className="w-3.5 h-3.5 text-phalis-action" />
+            <div className="bg-[#242424] border border-gray-700/60 rounded-3xl p-5 shadow-xl space-y-3">
+               <div className="flex items-center justify-between border-b border-gray-700/50 pb-3">
+                  <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                     <ShoppingBag className="w-3.5 h-3.5 text-phalis-ciano" />
                      Itens do Pedido ({pedido.itens?.length || 0})
                   </h3>
                </div>
@@ -493,10 +506,10 @@ export default function RastreioPublicoPage() {
                   {pedido.itens.map((item, idx) => (
                      <div
                         key={idx}
-                        className="flex items-center justify-between p-3 bg-black/40 rounded-2xl border border-gray-800/50 hover:border-gray-700/60 transition-colors"
+                        className="flex items-center justify-between p-3 bg-black/40 rounded-2xl border border-gray-800 hover:border-gray-700 transition-colors"
                      >
                         <div className="flex items-center gap-3 min-w-0 pr-2">
-                           <div className="w-8 h-8 rounded-xl bg-gray-800/60 border border-gray-700/50 flex items-center justify-center text-gray-400 flex-shrink-0">
+                           <div className="w-8 h-8 rounded-xl bg-gray-800/80 border border-gray-700 flex items-center justify-center text-phalis-ciano flex-shrink-0">
                               <FileText className="w-4 h-4" />
                            </div>
                            <span className="text-xs font-semibold text-gray-200 truncate">
@@ -512,16 +525,16 @@ export default function RastreioPublicoPage() {
             </div>
 
             {/* CARD 4: RESUMO FINANCEIRO */}
-            <div className="bg-[#121215] border border-gray-800/80 rounded-3xl p-5 shadow-xl space-y-3">
-               <div className="flex items-center justify-between border-b border-gray-800/60 pb-3">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                     <Clock className="w-3.5 h-3.5 text-phalis-action" />
+            <div className="bg-[#242424] border border-gray-700/60 rounded-3xl p-5 shadow-xl space-y-3">
+               <div className="flex items-center justify-between border-b border-gray-700/50 pb-3">
+                  <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                     <Clock className="w-3.5 h-3.5 text-phalis-yellow" />
                      Resumo Financeiro
                   </h3>
                </div>
 
                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between text-gray-400">
+                  <div className="flex items-center justify-between text-gray-300">
                      <span>Total do Pedido:</span>
                      <span className="text-white font-bold text-sm">
                         R$ {totalPedido.toFixed(2)}
@@ -530,13 +543,13 @@ export default function RastreioPublicoPage() {
 
                   {pedido.statusFinanceiro === 'PARCIAL' && (
                      <>
-                        <div className="flex items-center justify-between text-gray-400">
+                        <div className="flex items-center justify-between text-gray-300">
                            <span>Valor Pago (Entrada):</span>
                            <span className="text-green-400 font-semibold">
                               R$ {totalPago.toFixed(2)}
                            </span>
                         </div>
-                        <div className="flex items-center justify-between pt-1 border-t border-gray-800 text-orange-400 font-bold">
+                        <div className="flex items-center justify-between pt-1 border-t border-gray-700 text-phalis-yellow font-bold">
                            <span>Restante na Retirada:</span>
                            <span className="text-sm">
                               R$ {saldoRestante.toFixed(2)}
@@ -568,9 +581,9 @@ export default function RastreioPublicoPage() {
             </div>
 
             {/* CARD 5: CANAL DE SUPORTE WHATSAPP */}
-            <div className="bg-gradient-to-b from-[#16161b] to-[#101013] border border-gray-800 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+            <div className="bg-[#242424] border border-gray-700/60 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
                <div className="flex items-center gap-3 text-center sm:text-left">
-                  <div className="w-10 h-10 rounded-2xl bg-green-500/10 text-green-400 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-2xl bg-phalis-action/10 text-phalis-action border border-phalis-action/20 flex items-center justify-center flex-shrink-0">
                      <MessageCircle className="w-5 h-5" />
                   </div>
                   <div>
@@ -582,30 +595,58 @@ export default function RastreioPublicoPage() {
                   href={`https://wa.me/5581985890254?text=${encodeURIComponent('Olá! Gostaria de falar sobre o meu pedido ' + pedido.codigoVisual)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-600/20"
+                  className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-black font-extrabold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#25D366]/20"
                >
-                  <MessageCircle className="w-4 h-4" />
+                  <WhatsAppIcon className="w-4 h-4 text-black" />
                   Chamar no WhatsApp
                </a>
             </div>
 
          </main>
 
-         {/* FOOTER */}
-         <footer className="mt-10 mb-4 text-center px-4 space-y-2">
-            <p className="text-gray-600 text-[11px]">
+         {/* FOOTER COM CONTATO DO DESENVOLVEDOR */}
+         <footer className="mt-12 mb-4 text-center px-4 space-y-4 max-w-md mx-auto w-full">
+            {/* Card do Desenvolvedor */}
+            <div className="bg-[#1f1f1f] border border-gray-700/60 rounded-2xl p-4 space-y-2.5 shadow-md">
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-left">
+                     <div className="w-6 h-6 rounded-lg bg-phalis-action/10 border border-phalis-action/30 flex items-center justify-center text-phalis-action">
+                        <Code2 size={14} />
+                     </div>
+                     <div>
+                        <span className="text-[10px] text-gray-400 font-mono uppercase block">Software desenvolvido por</span>
+                        <strong className="text-white text-xs font-bold">Lucas Alves</strong>
+                     </div>
+                  </div>
+                  <span className="text-[10px] font-mono text-phalis-action bg-phalis-action/10 px-2 py-0.5 rounded-full border border-phalis-action/20">
+                     Dev
+                  </span>
+               </div>
+
+               <div className="flex items-center justify-center gap-2 pt-1 border-t border-gray-800">
+                  <a
+                     href="https://www.linkedin.com/in/lucas-matheus-dev/"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="inline-flex items-center gap-1 bg-[#282828] hover:bg-[#0077b5] text-gray-300 hover:text-white px-3 py-1 rounded-lg border border-gray-700 text-[11px] font-medium transition-colors"
+                  >
+                     <Linkedin size={12} />
+                     LinkedIn
+                  </a>
+                  <a
+                     href="https://wa.me/5581985890254?text=Ol%C3%A1%20Lucas!%20Vi%20seu%20contato%20no%20sistema%20da%20Phalis."
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="inline-flex items-center gap-1 bg-[#282828] hover:bg-[#25D366] hover:text-black text-gray-300 px-3 py-1 rounded-lg border border-gray-700 text-[11px] font-medium transition-colors"
+                  >
+                     <WhatsAppIcon className="w-3.5 h-3.5" />
+                     Contato
+                  </a>
+               </div>
+            </div>
+
+            <p className="text-gray-500 text-[11px]">
                Gráfica Phalis © {new Date().getFullYear()} • Soluções em Artes e Impressos
-            </p>
-            <p className="text-gray-500 text-xs">
-               Software desenvolvido por{' '}
-               <a
-                  href="https://www.linkedin.com/in/lucas-matheus-dev/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-gray-300 hover:text-white transition-colors border-b border-gray-600 hover:border-white pb-0.5"
-               >
-                  Lucas Alves
-               </a>
             </p>
          </footer>
       </div>

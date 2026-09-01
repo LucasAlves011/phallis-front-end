@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { type Product } from '@/lib/productData'; // 2. MUDANÇA: Importar apenas o *tipo*
-import { Loader2, Search } from 'lucide-react'; // 3. MUDANÇA: Importar o ícone de loading e search
+import { Loader2, Search, Share2, Check, ExternalLink } from 'lucide-react'; // 3. MUDANÇA: Importar o ícone de loading e search
 import { authenticatedFetch } from '@/lib/api'; // 4. MUDANÇA: Importar fetch autenticado
 import { usePermission } from '@/lib/auth/usePermission';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 // --- O Componente do Card (Sem mudanças) ---
 // (Este subcomponente está perfeito como você colou)
@@ -58,8 +59,18 @@ export default function CatalogoPage() {
    const [produtos, setProdutos] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
    const [filtroBusca, setFiltroBusca] = useState('');
+   const [copiado, setCopiado] = useState(false);
 
    const [error, setError] = useState('');
+
+   const handleCopyPublicLink = () => {
+      if (typeof window !== 'undefined') {
+         const publicUrl = `${window.location.origin}/catalogo-online`;
+         navigator.clipboard.writeText(publicUrl);
+         setCopiado(true);
+         setTimeout(() => setCopiado(false), 2500);
+      }
+   };
 
    // Hook para buscar os dados da API (MSW)
    useEffect(() => {
@@ -106,18 +117,52 @@ export default function CatalogoPage() {
 
    return (
       <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6">
-         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <h1 className="text-3xl font-bold text-white">Catálogo de Produtos</h1>
 
-            <div className="relative w-full md:w-96">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-               <Input
-                  type="text"
-                  placeholder="Pesquisar produto pelo nome..."
-                  className="pl-10 bg-phalis-black border-gray-800 text-white placeholder:text-gray-500 h-12 text-base focus-visible:ring-phalis-action"
-                  value={filtroBusca}
-                  onChange={(e) => setFiltroBusca(e.target.value)}
-               />
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+               {/* Botão Copiar Link do Catálogo Público */}
+               <Button
+                  type="button"
+                  onClick={handleCopyPublicLink}
+                  className="w-full sm:w-auto h-12 px-4 rounded-md bg-phalis-gray hover:bg-[#383838] border border-gray-700 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-sm transition-all shrink-0"
+                  title="Copiar link do Catálogo Online Público"
+               >
+                  {copiado ? (
+                     <>
+                        <Check className="h-4 w-4 text-phalis-action" />
+                        <span className="text-phalis-action font-bold">Link Copiado!</span>
+                     </>
+                  ) : (
+                     <>
+                        <Share2 className="h-4 w-4 text-phalis-action" />
+                        <span>Copiar Link do Catálogo</span>
+                     </>
+                  )}
+               </Button>
+
+               {/* Botão Abrir Catálogo Público em Nova Aba */}
+               <a
+                  href="/catalogo-online"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex h-12 w-12 rounded-md bg-phalis-gray hover:bg-[#383838] border border-gray-700 text-gray-300 hover:text-white items-center justify-center transition-all shrink-0 shadow-sm"
+                  title="Abrir Catálogo Público em Nova Aba"
+               >
+                  <ExternalLink className="h-4 w-4 text-phalis-action" />
+               </a>
+
+               {/* Campo de Pesquisa */}
+               <div className="relative w-full sm:w-80 lg:w-96">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <Input
+                     type="text"
+                     placeholder="Pesquisar produto pelo nome..."
+                     className="pl-10 bg-phalis-black border-gray-800 text-white placeholder:text-gray-500 h-12 text-base focus-visible:ring-phalis-action"
+                     value={filtroBusca}
+                     onChange={(e) => setFiltroBusca(e.target.value)}
+                  />
+               </div>
             </div>
          </div>
 

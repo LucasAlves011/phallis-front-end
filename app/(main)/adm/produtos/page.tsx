@@ -166,7 +166,7 @@ export default function GerenciarProdutosPage() {
       }
    };
 
-   // Função de ativar/desativar
+   // Função de ativar/desativar no sistema interno
    const handleToggleAtivo = async (id: string) => {
       try {
          const response = await authenticatedFetch(`/api/produtos/${id}/status`, {
@@ -181,6 +181,25 @@ export default function GerenciarProdutosPage() {
       }
    };
 
+   // Função de exibir/ocultar no catálogo público conectada à API
+   const handleTogglePublico = async (id: string) => {
+      const prod = produtos.find(p => p.id === id);
+      if (prod && prod.ativo === false) return;
+
+      try {
+         const response = await authenticatedFetch(`/api/produtos/${id}/catalogo-status`, {
+            method: 'PATCH'
+         });
+         if (!response.ok) throw new Error('Falha ao alterar visibilidade no catálogo');
+         const updatedProduct = await response.json();
+         setProdutos(prev => prev.map(p => p.id === id ? { ...p, visivelCatalogoPublico: updatedProduct.visivelCatalogoPublico } : p));
+         setSuccessMessage(`Visibilidade no catálogo público de "${updatedProduct.nome}" alterada para: ${updatedProduct.visivelCatalogoPublico ? 'VISÍVEL' : 'OCULTO'}`);
+      } catch (error) {
+         console.error("Erro ao alterar visibilidade no catálogo:", error);
+         alert("Não foi possível alterar a visibilidade no catálogo público.");
+      }
+   };
+
    const canReorder = hasPermission('produtos.ordenar');
 
    return (
@@ -189,24 +208,30 @@ export default function GerenciarProdutosPage() {
          collisionDetection={closestCenter}
          onDragEnd={handleDragEnd}
       >
-         <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6">
-            <AnimatePresence>
-               {successMessage && (
-                  <motion.div
-                     initial={{ opacity: 0, x: 20 }}
-                     animate={{ opacity: 1, x: 0 }}
-                     exit={{ opacity: 0, scale: 0.95 }}
-                     className="fixed top-24 right-6 z-[100] bg-green-600 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 border border-green-400"
-                  >
-                     <CheckCircle className="h-5 w-5" />
-                     <span className="font-medium">{successMessage}</span>
-                  </motion.div>
-               )}
-            </AnimatePresence>
+         {/* Toast de Notificação Flutuante (Fora do fluxo space-y para não empurrar a tabela) */}
+         <AnimatePresence>
+            {successMessage && (
+               <motion.div
+                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  className="fixed top-20 right-8 z-[9999] bg-green-600/95 backdrop-blur-md text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-green-400/40 pointer-events-none"
+               >
+                  <CheckCircle className="h-5 w-5 text-white shrink-0" />
+                  <span className="font-medium text-sm">{successMessage}</span>
+               </motion.div>
+            )}
+         </AnimatePresence>
 
-            {/* --- Cabeçalho (Sem mudança) --- */}
+         <div className="w-full 2xl:w-4/5 2xl:mx-auto space-y-6">
+            {/* --- Cabeçalho --- */}
             <div className="flex justify-between items-center">
-               <h1 className="text-3xl font-bold text-white">Gerenciar Produtos</h1>
+               <div>
+                  <h1 className="text-3xl font-bold text-white">Gerenciar Produtos</h1>
+                  <p className="text-xs text-gray-400 mt-1">
+                     Controle a ordem, edição e visibilidade no catálogo interno (👁️) e catálogo público (🌐)
+                  </p>
+               </div>
 
                {hasPermission('produtos.cadastrar') && (
                   <Button asChild className="bg-phalis-action text-phalis-black hover:bg-phalis-action-hover">
@@ -217,7 +242,7 @@ export default function GerenciarProdutosPage() {
                   </Button>)}
             </div>
 
-            {/* --- Tabela/Lista Arrastável (Sem mudança) --- */}
+            {/* --- Tabela/Lista Arrastável --- */}
             <div className="bg-phalis-black rounded-lg overflow-x-auto">
                {isLoading ? (
                   <div className="flex justify-center items-center p-12 min-w-[800px]">
@@ -230,9 +255,9 @@ export default function GerenciarProdutosPage() {
                         <div className="w-10"></div> {/* Espaço do Handle */}
                         <div className="w-[60px] text-center">Ordem</div>
                         <div className="w-[80px] px-4">Imagem</div>
-                        <div className="flex-1">Nome</div>
+                        <div className="flex-1">Nome & Visibilidade</div>
                         <div className="w-[100px]">Tipo</div>
-                        <div className="w-[140px] text-center">Ações</div>
+                        <div className="w-[180px] text-right pr-4">Ações & Visibilidade</div>
                      </div>
 
                      {/* A Lista Arrastável */}
@@ -246,10 +271,11 @@ export default function GerenciarProdutosPage() {
                               product={produto}
                               canEdit={hasPermission('produtos.editar')}
                               canDelete={hasPermission('produtos.deletar')}
-                              canReorder={canReorder} // Passa prop nova
+                              canReorder={canReorder}
                               onEdit={handleEdit}
                               onDelete={openDeleteDialog}
                               onToggleAtivo={handleToggleAtivo}
+                              onTogglePublico={handleTogglePublico}
                            />
                         ))}
                      </SortableContext>

@@ -833,7 +833,7 @@ export default function CatalogoPublicoPage() {
                         </a>
 
                         <a
-                           href="https://wa.me/5581985890254?text=Ol%C3%A1%20Lucas!%20Vi%20seu%20contato%20no%20sistema%20da%20Phalis."
+                           href="https://wa.me/5581996780937?text=Ol%C3%A1%20Lucas!%20Vi%20seu%20contato%20no%20sistema%20da%20Phalis."
                            target="_blank"
                            rel="noopener noreferrer"
                            className="inline-flex items-center gap-1.5 bg-[#2a2a2a] hover:bg-[#25D366] hover:text-black text-gray-200 px-3.5 py-1.5 rounded-xl border border-gray-700 hover:border-transparent text-xs font-semibold transition-all shadow-sm"

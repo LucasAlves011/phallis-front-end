@@ -20,8 +20,6 @@ import {
    Pedido,
    StatusFinanceiro,
    StatusProducao,
-   statusFinanceiroOptions,
-   statusProducaoOptions
 } from '@/lib/orderData';
 import DetalhesPedidoRow from './DetalhesPedidoRow';
 import { cn, formatarTelefone } from '@/lib/utils';
@@ -30,6 +28,7 @@ import { type User } from '@/types/client';
 import { usePermission } from '@/lib/auth/usePermission';
 import { authenticatedFetch } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ModalReverterFinanceiro, type TransicaoRegressiva } from './ModalReverterFinanceiro';
 
 interface TabelaPedidosProps {
    pedidos: Pedido[];
@@ -38,6 +37,21 @@ interface TabelaPedidosProps {
    currentUser: User;
    isLoading?: boolean;
 }
+
+// Opções operacionais selecionáveis nos dropdowns (CANCELADO só é possível via botão dedicado)
+const statusFinanceiroOperacionais: { value: StatusFinanceiro; label: string }[] = [
+   { value: 'PENDENTE', label: 'Pendente' },
+   { value: 'PARCIAL', label: 'Pagamento Parcial' },
+   { value: 'PAGO', label: 'Pago' },
+];
+
+const statusProducaoOperacionais: { value: StatusProducao; label: string }[] = [
+   { value: 'PRE_PRODUCAO', label: 'Pré-Produção' },
+   { value: 'EM_PRODUCAO', label: 'Em Produção' },
+   { value: 'ACABAMENTO', label: 'Acabamento' },
+   { value: 'PRONTO', label: 'Pronto p/ retirada' },
+   { value: 'ENTREGUE', label: 'Entregue' },
+];
 
 const financeiroBadgeColors: Record<StatusFinanceiro, string> = {
    PENDENTE: 'bg-amber-600 text-white',
@@ -63,7 +77,6 @@ const producaoBadgeColors: Record<StatusProducao, string> = {
    CANCELADO: 'bg-red-600 text-white hover:bg-red-700'
 };
 
-// ... (Funções formatarWhatsApp e formatarData - sem mudança)
 const formatarWhatsApp = (numero: string | undefined | null) => {
    if (!numero) return '#';
    const ddi = '55';
@@ -85,11 +98,60 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
    const [loadingStatus, setLoadingStatus] = useState<Record<string, boolean>>({});
    const { hasPermission } = usePermission();
 
+   // Estado para o modal de reversão / ajuste financeiro com confirmação por senha
+   const [reversaoModalState, setReversaoModalState] = useState<{
+      isOpen: boolean;
+      pedido: Pedido | null;
+      transicao: TransicaoRegressiva | null;
+   }>({
+      isOpen: false,
+      pedido: null,
+      transicao: null,
+   });
+
    const handleStatusChange = async (
       pedidoId: string,
       tipo: 'financeiro' | 'producao',
       value: string
    ) => {
+      const pedidoInfo = pedidos.find(p => String(p.id) === pedidoId);
+      if (!pedidoInfo) return;
+
+      if (tipo === 'financeiro') {
+         // Não faz nada se clicou no mesmo status atual
+         if (pedidoInfo.statusFinanceiro === value) return;
+
+         // Transição 1: PAGO -> PENDENTE
+         if (pedidoInfo.statusFinanceiro === 'PAGO' && value === 'PENDENTE') {
+            setReversaoModalState({
+               isOpen: true,
+               pedido: pedidoInfo,
+               transicao: 'PAGO_PARA_PENDENTE',
+            });
+            return;
+         }
+
+         // Transição 2: PARCIAL -> PENDENTE
+         if (pedidoInfo.statusFinanceiro === 'PARCIAL' && value === 'PENDENTE') {
+            setReversaoModalState({
+               isOpen: true,
+               pedido: pedidoInfo,
+               transicao: 'PARCIAL_PARA_PENDENTE',
+            });
+            return;
+         }
+
+         // Transição 3: PAGO -> PARCIAL
+         if (pedidoInfo.statusFinanceiro === 'PAGO' && value === 'PARCIAL') {
+            setReversaoModalState({
+               isOpen: true,
+               pedido: pedidoInfo,
+               transicao: 'PAGO_PARA_PARCIAL',
+            });
+            return;
+         }
+      }
+
       const loadingKey = `${tipo}-${pedidoId}`;
       setLoadingStatus(prev => ({ ...prev, [loadingKey]: true }));
       try {
@@ -101,7 +163,6 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
             body = { status: value };
          } else if (tipo === 'financeiro') {
             url = `/api/pedidos/${pedidoId}/pagamento`;
-            const pedidoInfo = pedidos.find(p => String(p.id) === pedidoId);
             const valor = pedidoInfo?.valor || Number(pedidoInfo?.valor) || 0;
             
             // Verifica o quanto já foi pago presumindo que PARCIAL = 50%
@@ -131,13 +192,10 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
          if (!response.ok) throw new Error('Falha ao atualizar status');
          const data = await response.json();
          if (tipo === 'financeiro') {
-            const pedidoAtual = pedidos.find(p => String(p.id) === pedidoId);
-            if (pedidoAtual) {
-               onPedidoUpdated({
-                  ...pedidoAtual,
-                  statusFinanceiro: data.status as StatusFinanceiro
-               });
-            }
+            onPedidoUpdated({
+               ...pedidoInfo,
+               statusFinanceiro: data.status as StatusFinanceiro
+            });
          } else {
             onPedidoUpdated(data as Pedido);
          }
@@ -148,178 +206,213 @@ const TabelaPedidos: React.FC<TabelaPedidosProps> = ({ pedidos, onPedidoUpdated,
       }
    };
 
+   const handleReversaoSuccess = (data: any) => {
+      if (!reversaoModalState.pedido) return;
+      const novoStatus = (data.status || (reversaoModalState.transicao === 'PAGO_PARA_PARCIAL' ? 'PARCIAL' : 'PENDENTE')) as StatusFinanceiro;
+      onPedidoUpdated({
+         ...reversaoModalState.pedido,
+         statusFinanceiro: novoStatus,
+      });
+      setReversaoModalState({ isOpen: false, pedido: null, transicao: null });
+   };
+
    const toggleRow = (pedidoId: string) => {
       setOpenRowId(prevId => (prevId === pedidoId ? null : pedidoId));
    };
 
    return (
-      <Table className="min-w-[1000px]">
-         <TableHeader>
-            <TableRow className="hover:bg-transparent border-gray-800">
-               <TableHead className="w-[120px] text-gray-400">Pedido</TableHead>
-               <TableHead className="w-[150px] text-gray-400">Data/Hora</TableHead>
-               <TableHead className="text-gray-400">Cliente</TableHead>
-               <TableHead className="text-gray-400">Contato</TableHead>
-               <TableHead className="text-gray-400">Item</TableHead>
-               <TableHead className="w-[180px] text-gray-400">Financeiro</TableHead>
-               <TableHead className="text-gray-400">Valor</TableHead>
-               <TableHead className="w-[200px] text-gray-400">Status</TableHead>
-            </TableRow>
-         </TableHeader>
+      <>
+         <Table className="min-w-[1000px]">
+            <TableHeader>
+               <TableRow className="hover:bg-transparent border-gray-800">
+                  <TableHead className="w-[120px] text-gray-400">Pedido</TableHead>
+                  <TableHead className="w-[150px] text-gray-400">Data/Hora</TableHead>
+                  <TableHead className="text-gray-400">Cliente</TableHead>
+                  <TableHead className="text-gray-400">Contato</TableHead>
+                  <TableHead className="text-gray-400">Item</TableHead>
+                  <TableHead className="w-[180px] text-gray-400">Financeiro</TableHead>
+                  <TableHead className="text-gray-400">Valor</TableHead>
+                  <TableHead className="w-[200px] text-gray-400">Status</TableHead>
+               </TableRow>
+            </TableHeader>
 
-         <TableBody>
-            {isLoading && pedidos.length === 0 ? (
-               Array.from({ length: 8 }).map((_, i) => (
-                  <TableRow key={`skeleton-${i}`}>
-                     <TableCell><Skeleton className="h-8 w-16" /></TableCell>
-                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                     <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                     <TableCell><Skeleton className="h-8 w-24 rounded-full" /></TableCell>
-                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                     <TableCell><Skeleton className="h-8 w-24 rounded-full" /></TableCell>
-                  </TableRow>
-               ))
-            ) : null}
+            <TableBody>
+               {isLoading && pedidos.length === 0 ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                     <TableRow key={`skeleton-${i}`}>
+                        <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-24 rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-24 rounded-full" /></TableCell>
+                     </TableRow>
+                  ))
+               ) : null}
 
-            {pedidos.map((pedido) => {
-               const isCanceled = pedido.statusProducao === 'CANCELADO';
+               {pedidos.map((pedido) => {
+                  const isCanceled = pedido.statusProducao === 'CANCELADO';
 
-               return (
-                  <React.Fragment key={pedido.id}>
-                     <TableRow
-                        data-state={openRowId === String(pedido.id) ? 'open' : 'closed'}
-                        className={cn(
-                           "cursor-pointer hover:bg-phalis-gray/50 data-[state=open]:bg-phalis-gray",
-                           pedido.id === highlightId && 'animate-flashCiano',
-                           isCanceled && 'text-gray-500 hover:bg-phalis-gray/30'
-                        )}
-                        onClick={() => toggleRow(String(pedido.id))}
-                     >
-                        <TableCell>
-                           <div className={cn("font-medium text-white", isCanceled && "line-through text-gray-500")}>{pedido.codigoVisual || '-'}</div>
-                           <div className="text-xs text-gray-500">#{pedido.id}</div>
-                        </TableCell>
-                        <TableCell className={cn("text-xs", isCanceled && "line-through")} suppressHydrationWarning={true}>
-                           {formatarData(pedido.dataCriacao)}
-                        </TableCell>
-                        <TableCell className={cn(isCanceled && "line-through text-gray-500")}>{pedido.cliente.nome}</TableCell>
-                        <TableCell>
-                           {pedido.cliente.telefone1 ? (
-                              <a
-                                 href={formatarWhatsApp(pedido.cliente.telefone1)}
-                                 target="_blank"
-                                 rel="noopener noreferrer"
-                                 className={cn(
-                                    "inline-flex items-center gap-1.5 text-white hover:text-phalis-action hover:underline w-fit cursor-pointer",
-                                    isCanceled && "pointer-events-none line-through text-gray-500"
-                                 )}
-                                 onClick={(e) => e.stopPropagation()}
-                              >
-                                 <MessageCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
-                                 <span>{formatarTelefone(pedido.cliente.telefone1)}</span>
-                              </a>
-                           ) : (
-                              <span className="text-gray-500">---</span>
+                  return (
+                     <React.Fragment key={pedido.id}>
+                        <TableRow
+                           data-state={openRowId === String(pedido.id) ? 'open' : 'closed'}
+                           className={cn(
+                              "cursor-pointer hover:bg-phalis-gray/50 data-[state=open]:bg-phalis-gray",
+                              pedido.id === highlightId && 'animate-flashCiano',
+                              isCanceled && 'text-gray-500 hover:bg-phalis-gray/30'
                            )}
-                        </TableCell>
-                        <TableCell className={cn(isCanceled && "line-through text-gray-500")}>
-                           {pedido.itens && pedido.itens.length > 0 ? (
-                              <div className="flex items-center gap-2">
-                                 <span>{pedido.itens[0].itemNome}</span>
-                                 {pedido.itens.length > 1 && (
-                                    <span className="bg-phalis-gray text-gray-300 text-xs px-2 py-0.5 rounded-full">
-                                       +{pedido.itens.length - 1} item(s)
-                                    </span>
-                                 )}
-                              </div>
-                           ) : (
-                              pedido.itemNome || 'Sem itens'
-                           )}
-                        </TableCell>
-                        <TableCell>
-                           {isCanceled && (pedido.statusFinanceiro === 'PAGO' || pedido.statusFinanceiro === 'PARCIAL') ? (
-                              <div 
-                                 className="flex h-10 w-full items-center justify-center font-semibold rounded-full px-3 py-1 text-xs bg-amber-600 text-white select-none whitespace-nowrap"
-                                 title="Pedido cancelado com estorno ainda pendente"
-                              >
-                                 Estorno Pendente
-                              </div>
-                           ) : (
-                              <Select
-                                 value={isCanceled && pedido.statusFinanceiro === 'PENDENTE' ? 'CANCELADO' : pedido.statusFinanceiro}
-                                 onValueChange={(value) => handleStatusChange(String(pedido.id), 'financeiro', value)}
-                                 disabled={loadingStatus[`financeiro-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.financeiro')}
-                              >
-                                 <SelectTrigger
+                           onClick={() => toggleRow(String(pedido.id))}
+                        >
+                           <TableCell>
+                              <div className={cn("font-medium text-white", isCanceled && "line-through text-gray-500")}>{pedido.codigoVisual || '-'}</div>
+                              <div className="text-xs text-gray-500">#{pedido.id}</div>
+                           </TableCell>
+                           <TableCell className={cn("text-xs", isCanceled && "line-through")} suppressHydrationWarning={true}>
+                              {formatarData(pedido.dataCriacao)}
+                           </TableCell>
+                           <TableCell className={cn(isCanceled && "line-through text-gray-500")}>{pedido.cliente.nome}</TableCell>
+                           <TableCell>
+                              {pedido.cliente.telefone1 ? (
+                                 <a
+                                    href={formatarWhatsApp(pedido.cliente.telefone1)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className={cn(
-                                       "font-semibold border-0 rounded-full px-3 py-1 text-xs focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none",
-                                       financeiroBadgeColors[isCanceled && pedido.statusFinanceiro === 'PENDENTE' ? 'CANCELADO' : pedido.statusFinanceiro],
-                                       !isCanceled && financeiroHoverColors[isCanceled && pedido.statusFinanceiro === 'PENDENTE' ? 'CANCELADO' : pedido.statusFinanceiro]
+                                       "inline-flex items-center gap-1.5 text-white hover:text-phalis-action hover:underline w-fit cursor-pointer",
+                                       isCanceled && "pointer-events-none line-through text-gray-500"
                                     )}
                                     onClick={(e) => e.stopPropagation()}
                                  >
-                                    {loadingStatus[`financeiro-${pedido.id}`] ? (
-                                       <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                       <SelectValue className="flex-1 text-center" />
+                                    <MessageCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
+                                    <span>{formatarTelefone(pedido.cliente.telefone1)}</span>
+                                 </a>
+                              ) : (
+                                 <span className="text-gray-500">---</span>
+                              )}
+                           </TableCell>
+                           <TableCell className={cn(isCanceled && "line-through text-gray-500")}>
+                              {pedido.itens && pedido.itens.length > 0 ? (
+                                 <div className="flex items-center gap-2">
+                                    <span>{pedido.itens[0].itemNome}</span>
+                                    {pedido.itens.length > 1 && (
+                                       <span className="bg-phalis-gray text-gray-300 text-xs px-2 py-0.5 rounded-full">
+                                          +{pedido.itens.length - 1} item(s)
+                                       </span>
                                     )}
-                                 </SelectTrigger>
-                                 <SelectContent className="bg-phalis-gray border-0">
-                                    {statusFinanceiroOptions.map(opt => (
-                                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                    ))}
-                                 </SelectContent>
-                              </Select>
-                           )}
-                        </TableCell>
+                                 </div>
+                              ) : (
+                                 pedido.itemNome || 'Sem itens'
+                              )}
+                           </TableCell>
+                           <TableCell>
+                              {isCanceled && (pedido.statusFinanceiro === 'PAGO' || pedido.statusFinanceiro === 'PARCIAL') ? (
+                                 <div 
+                                    className="flex h-10 w-full items-center justify-center font-semibold rounded-full px-3 py-1 text-xs bg-amber-600 text-white select-none whitespace-nowrap"
+                                    title="Pedido cancelado com estorno ainda pendente"
+                                 >
+                                    Estorno Pendente
+                                 </div>
+                              ) : isCanceled ? (
+                                 <div 
+                                    className="flex h-10 w-full items-center justify-center font-semibold rounded-full px-3 py-1 text-xs bg-red-600 text-white select-none whitespace-nowrap"
+                                 >
+                                    Cancelado
+                                 </div>
+                              ) : (
+                                 <Select
+                                    value={pedido.statusFinanceiro}
+                                    onValueChange={(value) => handleStatusChange(String(pedido.id), 'financeiro', value)}
+                                    disabled={loadingStatus[`financeiro-${pedido.id}`] || !hasPermission('pedidos.status.financeiro')}
+                                 >
+                                    <SelectTrigger
+                                       className={cn(
+                                          "font-semibold border-0 rounded-full px-3 py-1 text-xs focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none",
+                                          financeiroBadgeColors[pedido.statusFinanceiro],
+                                          financeiroHoverColors[pedido.statusFinanceiro]
+                                       )}
+                                       onClick={(e) => e.stopPropagation()}
+                                    >
+                                       {loadingStatus[`financeiro-${pedido.id}`] ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                       ) : (
+                                          <SelectValue className="flex-1 text-center" />
+                                       )}
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-phalis-gray border-0">
+                                       {statusFinanceiroOperacionais.map(opt => (
+                                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                       ))}
+                                    </SelectContent>
+                                 </Select>
+                              )}
+                           </TableCell>
 
-                        <TableCell className={cn(isCanceled && "line-through text-gray-500")}>R$ {(Number(pedido.valor) || 0).toFixed(2)}</TableCell>
+                           <TableCell className={cn(isCanceled && "line-through text-gray-500")}>R$ {(Number(pedido.valor) || 0).toFixed(2)}</TableCell>
 
-                        <TableCell className="w-[180px]">
-                           <Select
-                              value={pedido.statusProducao || ""}
-                              onValueChange={(value) => handleStatusChange(String(pedido.id), 'producao', value)}
-                              disabled={loadingStatus[`producao-${pedido.id}`] || isCanceled || !hasPermission('pedidos.status.producao')}
-                           >
-                              <SelectTrigger
-                                 className={cn(
-                                    "font-semibold border-0 rounded-full px-3 py-1 text-xs focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none w-full",
-                                    pedido.statusProducao ? producaoBadgeColors[pedido.statusProducao] : "bg-gray-700 text-gray-400"
-                                 )}
-                                 onClick={(e) => e.stopPropagation()}
-                              >
-                                 {loadingStatus[`producao-${pedido.id}`] ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                 ) : (
-                                    <SelectValue placeholder="Indefinido" className="flex-1 text-center whitespace-nowrap" />
-                                 )}
-                              </SelectTrigger>
-                              <SelectContent className="bg-phalis-gray border-0">
-                                 {statusProducaoOptions.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                 ))}
-                              </SelectContent>
-                           </Select>
-                        </TableCell>
-                     </TableRow>
-
-                     {openRowId === String(pedido.id) && (
-                        <TableRow className="bg-phalis-dark hover:bg-phalis-dark">
-                           <TableCell colSpan={8} className="p-4">
-                              <DetalhesPedidoRow
-                                 pedido={pedido}
-                                 onPedidoUpdated={onPedidoUpdated}
-                              />
+                           <TableCell className="w-[180px]">
+                              {isCanceled ? (
+                                 <div 
+                                    className="flex h-10 w-full items-center justify-center font-semibold rounded-full px-3 py-1 text-xs bg-red-600 text-white select-none whitespace-nowrap"
+                                 >
+                                    Cancelado
+                                 </div>
+                              ) : (
+                                 <Select
+                                    value={pedido.statusProducao || ""}
+                                    onValueChange={(value) => handleStatusChange(String(pedido.id), 'producao', value)}
+                                    disabled={loadingStatus[`producao-${pedido.id}`] || !hasPermission('pedidos.status.producao')}
+                                 >
+                                    <SelectTrigger
+                                       className={cn(
+                                          "font-semibold border-0 rounded-full px-3 py-1 text-xs focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none w-full",
+                                          pedido.statusProducao ? producaoBadgeColors[pedido.statusProducao] : "bg-gray-700 text-gray-400"
+                                       )}
+                                       onClick={(e) => e.stopPropagation()}
+                                    >
+                                       {loadingStatus[`producao-${pedido.id}`] ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                       ) : (
+                                          <SelectValue placeholder="Indefinido" className="flex-1 text-center whitespace-nowrap" />
+                                       )}
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-phalis-gray border-0">
+                                       {statusProducaoOperacionais.map(opt => (
+                                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                       ))}
+                                    </SelectContent>
+                                 </Select>
+                              )}
                            </TableCell>
                         </TableRow>
-                     )}
-                  </React.Fragment>
-               )
-            })}
-         </TableBody>
-      </Table>
+
+                        {openRowId === String(pedido.id) && (
+                           <TableRow className="bg-phalis-dark hover:bg-phalis-dark">
+                              <TableCell colSpan={8} className="p-4">
+                                 <DetalhesPedidoRow
+                                    pedido={pedido}
+                                    onPedidoUpdated={onPedidoUpdated}
+                                 />
+                              </TableCell>
+                           </TableRow>
+                        )}
+                     </React.Fragment>
+                  );
+               })}
+            </TableBody>
+         </Table>
+
+         {/* Modal de Reversão / Ajuste Financeiro com Confirmação por Senha */}
+         <ModalReverterFinanceiro
+            isOpen={reversaoModalState.isOpen}
+            onClose={() => setReversaoModalState({ isOpen: false, pedido: null, transicao: null })}
+            pedido={reversaoModalState.pedido}
+            transicao={reversaoModalState.transicao}
+            onSuccess={handleReversaoSuccess}
+         />
+      </>
    );
 };
 

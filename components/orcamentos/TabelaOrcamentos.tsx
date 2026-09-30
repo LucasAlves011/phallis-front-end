@@ -175,19 +175,19 @@ export default function TabelaOrcamentos({ orcamentos, highlightId, isLoading = 
    const handleBaixarPDF = async (orcamento: Orcamento) => {
       setDownloadingId(orcamento.id);
       try {
-         const doc = new jsPDF();
+         const doc = new jsPDF({ compress: true });
          const pageWidth = doc.internal.pageSize.getWidth();
          const pageHeight = doc.internal.pageSize.getHeight();
 
          const bgPag1 = await carregarImagemComoDataURL('/bg-pag1.png');
          const bgPag2 = await carregarImagemComoDataURL('/bg-pag2.png');
 
-         doc.addImage(bgPag1, 'PNG', 0, 0, pageWidth, pageHeight);
+         doc.addImage(bgPag1, 'PNG', 0, 0, pageWidth, pageHeight, 'bg_page_1', 'FAST');
 
          const originalAddPage = doc.addPage.bind(doc);
          doc.addPage = function () {
             originalAddPage();
-            this.addImage(bgPag2, 'PNG', 0, 0, pageWidth, pageHeight);
+            this.addImage(bgPag2, 'PNG', 0, 0, pageWidth, pageHeight, 'bg_page_2', 'FAST');
             return this;
          };
 

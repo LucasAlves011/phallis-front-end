@@ -255,7 +255,7 @@ export default function CarrinhoPage() {
             console.warn('Não foi possível registrar o orçamento no servidor:', apiErr);
          }
 
-         const doc = new jsPDF();
+         const doc = new jsPDF({ compress: true });
          const pageWidth = doc.internal.pageSize.getWidth();
          const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -264,14 +264,14 @@ export default function CarrinhoPage() {
          const bgPag2 = await carregarImagemComoDataURL('/bg-pag2.png');
 
          // 2. Adiciona o background na primeira página (já criada pelo new jsPDF)
-         doc.addImage(bgPag1, 'PNG', 0, 0, pageWidth, pageHeight);
+         doc.addImage(bgPag1, 'PNG', 0, 0, pageWidth, pageHeight, 'bg_page_1', 'FAST');
 
          // 3. Monkey-patch na função addPage para que toda nova página (criada pelo autoTable) receba o background 2.
          const originalAddPage = doc.addPage.bind(doc);
          doc.addPage = function () {
             originalAddPage();
             // Sempre que uma nova página for criada, injetamos a imagem da página 2
-            this.addImage(bgPag2, 'PNG', 0, 0, pageWidth, pageHeight);
+            this.addImage(bgPag2, 'PNG', 0, 0, pageWidth, pageHeight, 'bg_page_2', 'FAST');
             return this;
          };
 

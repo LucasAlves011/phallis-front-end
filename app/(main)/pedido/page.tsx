@@ -422,12 +422,12 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
    const options = produto.options || { papel: [], tamanho: [], cores: [], acabamento: [] };
 
    return (
-      <div className="w-full lg:h-[calc(100vh-120px)] lg:max-h-[calc(100vh-120px)] flex flex-col justify-between gap-4">
+      <div className="w-full fhd:h-[calc(100vh-120px)] fhd:max-h-[calc(100vh-120px)] flex flex-col justify-between gap-4">
          {/* GRID PRINCIPAL EM 3 COLUNAS */}
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 min-h-0 items-stretch">
 
             {/* COLUNA ESQUERDA: Card do Produto + Ficha + Tabela Preço */}
-            <div className="lg:col-span-1 flex flex-col gap-4 h-full min-h-0 overflow-y-auto pr-1">
+            <div className="lg:col-span-1 flex flex-col gap-4 h-full min-h-0 fhd:overflow-y-auto pr-1">
                <ProductInfoCard produto={produto} />
                <OrderSummaryCard ficha={fichaDoPedido} />
 
@@ -718,10 +718,10 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
 
                         {/* Bloco 3: Finalização (Arte Opcional) */}
                         <div className="bg-[#181818] px-3 py-2 rounded-xl border border-gray-800/90 flex items-center justify-between gap-3">
-                           <Label htmlFor="arte" className="text-[11px] text-gray-400 font-semibold flex items-center gap-1.5">
+                           <Label htmlFor="arte" className="text-[10px] 2xl:text-[11px] text-gray-400 font-semibold flex items-center gap-1.5 whitespace-nowrap">
                               Taxa de Criação / Ajuste de Arte:
                            </Label>
-                           <div className="w-28">
+                           <div className="w-24 2xl:w-28 flex-shrink-0">
                               <MoneyInput
                                  id="arte"
                                  value={precoArte}
@@ -735,25 +735,25 @@ const FormularioUnidade: React.FC<FormularioUnidadeProps> = ({ produto, pedidoPa
                      </div>
 
                      {/* Bloco 4: Cartão de Rentabilidade e Fechamento */}
-                     <div className="bg-gradient-to-r from-[#121212] via-[#161616] to-[#121212] p-2.5 rounded-xl border border-gray-800 flex items-center justify-between gap-2 text-xs flex-shrink-0">
-                        <div>
-                           <span className="text-[10px] text-gray-400 block font-semibold">Subtotal:</span>
-                           <strong className="text-phalis-action text-sm font-mono">
+                     <div className="bg-gradient-to-r from-[#121212] via-[#161616] to-[#121212] p-2 2xl:p-2.5 rounded-xl border border-gray-800 flex items-center justify-between gap-1.5 2xl:gap-2 text-xs flex-shrink-0">
+                        <div className="min-w-0">
+                           <span className="text-[9px] 2xl:text-[10px] text-gray-400 block font-semibold uppercase tracking-wider whitespace-nowrap">Subtotal:</span>
+                           <strong className="text-phalis-action text-[11px] 2xl:text-sm font-mono block whitespace-nowrap leading-tight">
                               R$ {vendaTotal.toFixed(2)}
                            </strong>
                         </div>
-                        <div className="border-l border-gray-800/80 pl-3">
-                           <span className="text-[10px] text-gray-400 block font-semibold">Unitário:</span>
-                           <strong className="text-gray-200 text-sm font-mono">
-                              R$ {unitario.toFixed(2)} / un
+                        <div className="border-l border-gray-800/80 pl-2 2xl:pl-3 min-w-0">
+                           <span className="text-[9px] 2xl:text-[10px] text-gray-400 block font-semibold uppercase tracking-wider whitespace-nowrap">Unitário:</span>
+                           <strong className="text-gray-200 text-[11px] 2xl:text-sm font-mono block whitespace-nowrap leading-tight">
+                              R$ {unitario.toFixed(2)} <span className="text-[9px] 2xl:text-xs font-sans text-gray-400">/ un</span>
                            </strong>
                         </div>
-                        <div className="text-right border-l border-gray-800/80 pl-3">
-                           <span className="text-[10px] text-gray-400 block font-semibold flex items-center justify-end gap-1">
-                              <TrendingUp className="h-3 w-3 text-emerald-400" /> Margem Estimada:
+                        <div className="text-right border-l border-gray-800/80 pl-2 2xl:pl-3 min-w-0">
+                           <span className="text-[9px] 2xl:text-[10px] text-gray-400 block font-semibold flex items-center justify-end gap-1 uppercase tracking-wider whitespace-nowrap">
+                              <TrendingUp className="h-2.5 w-2.5 2xl:h-3 2xl:w-3 text-emerald-400 flex-shrink-0" /> Margem<span className="hidden 2xl:inline"> Estimada</span>:
                            </span>
-                           <span className={`text-sm font-black ${margem >= 30 ? 'text-emerald-400' : 'text-yellow-400'}`}>
-                              {margem.toFixed(1)}% <span className="text-xs font-semibold text-gray-300">(Lucro: R$ {lucroBruto.toFixed(2)})</span>
+                           <span className={cn("text-[11px] 2xl:text-sm font-black whitespace-nowrap leading-tight block", margem >= 30 ? 'text-emerald-400' : 'text-yellow-400')}>
+                              {margem.toFixed(1)}% <span className="text-[9px] 2xl:text-xs font-semibold text-gray-300 block 2xl:inline whitespace-nowrap">(Lucro: R$ {lucroBruto.toFixed(2)})</span>
                            </span>
                         </div>
                      </div>
@@ -935,12 +935,12 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
    const options = produto.options || { papel: [], tamanho: [], cores: [], acabamento: [] };
 
    return (
-      <div className="w-full lg:h-[calc(100vh-120px)] lg:max-h-[calc(100vh-120px)] flex flex-col justify-between gap-4">
+      <div className="w-full fhd:h-[calc(100vh-120px)] fhd:max-h-[calc(100vh-120px)] flex flex-col justify-between gap-4">
          {/* GRID PRINCIPAL EM 3 COLUNAS */}
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 min-h-0 items-stretch">
 
             {/* COLUNA ESQUERDA: Card do Produto + Ficha */}
-            <div className="lg:col-span-1 flex flex-col gap-4 h-full min-h-0 overflow-y-auto pr-1">
+            <div className="lg:col-span-1 flex flex-col gap-4 h-full min-h-0 fhd:overflow-y-auto pr-1">
                <ProductInfoCard produto={produto} />
                <OrderSummaryCard ficha={fichaDoPedido} />
             </div>
@@ -1154,10 +1154,10 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
 
                         {/* Bloco 3: Finalização (Arte Opcional) */}
                         <div className="bg-[#181818] px-3 py-2 rounded-xl border border-gray-800/90 flex items-center justify-between gap-3">
-                           <Label className="text-[11px] text-gray-400 font-semibold flex items-center gap-1.5">
+                           <Label className="text-[10px] 2xl:text-[11px] text-gray-400 font-semibold flex items-center gap-1.5 whitespace-nowrap">
                               Taxa de Criação / Ajuste de Arte:
                            </Label>
-                           <div className="w-28">
+                           <div className="w-24 2xl:w-28 flex-shrink-0">
                               <MoneyInput
                                  value={valorArte}
                                  onChange={e => setValorArte(e.target.value)}
@@ -1170,25 +1170,25 @@ const FormularioMetro: React.FC<FormularioMetroProps> = ({ produto, pedidoParaEd
                      </div>
 
                      {/* Bloco 4: Cartão de Rentabilidade e Fechamento */}
-                     <div className="bg-gradient-to-r from-[#121212] via-[#161616] to-[#121212] p-2.5 rounded-xl border border-gray-800 flex items-center justify-between gap-2 text-xs flex-shrink-0">
-                        <div>
-                           <span className="text-[10px] text-gray-400 block font-semibold">Subtotal:</span>
-                           <strong className="text-phalis-action text-sm font-mono">
+                     <div className="bg-gradient-to-r from-[#121212] via-[#161616] to-[#121212] p-2 2xl:p-2.5 rounded-xl border border-gray-800 flex items-center justify-between gap-1.5 2xl:gap-2 text-xs flex-shrink-0">
+                        <div className="min-w-0">
+                           <span className="text-[9px] 2xl:text-[10px] text-gray-400 block font-semibold uppercase tracking-wider whitespace-nowrap">Subtotal:</span>
+                           <strong className="text-phalis-action text-[11px] 2xl:text-sm font-mono block whitespace-nowrap leading-tight">
                               R$ {valorTotalVenda.toFixed(2)}
                            </strong>
                         </div>
-                        <div className="border-l border-gray-800/80 pl-3">
-                           <span className="text-[10px] text-gray-400 block font-semibold">Área Total:</span>
-                           <strong className="text-gray-200 text-sm font-mono">
+                        <div className="border-l border-gray-800/80 pl-2 2xl:pl-3 min-w-0">
+                           <span className="text-[9px] 2xl:text-[10px] text-gray-400 block font-semibold uppercase tracking-wider whitespace-nowrap">Área Total:</span>
+                           <strong className="text-gray-200 text-[11px] 2xl:text-sm font-mono block whitespace-nowrap leading-tight">
                               {metrosQuadrados.toFixed(2)} m²
                            </strong>
                         </div>
-                        <div className="text-right border-l border-gray-800/80 pl-3">
-                           <span className="text-[10px] text-gray-400 block font-semibold flex items-center justify-end gap-1">
-                              <TrendingUp className="h-3 w-3 text-emerald-400" /> Margem Estimada:
+                        <div className="text-right border-l border-gray-800/80 pl-2 2xl:pl-3 min-w-0">
+                           <span className="text-[9px] 2xl:text-[10px] text-gray-400 block font-semibold flex items-center justify-end gap-1 uppercase tracking-wider whitespace-nowrap">
+                              <TrendingUp className="h-2.5 w-2.5 2xl:h-3 2xl:w-3 text-emerald-400 flex-shrink-0" /> Margem<span className="hidden 2xl:inline"> Estimada</span>:
                            </span>
-                           <span className={`text-sm font-black ${margem >= 30 ? 'text-emerald-400' : 'text-yellow-400'}`}>
-                              {margem.toFixed(1)}% <span className="text-xs font-semibold text-gray-300">(Lucro: R$ {lucroBruto.toFixed(2)})</span>
+                           <span className={cn("text-[11px] 2xl:text-sm font-black whitespace-nowrap leading-tight block", margem >= 30 ? 'text-emerald-400' : 'text-yellow-400')}>
+                              {margem.toFixed(1)}% <span className="text-[9px] 2xl:text-xs font-semibold text-gray-300 block 2xl:inline whitespace-nowrap">(Lucro: R$ {lucroBruto.toFixed(2)})</span>
                            </span>
                         </div>
                      </div>
@@ -1283,12 +1283,12 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
    }, [observacao, valorVenda]);
 
    return (
-      <div className="w-full lg:h-[calc(100vh-120px)] lg:max-h-[calc(100vh-120px)] flex flex-col justify-between gap-4">
+      <div className="w-full fhd:h-[calc(100vh-120px)] fhd:max-h-[calc(100vh-120px)] flex flex-col justify-between gap-4">
          {/* GRID PRINCIPAL EM 3 COLUNAS */}
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 min-h-0 items-stretch">
 
             {/* COLUNA ESQUERDA: Card do Produto + Informações */}
-            <div className="lg:col-span-1 flex flex-col gap-4 h-full min-h-0 overflow-y-auto pr-1">
+            <div className="lg:col-span-1 flex flex-col gap-4 h-full min-h-0 fhd:overflow-y-auto pr-1">
                <ProductInfoCard produto={produto} />
                <div className="bg-phalis-black rounded-2xl p-4 border border-gray-800 shadow-xl space-y-2 flex-shrink-0">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider">Ficha do Pedido:</h3>
@@ -1358,14 +1358,14 @@ const FormularioServico: React.FC<FormularioServicoProps> = ({ produto, pedidoPa
                      </div>
 
                      {/* Resumo Final */}
-                     <div className="bg-gradient-to-r from-[#121212] via-[#161616] to-[#121212] p-2.5 rounded-xl border border-gray-800 flex items-center justify-between text-xs flex-shrink-0">
-                        <div>
-                           <span className="text-[10px] text-gray-400 block font-semibold">Modalidade:</span>
-                           <strong className="text-white text-sm font-mono">Serviço Avulso</strong>
+                     <div className="bg-gradient-to-r from-[#121212] via-[#161616] to-[#121212] p-2 2xl:p-2.5 rounded-xl border border-gray-800 flex items-center justify-between text-xs flex-shrink-0">
+                        <div className="min-w-0">
+                           <span className="text-[9px] 2xl:text-[10px] text-gray-400 block font-semibold uppercase tracking-wider whitespace-nowrap">Modalidade:</span>
+                           <strong className="text-white text-[11px] 2xl:text-sm font-mono block whitespace-nowrap leading-tight">Serviço Avulso</strong>
                         </div>
-                        <div className="text-right">
-                           <span className="text-[10px] text-gray-400 block font-semibold">Total a Cobrar:</span>
-                           <span className="text-sm font-black text-phalis-action font-mono">
+                        <div className="text-right min-w-0">
+                           <span className="text-[9px] 2xl:text-[10px] text-gray-400 block font-semibold uppercase tracking-wider whitespace-nowrap">Total a Cobrar:</span>
+                           <span className="text-[11px] 2xl:text-sm font-black text-phalis-action font-mono block whitespace-nowrap leading-tight">
                               R$ {total.toFixed(2)}
                            </span>
                         </div>

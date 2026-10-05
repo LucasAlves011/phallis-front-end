@@ -18,6 +18,9 @@ const config = {
 			}
 		},
 		extend: {
+			screens: {
+				'fhd': { raw: '(min-width: 1536px) and (min-height: 850px)' },
+			},
 			colors: {
 				'phalis-dark': '#1c1c1c',
 				'phalis-black': '#000000',
